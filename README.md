@@ -1,1 +1,1 @@
-# maliput_sample
+# maliput_sparse
