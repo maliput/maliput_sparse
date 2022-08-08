@@ -29,11 +29,11 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maliput_sample/geometry/line_string.h"
 
+#include <array>
 #include <cmath>
 #include <vector>
 
 #include <gtest/gtest.h>
-
 #include <maliput/common/assertion_error.h>
 #include <maliput/math/vector.h>
 
@@ -45,9 +45,13 @@ namespace {
 using maliput::math::Vector2;
 using maliput::math::Vector3;
 
+// Used tolerance for the length computation.
+const constexpr double kTolerance{1e-15};
+
+// Alternative function to compute the accumulated distance between points in a LineString.
 template <typename VectorT>
-struct DistanceFunction {
-  double operator()(const VectorT& v1, const VectorT& v2) const { return (v1 - v2).norm(); }
+struct SquaredDistanceFunction {
+  double operator()(const VectorT& v1, const VectorT& v2) const { return std::pow((v1 - v2).norm(), 2.); }
 };
 
 class LineString3dTest : public ::testing::Test {
@@ -57,23 +61,31 @@ class LineString3dTest : public ::testing::Test {
   const Vector3 p3{Vector3::UnitZ()};
 };
 
-TEST_F(LineString3dTest, ConstructorWithInitializerListIsSuccessful) {
-  const LineString<Vector3, DistanceFunction<Vector3>> dut{p1, p2, p3};
-}
+TEST_F(LineString3dTest, ConstructorWithInitializerListIsSuccessful) { const LineString3d dut{p1, p2, p3}; }
 
 TEST_F(LineString3dTest, ConstructorWithVectorIsSuccessful) {
-  const LineString<Vector3, DistanceFunction<Vector3>> dut(std::vector<Vector3>{p1, p2, p3});
+  const LineString3d dut(std::vector<Vector3>{p1, p2, p3});
+}
+
+TEST_F(LineString3dTest, ConstructorWithIteratorsIsSucceful) {
+  const std::array<Vector3, 3> points{p1, p2, p3};
+  const LineString3d dut(points.begin(), points.end());
 }
 
 TEST_F(LineString3dTest, Api) {
-  const LineString<Vector3, DistanceFunction<Vector3>> dut(std::vector<Vector3>{p1, p2, p3});
+  const LineString3d dut(std::vector<Vector3>{p1, p2, p3});
   EXPECT_TRUE(p1 == dut.first());
   EXPECT_TRUE(p3 == dut.last());
   EXPECT_TRUE(p1 == dut.at(0));
   EXPECT_TRUE(p2 == dut.at(1));
   EXPECT_TRUE(p3 == dut.at(2));
   EXPECT_EQ(3, dut.size());
-  EXPECT_NEAR(2. * std::sqrt(2.), dut.length(), 1e-14);
+  EXPECT_NEAR(2. * std::sqrt(2.), dut.length(), kTolerance);
+}
+
+TEST_F(LineString3dTest, LengthInjectedDistanceFunction) {
+  const LineString<Vector3, SquaredDistanceFunction<Vector3>> dut(std::vector<Vector3>{p1, p2, p3});
+  EXPECT_NEAR(4., dut.length(), 1e-14);
 }
 
 class LineString2dTest : public ::testing::Test {
@@ -83,19 +95,31 @@ class LineString2dTest : public ::testing::Test {
   const Vector2 p3{1., 1.};
 };
 
-TEST_F(LineString2dTest, ConstructorIsSuccessful) {
-  const LineString<Vector2, DistanceFunction<Vector2>> dut(std::vector<Vector2>{p1, p2, p3});
+TEST_F(LineString2dTest, ConstructorWithInitializerListIsSuccessful) { const LineString2d dut{p1, p2, p3}; }
+
+TEST_F(LineString2dTest, ConstructorWithVectorIsSuccessful) {
+  const LineString2d dut(std::vector<Vector2>{p1, p2, p3});
+}
+
+TEST_F(LineString2dTest, ConstructorWithIteratorsIsSucceful) {
+  const std::array<Vector2, 3> points{p1, p2, p3};
+  const LineString2d dut(points.begin(), points.end());
 }
 
 TEST_F(LineString2dTest, Api) {
-  const LineString<Vector2, DistanceFunction<Vector2>> dut(std::vector<Vector2>{p1, p2, p3});
+  const LineString2d dut(std::vector<Vector2>{p1, p2, p3});
   EXPECT_TRUE(p1 == dut.first());
   EXPECT_TRUE(p3 == dut.last());
   EXPECT_TRUE(p1 == dut.at(0));
   EXPECT_TRUE(p2 == dut.at(1));
   EXPECT_TRUE(p3 == dut.at(2));
   EXPECT_EQ(3, dut.size());
-  EXPECT_NEAR(1. + std::sqrt(2.), dut.length(), 1e-14);
+  EXPECT_NEAR(1. + std::sqrt(2.), dut.length(), kTolerance);
+}
+
+TEST_F(LineString2dTest, LengthWithInjectedDistanceFunction) {
+  const LineString<Vector2, SquaredDistanceFunction<Vector2>> dut(std::vector<Vector2>{p1, p2, p3});
+  EXPECT_NEAR(3., dut.length(), kTolerance);
 }
 
 }  // namespace

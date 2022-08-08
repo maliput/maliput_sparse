@@ -29,34 +29,96 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <cmath>
 #include <initializer_list>
 #include <vector>
 
 #include <maliput/common/maliput_throw.h>
+#include <maliput/math/vector.h>
 
 namespace maliput_sample {
 namespace geometry {
+namespace details {
 
-template <typename CoordinateT, typename DistanceFunction>
+/// Calculates the Euclidean distance between two coordinates.
+/// @tparam CoordinateT The type of the coordinates.
+template <typename CoordinateT>
+struct EuclideanDistance {
+  /// Obtains Euclidean distance between two coordinates.
+  /// @param lhs First point.
+  /// @param rhs Second point.
+  /// @returns The Euqclidean distance between the two coordinates.
+  /// @throws maliput::common::assertion_error When coordinate sizes are different.
+  double operator()(const CoordinateT& lhs, const CoordinateT& rhs) const {
+    MALIPUT_THROW_UNLESS(lhs.size() == rhs.size());
+    double dist = 0;
+    for (std::size_t i = 0; i < lhs.size(); ++i) {
+      const double d = lhs[i] - rhs[i];
+      dist += d * d;
+    }
+    return std::sqrt(dist);
+  }
+};
+
+}  // namespace details
+
+/// Defines a polyline in the `CoordinateT` domain composed of M>1 points.
+///
+/// @tparam CoordinateT The coordinate point type to be used.
+/// @tparam DistanceFunction The function to compute the distance with. By default, the Euclidean
+/// distance is used.
+template <typename CoordinateT, typename DistanceFunction = details::EuclideanDistance<CoordinateT>>
 class LineString final {
  public:
-  explicit LineString(const std::vector<CoordinateT>& coordinates) : coordinates_(coordinates) {
+  /// Constructs a LineString from a std::vector.
+  ///
+  /// This function calls LineString(coordinates.begin, coordinates.end)
+  ///
+  /// @param coordinates A vector of CoordinateT to define this LineString.
+  explicit LineString(const std::vector<CoordinateT>& coordinates)
+      : LineString(coordinates.begin(), coordinates.end()) {}
+
+  /// Constructs a LineString form an initializer list.
+  ///
+  /// This function calls LineString(coordinates.begin, coordinates.end)
+  ///
+  /// @param coordinates An initializer list to define this LineString.
+  explicit LineString(std::initializer_list<CoordinateT> coordinates)
+      : LineString(coordinates.begin(), coordinates.end()) {}
+
+  /// Constructs a LineString form the begin and end iterators.
+  ///
+  /// After loading the coordinates, this iterates through the list of points and computes the total length.
+  /// This operation is O(n) in the list size.
+  ///
+  /// @param begin The initial iterator.
+  /// @param end The final iterator.
+  /// @tparam Iterator the iterator type.
+  /// @throws maliput::common::assertion_error When there are less than two points.
+  template <typename Iterator>
+  LineString(Iterator begin, Iterator end) : coordinates_(begin, end) {
     MALIPUT_THROW_UNLESS(coordinates_.size() > 1);
     length_ = ComputeLength();
   }
 
-  explicit LineString(std::initializer_list<CoordinateT> coordinates) : coordinates_(coordinates) {
-    MALIPUT_THROW_UNLESS(coordinates_.size() > 1);
-    length_ = ComputeLength();
-  }
-
+  /// @return The first point in the LineString.
   const CoordinateT& first() const { return coordinates_.front(); }
+
+  /// @return The last point in the LineString.
   const CoordinateT& last() const { return coordinates_.back(); }
+
+  /// @return The point at @p i index in the LineString.
+  /// @throws std::out_of_range When @p i is not in [0, size()) bounds.
   const CoordinateT& at(size_t i) const { return coordinates_.at(i); }
+
+  /// @return The number of points this LineString has.
   size_t size() const { return coordinates_.size(); }
+
+  /// @return The accumulated length between consecutive points in this LineString by means of DistanceFunction.
   double length() const { return length_; }
 
  private:
+  // @return The accumulated Length of this LineString.
   const double ComputeLength() const {
     double accumulated_{0.};
     for (size_t i = 0; i < size() - 1; ++i) {
@@ -69,10 +131,9 @@ class LineString final {
   double length_{};
 };
 
-// template<typename CoordinateT>
-// LineString<CoordinateT> BuildCenterLine(const LineString<CoordinateT>& lhs, const LineString<CoordinateT>& rhs) {
-//   return LineString<CoordinateT>(CoordinateT(), Coordinate());
-// }
+// Convenient aliases.
+using LineString2d = LineString<maliput::math::Vector2>;
+using LineString3d = LineString<maliput::math::Vector3>;
 
 }  // namespace geometry
 }  // namespace maliput_sample
