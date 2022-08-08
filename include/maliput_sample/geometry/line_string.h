@@ -62,7 +62,7 @@ struct EuclideanDistance {
 
 }  // namespace details
 
-/// Defines a polyline in the `CoordinateT` domain composed of M>1 points.
+/// Defines a polyline in the `CoordinateT` domain composed of at least 2 points.
 ///
 /// @tparam CoordinateT The coordinate point type to be used.
 /// @tparam DistanceFunction The function to compute the distance with. By default, the Euclidean
