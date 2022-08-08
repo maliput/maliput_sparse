@@ -3,7 +3,7 @@
 ##############################################################################
 
 set(GEOMETRY_SOURCES
-  dummy.cc
+  line_string.cc
 )
 
 add_library(geometry ${GEOMETRY_SOURCES})
