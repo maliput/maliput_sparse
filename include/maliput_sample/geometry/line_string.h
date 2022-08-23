@@ -70,6 +70,9 @@ struct EuclideanDistance {
 template <typename CoordinateT, typename DistanceFunction = details::EuclideanDistance<CoordinateT>>
 class LineString final {
  public:
+  using iterator = typename std::vector<CoordinateT>::iterator;
+  using const_iterator = typename std::vector<CoordinateT>::const_iterator;
+
   /// Constructs a LineString from a std::vector.
   ///
   /// This function calls LineString(coordinates.begin, coordinates.end)
@@ -101,6 +104,8 @@ class LineString final {
     length_ = ComputeLength();
   }
 
+  LineString() = default;
+
   /// @return The first point in the LineString.
   const CoordinateT& first() const { return coordinates_.front(); }
 
@@ -116,6 +121,39 @@ class LineString final {
 
   /// @return The accumulated length between consecutive points in this LineString by means of DistanceFunction.
   double length() const { return length_; }
+
+  void push_back(const CoordinateT& coordinate) {
+    coordinates_.push_back(coordinate);
+    if (coordinates_.size() > 1) {
+      length_ += DistanceFunction()(coordinates_[coordinates_.size() - 2], coordinates_.back());
+    }
+  }
+
+  iterator begin() { return coordinates_.begin(); }
+  const_iterator begin() const { return coordinates_.begin(); }
+  iterator end() { return coordinates_.end(); }
+  const_iterator end() const { return coordinates_.end(); }
+
+  const CoordinateT& operator[](std::size_t index) const {
+    // MALIPUT_THROW_UNLESS(index < coordinates_.size());
+    return coordinates_[index];
+  }
+  CoordinateT& operator[](std::size_t index) {
+    // MALIPUT_THROW_UNLESS(index < coordinates_.size());
+    return coordinates_[index];
+  }
+
+  bool operator==(const LineString<CoordinateT, DistanceFunction>& other) const {
+    if (other.size() != size()) {
+      return false;
+    };
+    for (std::size_t i = 0; i < size(); ++i) {
+      if (operator[](i) != other[i]) {
+        return false;
+      }
+    }
+    return true;
+  }
 
  private:
   // @return The accumulated Length of this LineString.
