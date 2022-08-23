@@ -27,15 +27,8 @@
 // CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#pragma once
+#include "lane_geometry.h"
 
-#include <memory>
-
-#include <maliput/common/maliput_copyable.h>
-#include <maliput/math/roll_pitch_yaw.h>
-#include <maliput/math/vector.h>
-
-#include "maliput/maliput_sample/geometry/line_string.h"
 
 namespace maliput_sample {
 namespace geometry {
@@ -51,11 +44,19 @@ namespace {
 //
 maliput::math::Vector3 InterpolatedPointAtP(const LineString<maliput::math::Vector3>& line_string, double p) {
   MALIPUT_THROW_MESSAGE("Not implemented yet.");
+  // TODO() Move method to a common place for all geometry helper methods.
+}
+
+LineString<maliput::math::Vector3> ComputeCenterline(const LineString<maliput::math::Vector3>& left, const LineString<maliput::math::Vector3>& right) {
+  MALIPUT_THROW_MESSAGE("Not implemented yet.");
+  // TODO() Move method to a common place for all geometry helper methods.
 }
 
 maliput::math::Vector3 GetPHat(const LineString<maliput::math::Vector3>& line_string, double p) {
   MALIPUT_THROW_MESSAGE("Not implemented yet.");
+  // TODO() Move method to a common place for all geometry helper methods.
 }
+
 
 }  // namespace
 
@@ -98,14 +99,24 @@ maliput::math::Vector3 LaneGeometry::W(const maliput::math::Vector3& prh) const 
 
 maliput::math::Vector3 LaneGeometry::WDot(const maliput::math::Vector3& prh) const {
   MALIPUT_THROW_MESSAGE("LaneGeometry::WDot is not implemented yet.");
+
+
+  // Same direction as SHat but with a module, how to know the module?
+
+
 }
 
-maliput::math::RollPitchYaw Orientation(const maliput::math::Vector3& prh) const {
+maliput::math::RollPitchYaw LaneGeometry::Orientation(const maliput::math::Vector3& prh) const {
   MALIPUT_THROW_MESSAGE("LaneGeometry::Orientation is not implemented yet.");
+
+  // Knowing s_hat, r_hat and h_hat we can compute the orientation.
+
 }
 
-maliput::math::RollPitchYaw WInverse(const maliput::math::Vector3& xyz) const {
+maliput::math::Vector3 LaneGeometry::WInverse(const maliput::math::Vector3& xyz) const {
   MALIPUT_THROW_MESSAGE("LaneGeometry::Orientation is not implemented yet.");
+
+  // Halp!
 }
 
 }  // namespace geometry

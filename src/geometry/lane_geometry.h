@@ -35,7 +35,7 @@
 #include <maliput/math/roll_pitch_yaw.h>
 #include <maliput/math/vector.h>
 
-#include "maliput/maliput_sample/geometry/line_string.h"
+#include "maliput_sample/geometry/line_string.h"
 
 namespace maliput_sample {
 namespace geometry {
@@ -50,6 +50,11 @@ class LaneGeometry {
 
   double p0() const { return 0.; }
   double p1() const { return centerline_.length(); }
+
+  double ArcLength() {
+    // en s-coordinate
+
+  }
 
   /// @return The linear tolerance used to compute all the methods.
   /// @see maliput::api::RoadGeometry::linear_tolerance().
@@ -87,10 +92,10 @@ class LaneGeometry {
   maliput::math::Vector3 WInverse(const maliput::math::Vector3& xyz) const;
 
  private:
-  const double linear_tolerance{};
-  const double scale_length{};
   const LineString<maliput::math::Vector3> left_{};
   const LineString<maliput::math::Vector3> right_{};
+  const double scale_length_{};
+  const double linear_tolerance_{};
   LineString<maliput::math::Vector3> centerline_{};
 };
 
