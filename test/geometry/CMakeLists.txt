@@ -1,4 +1,5 @@
 ament_add_gtest(line_string_test line_string_test.cc)
+ament_add_gtest(geometry_test utility/geometry_test.cc)
 
 macro(add_dependencies_to_test target)
 if (TARGET ${target})
@@ -14,9 +15,11 @@ if (TARGET ${target})
           maliput::common
           maliput::math
           maliput::test_utilities
+          maliput_sparse::geometry
       )
 
     endif()
 endmacro()
 
 add_dependencies_to_test(line_string_test)
+add_dependencies_to_test(geometry_test)

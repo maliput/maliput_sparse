@@ -70,6 +70,12 @@ struct EuclideanDistance {
 template <typename CoordinateT, typename DistanceFunction = details::EuclideanDistance<CoordinateT>>
 class LineString final {
  public:
+  using iterator = typename std::vector<CoordinateT>::iterator;
+  using const_iterator = typename std::vector<CoordinateT>::const_iterator;
+
+  /// Default constructor.
+  LineString() = default;
+
   /// Constructs a LineString from a std::vector.
   ///
   /// This function calls LineString(coordinates.begin, coordinates.end)
@@ -116,6 +122,39 @@ class LineString final {
 
   /// @return The accumulated length between consecutive points in this LineString by means of DistanceFunction.
   double length() const { return length_; }
+
+  /// Pushes @p coordiante into the line string.
+  void push_back(const CoordinateT& coordinate) {
+    coordinates_.push_back(coordinate);
+    if (coordinates_.size() > 1) {
+      length_ += DistanceFunction()(coordinates_[coordinates_.size() - 2], coordinates_.back());
+    }
+  }
+
+  /// @returns begin iterator of the underlying collection.
+  iterator begin() { return coordinates_.begin(); }
+  /// @returns begin const iterator of the underlying collection.
+  const_iterator begin() const { return coordinates_.begin(); }
+  /// @returns end iterator of the underlying collection.
+  iterator end() { return coordinates_.end(); }
+  /// @returns end const iterator of the underlying collection.
+  const_iterator end() const { return coordinates_.end(); }
+
+  const CoordinateT& operator[](std::size_t index) const { return coordinates_[index]; }
+  CoordinateT& operator[](std::size_t index) { return coordinates_[index]; }
+
+  /// Equality operator.
+  bool operator==(const LineString<CoordinateT, DistanceFunction>& other) const {
+    if (other.size() != size()) {
+      return false;
+    };
+    for (std::size_t i = 0; i < size(); ++i) {
+      if (operator[](i) != other[i]) {
+        return false;
+      }
+    }
+    return true;
+  }
 
  private:
   // @return The accumulated Length of this LineString.
