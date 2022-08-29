@@ -46,6 +46,12 @@ namespace utility {
 /// @returns The centerline.
 LineString3d ComputeCenterline3d(const LineString3d& left, const LineString3d& right);
 
+/// Returns the piecewise linearly interpolated point at the given distance.
+/// @param line_string the line_string to iterate. Size must be >0.
+/// @param p distance along line_string.
+/// @return The interpolated point (a new point if not perfectly matching).
+maliput::math::Vector3 InterpolatedPointAtP(const LineString3d& line_string, double p);
+
 }  // namespace utility
 }  // namespace geometry
 }  // namespace maliput_sample

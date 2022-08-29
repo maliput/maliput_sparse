@@ -303,6 +303,30 @@ LineString3d ComputeCenterline3d(const LineString3d& left, const LineString3d& r
   return centerline;
 }
 
+maliput::math::Vector3 InterpolatedPointAtP(const LineString3d& line_string, double p) {
+  // Implementation inspired on:
+  // https://github.com/fzi-forschungszentrum-informatik/Lanelet2/blob/master/lanelet2_core/include/lanelet2_core/geometry/impl/LineString.h#L618
+  static constexpr double kEpsilon{1e-12};
+  if (p < 0) return line_string.first();
+
+  double current_cumulative_length = 0.0;
+  for (auto first = line_string.begin(), second = std::next(line_string.begin()); second != line_string.end();
+       ++first, ++second) {
+    const auto p1 = *first;
+    const auto p2 = *second;
+    const double current_length = (p1 - p2).norm();
+    current_cumulative_length += current_length;
+    if (current_cumulative_length >= p) {
+      const double remaining_distance = p - (current_cumulative_length - current_length);
+      if (remaining_distance < kEpsilon) {
+        return p1;
+      }
+      return p1 + remaining_distance / current_length * (p2 - p1);
+    }
+  }
+  return line_string.last();
+}
+
 }  // namespace utility
 }  // namespace geometry
 }  // namespace maliput_sample

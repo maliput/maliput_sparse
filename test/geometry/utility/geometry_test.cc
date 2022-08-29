@@ -36,6 +36,7 @@
 #include <gtest/gtest.h>
 #include <maliput/common/assertion_error.h>
 #include <maliput/math/vector.h>
+#include <maliput/test_utilities/maliput_math_compare.h>
 
 namespace maliput_sample {
 namespace geometry {
@@ -176,6 +177,62 @@ TEST_P(ComputeCenterlineTest, Test) {
 
 INSTANTIATE_TEST_CASE_P(ComputeCenterlineTestGroup, ComputeCenterlineTest,
                         ::testing::ValuesIn(LeftRightCenterlineTestCases()));
+
+struct LineStringPointAtPCase {
+  LineString3d line_string{};
+  double p{};
+  Vector3 expected_point{};
+};
+
+std::vector<LineStringPointAtPCase> LineStringPointAtPTestCases() {
+  return {
+      {
+          LineString3d{{0., 0., 0.}, {10., 0., 0.}} /* line string*/,
+          double{5.} /* p */,
+          {5., 0., 0.} /* expected_point */
+      },
+      {
+          LineString3d{{0., 0., 0.}, {10., 0., 0.}, {10., 10., 0.}, {10., 10., 10.}, {0., 10., 10.}} /* line string*/,
+          double{35.} /* p */,
+          {5., 10., 10.} /* expected_point */
+      },
+      {
+          LineString3d{{-157., 123., 25.},
+                       {5468., -67., -1.},
+                       {-385., 15., 25.},
+                       {-67., 5468., 85.},
+                       {0., 5468., 85.}} /* line string*/,
+          double{17000} /* p */,
+          {-11.4941296448815, 5468., 85.} /* expected_point */
+      },
+  };
+}
+
+class InterpolatedPointAtPTest : public ::testing::TestWithParam<LineStringPointAtPCase> {
+ public:
+  static constexpr double kTolerance{1e-12};
+  LineStringPointAtPCase line_string_point_at_p_case_ = GetParam();
+};
+
+TEST_P(InterpolatedPointAtPTest, Test) {
+  const auto dut = InterpolatedPointAtP(line_string_point_at_p_case_.line_string, line_string_point_at_p_case_.p);
+  EXPECT_TRUE(maliput::math::test::CompareVectors(line_string_point_at_p_case_.expected_point, dut, kTolerance));
+}
+
+TEST_P(InterpolatedPointAtPTest, NegativeP) {
+  const double negative_p{-1.};
+  const auto dut = InterpolatedPointAtP(line_string_point_at_p_case_.line_string, negative_p);
+  EXPECT_EQ(line_string_point_at_p_case_.line_string.first(), dut);
+}
+
+TEST_P(InterpolatedPointAtPTest, ExceededP) {
+  const double exceeded_p{line_string_point_at_p_case_.line_string.length() + 1};
+  const auto dut = InterpolatedPointAtP(line_string_point_at_p_case_.line_string, exceeded_p);
+  EXPECT_EQ(line_string_point_at_p_case_.line_string.last(), dut);
+}
+
+INSTANTIATE_TEST_CASE_P(InterpolatedPointAtPTestGroup, InterpolatedPointAtPTest,
+                        ::testing::ValuesIn(LineStringPointAtPTestCases()));
 
 }  // namespace
 }  // namespace test
