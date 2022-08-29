@@ -73,6 +73,9 @@ class LineString final {
   using iterator = typename std::vector<CoordinateT>::iterator;
   using const_iterator = typename std::vector<CoordinateT>::const_iterator;
 
+  /// Default constructor.
+  LineString() = default;
+
   /// Constructs a LineString from a std::vector.
   ///
   /// This function calls LineString(coordinates.begin, coordinates.end)
@@ -104,8 +107,6 @@ class LineString final {
     length_ = ComputeLength();
   }
 
-  LineString() = default;
-
   /// @return The first point in the LineString.
   const CoordinateT& first() const { return coordinates_.front(); }
 
@@ -122,6 +123,7 @@ class LineString final {
   /// @return The accumulated length between consecutive points in this LineString by means of DistanceFunction.
   double length() const { return length_; }
 
+  /// Pushes @p coordiante into the line string.
   void push_back(const CoordinateT& coordinate) {
     coordinates_.push_back(coordinate);
     if (coordinates_.size() > 1) {
@@ -129,20 +131,19 @@ class LineString final {
     }
   }
 
+  /// @returns begin iterator of the underlying collection.
   iterator begin() { return coordinates_.begin(); }
+  /// @returns begin const iterator of the underlying collection.
   const_iterator begin() const { return coordinates_.begin(); }
+  /// @returns end iterator of the underlying collection.
   iterator end() { return coordinates_.end(); }
+  /// @returns end const iterator of the underlying collection.
   const_iterator end() const { return coordinates_.end(); }
 
-  const CoordinateT& operator[](std::size_t index) const {
-    // MALIPUT_THROW_UNLESS(index < coordinates_.size());
-    return coordinates_[index];
-  }
-  CoordinateT& operator[](std::size_t index) {
-    // MALIPUT_THROW_UNLESS(index < coordinates_.size());
-    return coordinates_[index];
-  }
+  const CoordinateT& operator[](std::size_t index) const { return coordinates_[index]; }
+  CoordinateT& operator[](std::size_t index) { return coordinates_[index]; }
 
+  /// Equality operator.
   bool operator==(const LineString<CoordinateT, DistanceFunction>& other) const {
     if (other.size() != size()) {
       return false;
