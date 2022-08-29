@@ -37,6 +37,13 @@ namespace maliput_sample {
 namespace geometry {
 namespace utility {
 
+/// Computes a 3-dimensional centerline out of the @p left and @p right line string.
+///
+/// Inspired on https://github.com/fzi-forschungszentrum-informatik/Lanelet2/blob/master/lanelet2_core/src/Lanelet.cpp
+///
+/// @param left Left line string.
+/// @param right Right line string.
+/// @returns The centerline.
 LineString3d ComputeCenterline3d(const LineString3d& left, const LineString3d& right);
 
 }  // namespace utility
