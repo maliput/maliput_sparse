@@ -35,28 +35,13 @@ namespace geometry {
 
 namespace {
 
-// TODO(): Move this method to a common place for all geometry helper methods.
-//
-// Returns the piecewise linearly interpolated point at the given distance.
-// @param lineString the lineString to iterate. Size must be >0.
-// @param p distance along linestring.
-// @return The interpolated point (a new point if not perfectly matching)
-//
-maliput::math::Vector3 InterpolatedPointAtP(const LineString<maliput::math::Vector3>& line_string, double p) {
-  MALIPUT_THROW_MESSAGE("Not implemented yet.");
-  // TODO() Move method to a common place for all geometry helper methods.
-}
+// 
 
-LineString<maliput::math::Vector3> ComputeCenterline(const LineString<maliput::math::Vector3>& left, const LineString<maliput::math::Vector3>& right) {
-  MALIPUT_THROW_MESSAGE("Not implemented yet.");
-  // TODO() Move method to a common place for all geometry helper methods.
-}
 
 maliput::math::Vector3 GetPHat(const LineString<maliput::math::Vector3>& line_string, double p) {
   MALIPUT_THROW_MESSAGE("Not implemented yet.");
   // TODO() Move method to a common place for all geometry helper methods.
 }
-
 
 }  // namespace
 
@@ -64,7 +49,7 @@ LaneGeometry::LaneGeometry(const LineString<maliput::math::Vector3>& left,
                            const LineString<maliput::math::Vector3>& right, double scale_length,
                            double linear_tolerance)
     : left_(left), right_(right), scale_length_(scale_length), linear_tolerance_(linear_tolerance) {
-  centerline_ = ComputeCenterline(left_, right_);
+  centerline_ = utility::ComputeCenterline3d(left_, right_);
 }
 
 maliput::math::Vector3 LaneGeometry::W(const maliput::math::Vector3& prh) const {
@@ -95,21 +80,35 @@ maliput::math::Vector3 LaneGeometry::W(const maliput::math::Vector3& prh) const 
   // Computes the final point
   const maliput::math::Vector3 on_prh_point = on_centerline_point + r_hat * r + h_hat * h;
   return on_prh_point;
+
+  const double z = elevation_->f(p);
+  // Calculates x,y of (p,0,0).
+  const maliput::math::Vector2 xy = ground_curve_->G(p);
+  // Calculates orientation of (p,r,h) basis at (p,0,0).
+  const maliput::math::RollPitchYaw rpy = Orientation(p);
+  // Rotates (0,r,h) and sums with mapped (p,0,0).
+  return rpy.ToMatrix() * maliput::math::Vector3(0., prh.y(), prh.z()) + maliput::math::Vector3(xy.x(), xy.y(), z);
 }
 
 maliput::math::Vector3 LaneGeometry::WDot(const maliput::math::Vector3& prh) const {
   MALIPUT_THROW_MESSAGE("LaneGeometry::WDot is not implemented yet.");
 
-
   // Same direction as SHat but with a module, how to know the module?
-
-
 }
 
 maliput::math::RollPitchYaw LaneGeometry::Orientation(const maliput::math::Vector3& prh) const {
   MALIPUT_THROW_MESSAGE("LaneGeometry::Orientation is not implemented yet.");
 
-  // Knowing s_hat, r_hat and h_hat we can compute the orientation.
+  // Option A:
+  //    Knowing s_hat, r_hat and h_hat we can compute the orientation.
+
+  // Option B:
+  //    roll = superelevation_->f(p)
+  //    pitch = -std::atan2(elevation_->f_dot(p), g_prime.norm()) // g_prime is the derivative of the ground curve(centerline at z=0) at p
+  //    yaw = ground_curve_->Heading(p)) // ground curve(centerline at z=0)
+
+  return maliput::math::RollPitchYaw(superelevation_->f(p), -std::atan2(elevation_->f_dot(p), g_prime.norm()),
+                                     ground_curve_->Heading(p));
 
 }
 
