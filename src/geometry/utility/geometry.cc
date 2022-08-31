@@ -308,24 +308,43 @@ maliput::math::Vector3 InterpolatedPointAtP(const LineString3d& line_string, dou
   // https://github.com/fzi-forschungszentrum-informatik/Lanelet2/blob/master/lanelet2_core/include/lanelet2_core/geometry/impl/LineString.h#L618
   static constexpr double kEpsilon{1e-12};
   if (p < 0) return line_string.first();
+  if (p >= line_string.length()) return line_string.last();
 
+  const auto line_string_points_length = GetBoundPointsAtP(line_string, p);
+  const double partial_length{(*line_string_points_length.first - *line_string_points_length.second).norm()};
+  const double length_up_to_second{line_string_points_length.length + partial_length};
+  const double remaining_distance = p - line_string_points_length.length;
+  if (remaining_distance < kEpsilon) {
+    return *line_string_points_length.first;
+  }
+  return *line_string_points_length.first + remaining_distance / partial_length * (*line_string_points_length.second - *line_string_points_length.first);
+}
+
+double GetSlopeAtP(const LineString3d& line_string, double p) {
+  // Get prev and next point of p.
+}
+
+
+LineStringPointsAndLength GetBoundPointsAtP(const LineString3d& line_string, double p) {
+  static constexpr double kEpsilon{1e-12};
+  MALIPUT_THROW_UNLESS(p>=0);
+  MALIPUT_THROW_UNLESS(p<=line_string.length());
+
+  LineStringPointsAndLength result;
   double current_cumulative_length = 0.0;
   for (auto first = line_string.begin(), second = std::next(line_string.begin()); second != line_string.end();
        ++first, ++second) {
     const auto p1 = *first;
     const auto p2 = *second;
     const double current_length = (p1 - p2).norm();
-    current_cumulative_length += current_length;
-    if (current_cumulative_length >= p) {
-      const double remaining_distance = p - (current_cumulative_length - current_length);
-      if (remaining_distance < kEpsilon) {
-        return p1;
-      }
-      return p1 + remaining_distance / current_length * (p2 - p1);
+    if (current_cumulative_length + current_length >= p) {
+      return {first, second, current_cumulative_length};
     }
+    current_cumulative_length += current_length;
   }
-  return line_string.last();
+  return {line_string.end()-1, line_string.end()-2, line_string.length()};
 }
+
 
 }  // namespace utility
 }  // namespace geometry

@@ -37,6 +37,13 @@ namespace maliput_sample {
 namespace geometry {
 namespace utility {
 
+struct LineStringPointsAndLength {
+  LineString3d::const_iterator first;
+  LineString3d::const_iterator second;
+  // Length up to first.
+  double length;
+};
+
 /// Computes a 3-dimensional centerline out of the @p left and @p right line string.
 ///
 /// Inspired on https://github.com/fzi-forschungszentrum-informatik/Lanelet2/blob/master/lanelet2_core/src/Lanelet.cpp
@@ -51,6 +58,11 @@ LineString3d ComputeCenterline3d(const LineString3d& left, const LineString3d& r
 /// @param p distance along line_string.
 /// @return The interpolated point (a new point if not perfectly matching).
 maliput::math::Vector3 InterpolatedPointAtP(const LineString3d& line_string, double p);
+
+double GetSlopeAtP(const LineString3d& line_string, double p);
+
+LineStringPointsAndLength GetBoundPointsAtP(const LineString3d& line_string, double p);
+
 
 }  // namespace utility
 }  // namespace geometry
