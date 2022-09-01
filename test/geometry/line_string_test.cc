@@ -61,7 +61,6 @@ class LineString3dTest : public ::testing::Test {
   const Vector3 p3{Vector3::UnitZ()};
 };
 
-TEST_F(LineString3dTest, DefaultConstructor) { const LineString3d dut{}; }
 TEST_F(LineString3dTest, ConstructorWithInitializerListIsSuccessful) { const LineString3d dut{p1, p2, p3}; }
 
 TEST_F(LineString3dTest, ConstructorWithVectorIsSuccessful) {
@@ -74,21 +73,14 @@ TEST_F(LineString3dTest, ConstructorWithIteratorsIsSucceful) {
 }
 
 TEST_F(LineString3dTest, Api) {
-  const double expected_length{2. * std::sqrt(2.)};
-  LineString3d dut(std::vector<Vector3>{p1, p2, p3});
+  const LineString3d dut(std::vector<Vector3>{p1, p2, p3});
   EXPECT_TRUE(p1 == dut.first());
-  EXPECT_TRUE(p1 == *dut.begin());
   EXPECT_TRUE(p3 == dut.last());
-  EXPECT_TRUE(p3 == *(dut.end() - 1));
   EXPECT_TRUE(p1 == dut.at(0));
   EXPECT_TRUE(p2 == dut.at(1));
   EXPECT_TRUE(p3 == dut.at(2));
   EXPECT_EQ(3, dut.size());
-  EXPECT_NEAR(expected_length, dut.length(), kTolerance);
-  dut.push_back(p1);
-  EXPECT_EQ(4, dut.size());
-  EXPECT_TRUE(p1 == dut.at(3));
-  EXPECT_NEAR(expected_length + std::sqrt(2.), dut.length(), kTolerance);
+  EXPECT_NEAR(2. * std::sqrt(2.), dut.length(), kTolerance);
 }
 
 TEST_F(LineString3dTest, LengthInjectedDistanceFunction) {
@@ -115,19 +107,14 @@ TEST_F(LineString2dTest, ConstructorWithIteratorsIsSucceful) {
 }
 
 TEST_F(LineString2dTest, Api) {
-  const double expected_length{1. + std::sqrt(2.)};
-  LineString2d dut(std::vector<Vector2>{p1, p2, p3});
+  const LineString2d dut(std::vector<Vector2>{p1, p2, p3});
   EXPECT_TRUE(p1 == dut.first());
   EXPECT_TRUE(p3 == dut.last());
   EXPECT_TRUE(p1 == dut.at(0));
   EXPECT_TRUE(p2 == dut.at(1));
   EXPECT_TRUE(p3 == dut.at(2));
   EXPECT_EQ(3, dut.size());
-  EXPECT_NEAR(expected_length, dut.length(), kTolerance);
-  dut.push_back(p1);
-  EXPECT_EQ(4, dut.size());
-  EXPECT_TRUE(p1 == dut.at(3));
-  EXPECT_NEAR(expected_length + 1., dut.length(), kTolerance);
+  EXPECT_NEAR(1. + std::sqrt(2.), dut.length(), kTolerance);
 }
 
 TEST_F(LineString2dTest, LengthWithInjectedDistanceFunction) {
