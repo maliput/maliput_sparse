@@ -234,6 +234,70 @@ TEST_P(InterpolatedPointAtPTest, ExceededP) {
 INSTANTIATE_TEST_CASE_P(InterpolatedPointAtPTestGroup, InterpolatedPointAtPTest,
                         ::testing::ValuesIn(LineStringPointAtPTestCases()));
 
+struct SlopeTestCase {
+  LineString3d line_string{};
+  std::vector<double> p{};
+  std::vector<double> expected_slopes{};
+};
+
+std::vector<SlopeTestCase> SlopeTestCases() {
+  return {
+      {
+          // LineString with length of: std::sqrt(2)*10
+          LineString3d{{0., 0., 0.}, {10., 0., 10.}} /* line string*/,
+          {0., std::sqrt(2) * 10. / 2., std::sqrt(2) * 10} /* ps */,
+          {std::sqrt(2.) / 2., std::sqrt(2.) / 2., std::sqrt(2.) / 2.} /* expected_slopes */
+      },
+      {
+          // LineString with different z values along y axis.
+          LineString3d{{0., 0., 0.}, {5., 0., 5.}, {10., 0., 5.}, {15., 0., 10.}} /* line string*/,
+          {0., std::sqrt(2.) * 5, std::sqrt(2.) * 5 + 5., 2 * std::sqrt(2.) * 5 + 5.} /* ps */,
+          {std::sqrt(2.) / 2., std::sqrt(2.) / 2., 0., std::sqrt(2.) / 2.} /* expected_slopes */
+      },
+      {
+          // LineString with different z values along x axis.
+          LineString3d{{0., 0., 0.}, {0., 5., 5.}, {0., 10., 5.}, {0., 15., 10.}} /* line string*/,
+          {0., std::sqrt(2.) * 5, std::sqrt(2.) * 5 + 5., 2 * std::sqrt(2.) * 5 + 5.} /* ps */,
+          {std::sqrt(2.) / 2., std::sqrt(2.) / 2., 0., std::sqrt(2.) / 2.} /* expected_slopes */
+      },
+      {
+          // LineString with different z values.
+          LineString3d{{0., 0., 0.}, {6., 3., 2.}, {10., 6., 2.}, {16., 9., 4.}, {10., 6., 2.}} /* line string*/,
+          {0., 7., 12., 19., 26.} /* ps */,
+          {2. / 7., 2. / 7., 0., 2. / 7., -2. / 7.} /* expected_slopes */
+      },
+  };
+}
+
+class GetSlopeAtPTest : public ::testing::TestWithParam<SlopeTestCase> {
+ public:
+  static constexpr double kTolerance{1e-12};
+  SlopeTestCase case_ = GetParam();
+};
+
+TEST_P(GetSlopeAtPTest, Test) {
+  ASSERT_EQ(case_.p.size(), case_.expected_slopes.size()) << ">>>>> Test case is ill-formed.";
+  for (std::size_t i = 0; i < case_.p.size(); ++i) {
+    const double dut = GetSlopeAtP(case_.line_string, case_.p[i]);
+    EXPECT_DOUBLE_EQ(case_.expected_slopes[i], dut);
+  }
+}
+
+INSTANTIATE_TEST_CASE_P(GetSlopeAtPTestGroup, GetSlopeAtPTest, ::testing::ValuesIn(SlopeTestCases()));
+
+class GetSlopeAtPSpecialCasesTest : public testing::Test {};
+
+TEST_F(GetSlopeAtPSpecialCasesTest, Throw) {
+  const LineString3d kNoLength{{0., 0., 0.}, {0., 0., 0.}};
+  EXPECT_THROW(GetSlopeAtP(kNoLength, 0.), maliput::common::assertion_error);
+}
+
+TEST_F(GetSlopeAtPSpecialCasesTest, InfinitySlope) {
+  const LineString3d kOnlyZ{{0., 0., 0.}, {0., 0., 100.}, {0., 0., 0.}};
+  EXPECT_EQ(1, GetSlopeAtP(kOnlyZ, 50.));
+  EXPECT_EQ(-1, GetSlopeAtP(kOnlyZ, 150.));
+}
+
 }  // namespace
 }  // namespace test
 }  // namespace utility

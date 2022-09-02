@@ -53,7 +53,6 @@ class LaneGeometry {
 
   double ArcLength() {
     // en s-coordinate
-
   }
 
   /// @return The linear tolerance used to compute all the methods.

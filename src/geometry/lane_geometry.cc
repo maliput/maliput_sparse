@@ -29,14 +29,12 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "lane_geometry.h"
 
-
 namespace maliput_sample {
 namespace geometry {
 
 namespace {
 
-// 
-
+//
 
 maliput::math::Vector3 GetPHat(const LineString<maliput::math::Vector3>& line_string, double p) {
   MALIPUT_THROW_MESSAGE("Not implemented yet.");
@@ -104,12 +102,14 @@ maliput::math::RollPitchYaw LaneGeometry::Orientation(const maliput::math::Vecto
 
   // Option B:
   //    roll = superelevation_->f(p)
-  //    pitch = -std::atan2(elevation_->f_dot(p), g_prime.norm()) // g_prime is the derivative of the ground curve(centerline at z=0) at p
-  //    yaw = ground_curve_->Heading(p)) // ground curve(centerline at z=0)
+  //    pitch = -std::atan2(elevation_->f_dot(p), g_prime.norm()) // g_prime is the derivative of the ground
+  //    curve(centerline at z=0) at p yaw = ground_curve_->Heading(p)) // ground curve(centerline at z=0)
 
+  // The GetSlopeAtP returns between 0 and 1 because it calculates the elevation in comparison with the p in the 3d
+  // linestring. Maybe we should use in comparison to the xy distance(ground curve distance, p_xy). g_prime norm would
+  // give information about how xy changes according p. We could numerically calculate this.
   return maliput::math::RollPitchYaw(superelevation_->f(p), -std::atan2(elevation_->f_dot(p), g_prime.norm()),
                                      ground_curve_->Heading(p));
-
 }
 
 maliput::math::Vector3 LaneGeometry::WInverse(const maliput::math::Vector3& xyz) const {

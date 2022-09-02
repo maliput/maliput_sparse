@@ -317,18 +317,21 @@ maliput::math::Vector3 InterpolatedPointAtP(const LineString3d& line_string, dou
   if (remaining_distance < kEpsilon) {
     return *line_string_points_length.first;
   }
-  return *line_string_points_length.first + remaining_distance / partial_length * (*line_string_points_length.second - *line_string_points_length.first);
+  return *line_string_points_length.first +
+         remaining_distance / partial_length * (*line_string_points_length.second - *line_string_points_length.first);
 }
 
 double GetSlopeAtP(const LineString3d& line_string, double p) {
-  // Get prev and next point of p.
+  const LineStringPointsAndLength bound_points = GetBoundPointsAtP(line_string, p);
+  const double dist{(*bound_points.second - *bound_points.first).norm()};
+  const double delta_z{bound_points.second->z() - bound_points.first->z()};
+  MALIPUT_THROW_UNLESS(!(dist == 0. && delta_z == 0.));
+  return delta_z / dist;
 }
 
-
 LineStringPointsAndLength GetBoundPointsAtP(const LineString3d& line_string, double p) {
-  static constexpr double kEpsilon{1e-12};
-  MALIPUT_THROW_UNLESS(p>=0);
-  MALIPUT_THROW_UNLESS(p<=line_string.length());
+  MALIPUT_THROW_UNLESS(p >= 0);
+  MALIPUT_THROW_UNLESS(p <= line_string.length());
 
   LineStringPointsAndLength result;
   double current_cumulative_length = 0.0;
@@ -342,9 +345,8 @@ LineStringPointsAndLength GetBoundPointsAtP(const LineString3d& line_string, dou
     }
     current_cumulative_length += current_length;
   }
-  return {line_string.end()-1, line_string.end()-2, line_string.length()};
+  return {line_string.end() - 1, line_string.end() - 2, line_string.length()};
 }
-
 
 }  // namespace utility
 }  // namespace geometry

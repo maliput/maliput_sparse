@@ -59,10 +59,13 @@ LineString3d ComputeCenterline3d(const LineString3d& left, const LineString3d& r
 /// @return The interpolated point (a new point if not perfectly matching).
 maliput::math::Vector3 InterpolatedPointAtP(const LineString3d& line_string, double p);
 
+/// Returns the slope of a @p line_string for a given @p p .
+/// The result is expected to be contained within [-1., 1.].
+/// @param line_string LineString to be computed the slope from.
+/// @param p P parameter at which compute the slope.
 double GetSlopeAtP(const LineString3d& line_string, double p);
 
 LineStringPointsAndLength GetBoundPointsAtP(const LineString3d& line_string, double p);
-
 
 }  // namespace utility
 }  // namespace geometry
