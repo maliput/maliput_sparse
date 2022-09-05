@@ -31,6 +31,7 @@
 
 #include <cmath>
 #include <initializer_list>
+#include <iterator>
 #include <vector>
 
 #include <maliput/common/maliput_throw.h>

@@ -122,24 +122,17 @@ class BoundChecker {
 
   bool Intersects2d(const Segment3d& seg) const {
     const Segment2d seg2d{{seg.first.x(), seg.first.y()}, {seg.second.x(), seg.second.y()}};
-    return IntersectsLeft2d(seg2d) || IntersectsRight2d(seg2d) || CrossesEntry2d(seg2d) || CrossesExit2d(seg2d);
+    return Intersects2dSegments(kLeft, seg2d) || Intersects2dSegments(kRight, seg2d) || CrossesEntry2d(seg2d) ||
+           CrossesExit2d(seg2d);
   }
 
-  bool IntersectsLeft2d(const Segment2d& seg) const {
-    const auto it = std::find_if(left_segments_.begin(), left_segments_.end(), [&seg](const Segment3d& left_segment) {
-      const Segment2d left_segment_2d{To2D(left_segment)};
-      return SegmentsIntersect2d(seg, left_segment_2d) ? !(seg.first == left_segment_2d.first) : false;
+  bool Intersects2dSegments(bool use_left_segments, const Segment2d& seg) const {
+    const auto& segments = use_left_segments ? left_segments_ : right_segments_;
+    const auto it = std::find_if(segments.begin(), segments.end(), [&seg](const Segment3d& segment) {
+      const Segment2d segment_2d{To2D(segment)};
+      return SegmentsIntersect2d(seg, segment_2d) ? !(seg.first == segment_2d.first) : false;
     });
-    return it != left_segments_.end();
-  }
-
-  bool IntersectsRight2d(const Segment2d& seg) const {
-    const auto it =
-        std::find_if(right_segments_.begin(), right_segments_.end(), [&seg](const Segment3d& right_segment) {
-          const Segment2d right_segment_2d{To2D(right_segment)};
-          return SegmentsIntersect2d(seg, right_segment_2d) ? !(seg.first == right_segment_2d.first) : false;
-        });
-    return it != right_segments_.end();
+    return it != segments.end();
   }
 
   bool CrossesEntry2d(const Segment2d& seg) const {
