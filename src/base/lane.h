@@ -63,7 +63,6 @@ class Lane : public maliput::geometry_base::Lane {
   maliput::api::RBounds do_lane_bounds(double s) const override;
   maliput::api::RBounds do_segment_bounds(double s) const override;
   maliput::api::HBounds do_elevation_bounds(double, double) const override;
-
   maliput::math::Vector3 DoToBackendPosition(const maliput::api::LanePosition& lane_pos) const override;
   void DoToLanePositionBackend(const maliput::math::Vector3& backend_pos, maliput::api::LanePosition* lane_position,
                                maliput::math::Vector3* nearest_backend_pos, double* distance) const override;
