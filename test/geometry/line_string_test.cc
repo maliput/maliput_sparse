@@ -27,7 +27,7 @@
 // CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#include "maliput_sample/geometry/line_string.h"
+#include "maliput_sparse/geometry/line_string.h"
 
 #include <array>
 #include <cmath>
@@ -37,7 +37,7 @@
 #include <maliput/common/assertion_error.h>
 #include <maliput/math/vector.h>
 
-namespace maliput_sample {
+namespace maliput_sparse {
 namespace geometry {
 namespace test {
 namespace {
@@ -83,12 +83,8 @@ TEST_F(LineString3dTest, Api) {
   EXPECT_TRUE(p1 == dut.at(0));
   EXPECT_TRUE(p2 == dut.at(1));
   EXPECT_TRUE(p3 == dut.at(2));
-  EXPECT_EQ(3, dut.size());
-  EXPECT_NEAR(expected_length, dut.length(), kTolerance);
-  dut.push_back(p1);
-  EXPECT_EQ(4, dut.size());
-  EXPECT_TRUE(p1 == dut.at(3));
-  EXPECT_NEAR(expected_length + std::sqrt(2.), dut.length(), kTolerance);
+  EXPECT_EQ(static_cast<size_t>(3), dut.size());
+  EXPECT_NEAR(2. * std::sqrt(2.), dut.length(), kTolerance);
 }
 
 TEST_F(LineString3dTest, LengthInjectedDistanceFunction) {
@@ -122,12 +118,8 @@ TEST_F(LineString2dTest, Api) {
   EXPECT_TRUE(p1 == dut.at(0));
   EXPECT_TRUE(p2 == dut.at(1));
   EXPECT_TRUE(p3 == dut.at(2));
-  EXPECT_EQ(3, dut.size());
-  EXPECT_NEAR(expected_length, dut.length(), kTolerance);
-  dut.push_back(p1);
-  EXPECT_EQ(4, dut.size());
-  EXPECT_TRUE(p1 == dut.at(3));
-  EXPECT_NEAR(expected_length + 1., dut.length(), kTolerance);
+  EXPECT_EQ(static_cast<size_t>(3), dut.size());
+  EXPECT_NEAR(1. + std::sqrt(2.), dut.length(), kTolerance);
 }
 
 TEST_F(LineString2dTest, LengthWithInjectedDistanceFunction) {
@@ -138,4 +130,4 @@ TEST_F(LineString2dTest, LengthWithInjectedDistanceFunction) {
 }  // namespace
 }  // namespace test
 }  // namespace geometry
-}  // namespace maliput_sample
+}  // namespace maliput_sparse

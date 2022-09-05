@@ -31,9 +31,9 @@
 
 #include <optional>
 
-#include "maliput_sample/geometry/line_string.h"
+#include "maliput_sparse/geometry/line_string.h"
 
-namespace maliput_sample {
+namespace maliput_sparse {
 namespace geometry {
 namespace utility {
 
@@ -69,4 +69,4 @@ LineStringPointsAndLength GetBoundPointsAtP(const LineString3d& line_string, dou
 
 }  // namespace utility
 }  // namespace geometry
-}  // namespace maliput_sample
+}  // namespace maliput_sparse
