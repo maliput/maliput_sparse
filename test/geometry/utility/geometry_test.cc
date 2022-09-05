@@ -27,7 +27,7 @@
 // CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#include "maliput_sample/geometry/utility/geometry.h"
+#include "maliput_sparse/geometry/utility/geometry.h"
 
 #include <array>
 #include <cmath>
@@ -37,7 +37,7 @@
 #include <maliput/common/assertion_error.h>
 #include <maliput/math/vector.h>
 
-namespace maliput_sample {
+namespace maliput_sparse {
 namespace geometry {
 namespace utility {
 namespace test {
@@ -181,4 +181,4 @@ INSTANTIATE_TEST_CASE_P(ComputeCenterlineTestGroup, ComputeCenterlineTest,
 }  // namespace test
 }  // namespace utility
 }  // namespace geometry
-}  // namespace maliput_sample
+}  // namespace maliput_sparse
