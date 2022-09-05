@@ -234,6 +234,46 @@ TEST_P(InterpolatedPointAtPTest, ExceededP) {
 INSTANTIATE_TEST_CASE_P(InterpolatedPointAtPTestGroup, InterpolatedPointAtPTest,
                         ::testing::ValuesIn(LineStringPointAtPTestCases()));
 
+class GetBoundPointsAtPTest : public ::testing::Test {
+ public:
+  const LineString3d line_string{{0., 0., 0.}, {6., 3., 2.}, {10., 6., 2.}, {16., 9., 4.}, {10., 6., 2.}};
+};
+
+TEST_F(GetBoundPointsAtPTest, Test) {
+  {
+    const double p{0.};
+    const BoundPointsResult expected_result{line_string.begin(), line_string.begin() + 1, 0.};
+    const BoundPointsResult dut = GetBoundPointsAtP(line_string, p);
+    EXPECT_EQ(expected_result.first, dut.first);
+    EXPECT_EQ(expected_result.second, dut.second);
+    EXPECT_EQ(expected_result.length, dut.length);
+  }
+  {
+    const double p{7.5};
+    const BoundPointsResult expected_result{line_string.begin() + 1, line_string.begin() + 2, 7.};
+    const BoundPointsResult dut = GetBoundPointsAtP(line_string, p);
+    EXPECT_EQ(expected_result.first, dut.first);
+    EXPECT_EQ(expected_result.second, dut.second);
+    EXPECT_EQ(expected_result.length, dut.length);
+  }
+  {
+    const double p{12.5};
+    const BoundPointsResult expected_result{line_string.begin() + 2, line_string.begin() + 3, 12.};
+    const BoundPointsResult dut = GetBoundPointsAtP(line_string, p);
+    EXPECT_EQ(expected_result.first, dut.first);
+    EXPECT_EQ(expected_result.second, dut.second);
+    EXPECT_EQ(expected_result.length, dut.length);
+  }
+  {
+    const double p{19.5};
+    const BoundPointsResult expected_result{line_string.begin() + 3, line_string.begin() + 4, 19.};
+    const BoundPointsResult dut = GetBoundPointsAtP(line_string, p);
+    EXPECT_EQ(expected_result.first, dut.first);
+    EXPECT_EQ(expected_result.second, dut.second);
+    EXPECT_EQ(expected_result.length, dut.length);
+  }
+}
+
 struct SlopeTestCase {
   LineString3d line_string{};
   std::vector<double> p{};
@@ -246,25 +286,25 @@ std::vector<SlopeTestCase> SlopeTestCases() {
           // LineString with length of: std::sqrt(2)*10
           LineString3d{{0., 0., 0.}, {10., 0., 10.}} /* line string*/,
           {0., std::sqrt(2) * 10. / 2., std::sqrt(2) * 10} /* ps */,
-          {std::sqrt(2.) / 2., std::sqrt(2.) / 2., std::sqrt(2.) / 2.} /* expected_slopes */
+          {1., 1., 1.} /* expected_slopes */
       },
       {
           // LineString with different z values along y axis.
           LineString3d{{0., 0., 0.}, {5., 0., 5.}, {10., 0., 5.}, {15., 0., 10.}} /* line string*/,
           {0., std::sqrt(2.) * 5, std::sqrt(2.) * 5 + 5., 2 * std::sqrt(2.) * 5 + 5.} /* ps */,
-          {std::sqrt(2.) / 2., std::sqrt(2.) / 2., 0., std::sqrt(2.) / 2.} /* expected_slopes */
+          {1., 1., 0., 1.} /* expected_slopes */
       },
       {
           // LineString with different z values along x axis.
           LineString3d{{0., 0., 0.}, {0., 5., 5.}, {0., 10., 5.}, {0., 15., 10.}} /* line string*/,
           {0., std::sqrt(2.) * 5, std::sqrt(2.) * 5 + 5., 2 * std::sqrt(2.) * 5 + 5.} /* ps */,
-          {std::sqrt(2.) / 2., std::sqrt(2.) / 2., 0., std::sqrt(2.) / 2.} /* expected_slopes */
+          {1., 1., 0., 1.} /* expected_slopes */
       },
       {
           // LineString with different z values.
           LineString3d{{0., 0., 0.}, {6., 3., 2.}, {10., 6., 2.}, {16., 9., 4.}, {10., 6., 2.}} /* line string*/,
           {0., 7., 12., 19., 26.} /* ps */,
-          {2. / 7., 2. / 7., 0., 2. / 7., -2. / 7.} /* expected_slopes */
+          {2. / std::sqrt(45), 2. / std::sqrt(45), 0., 2. / std::sqrt(45), -2. / std::sqrt(45)} /* expected_slopes */
       },
   };
 }
@@ -293,10 +333,62 @@ TEST_F(GetSlopeAtPSpecialCasesTest, Throw) {
 }
 
 TEST_F(GetSlopeAtPSpecialCasesTest, InfinitySlope) {
+  const double inf{std::numeric_limits<double>::infinity()};
   const LineString3d kOnlyZ{{0., 0., 0.}, {0., 0., 100.}, {0., 0., 0.}};
-  EXPECT_EQ(1, GetSlopeAtP(kOnlyZ, 50.));
-  EXPECT_EQ(-1, GetSlopeAtP(kOnlyZ, 150.));
+  EXPECT_EQ(inf, GetSlopeAtP(kOnlyZ, 50.));
+  EXPECT_EQ(-inf, GetSlopeAtP(kOnlyZ, 150.));
 }
+
+struct HeadingTestCase {
+  LineString3d line_string{};
+  std::vector<double> p{};
+  std::vector<double> expected_headings{};
+};
+
+std::vector<HeadingTestCase> HeadingTestCases() {
+  return {
+      {
+          // LineString along y = 0 for x > 0;
+          LineString3d{{0., 0., 0.}, {10., 0., 10.}} /* line string*/,
+          {0., std::sqrt(2) * 10. / 2., std::sqrt(2) * 10} /* ps */,
+          {0., 0., 0.} /* expected_slopes */
+      },
+      {
+          // LineString along y = 0 for x < 0;
+          LineString3d{{0., 0., 0.}, {-10., 0., 10.}} /* line string*/,
+          {0., std::sqrt(2) * 10. / 2., std::sqrt(2) * 10} /* ps */,
+          {M_PI, M_PI, M_PI} /* expected_slopes */
+      },
+      {
+          // LineString along x = 0 for y > 0;
+          LineString3d{{0., 0., 0.}, {0., 10., 10.}} /* line string*/,
+          {0., std::sqrt(2) * 10. / 2., std::sqrt(2) * 10} /* ps */,
+          {M_PI_2, M_PI_2, M_PI_2} /* expected_slopes */
+      },
+      {
+          // LineString along x = 0 for y < 0;
+          LineString3d{{0., 0., 0.}, {0., -10., 10.}} /* line string*/,
+          {0., std::sqrt(2) * 10. / 2., std::sqrt(2) * 10} /* ps */,
+          {-M_PI_2, -M_PI_2, -M_PI_2} /* expected_slopes */
+      },
+  };
+}
+
+class Get2DHeadingAtPTest : public ::testing::TestWithParam<HeadingTestCase> {
+ public:
+  static constexpr double kTolerance{1e-12};
+  HeadingTestCase case_ = GetParam();
+};
+
+TEST_P(Get2DHeadingAtPTest, Test) {
+  ASSERT_EQ(case_.p.size(), case_.expected_headings.size()) << ">>>>> Test case is ill-formed.";
+  for (std::size_t i = 0; i < case_.p.size(); ++i) {
+    const double dut = Get2DHeadingAtP(case_.line_string, case_.p[i]);
+    EXPECT_DOUBLE_EQ(case_.expected_headings[i], dut);
+  }
+}
+
+INSTANTIATE_TEST_CASE_P(Get2DHeadingAtPTestGroup, Get2DHeadingAtPTest, ::testing::ValuesIn(HeadingTestCases()));
 
 }  // namespace
 }  // namespace test

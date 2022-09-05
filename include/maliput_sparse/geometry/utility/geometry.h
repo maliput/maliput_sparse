@@ -37,7 +37,8 @@ namespace maliput_sparse {
 namespace geometry {
 namespace utility {
 
-struct LineStringPointsAndLength {
+/// Holds the result of #GetBoundPointsAtP method.
+struct BoundPointsResult {
   LineString3d::const_iterator first;
   LineString3d::const_iterator second;
   // Length up to first.
@@ -65,7 +66,21 @@ maliput::math::Vector3 InterpolatedPointAtP(const LineString3d& line_string, dou
 /// @param p P parameter at which compute the slope.
 double GetSlopeAtP(const LineString3d& line_string, double p);
 
-LineStringPointsAndLength GetBoundPointsAtP(const LineString3d& line_string, double p);
+/// Obtains the points that confines @p p in the @p line_string .
+/// @param line_string LineString.
+/// @param p P parameter.
+BoundPointsResult GetBoundPointsAtP(const LineString3d& line_string, double p);
+
+/// Returns the heading of a @p line_string for a given @p p .
+/// @param line_string LineString to be computed the heading from.
+/// @param p P parameter at which compute the heading.
+double Get2DHeadingAtP(const LineString3d& line_string, double p);
+
+/// Returns the 2d-tangent of a @p line_string for a given @p p .
+/// The tangent is calculated from the @p line_string projected on the xy plane.
+/// @param line_string LineString to be computed the 2d-tangent from.
+/// @param p P parameter at which compute the 2d-tangent.
+maliput::math::Vector2 Get2DTangentAtP(const LineString3d& line_string, double p);
 
 }  // namespace utility
 }  // namespace geometry

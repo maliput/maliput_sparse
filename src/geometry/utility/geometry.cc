@@ -58,6 +58,8 @@
 
 #include "maliput_sparse/geometry/utility/geometry.h"
 
+#include <cmath>
+
 namespace maliput_sparse {
 namespace geometry {
 namespace utility {
@@ -272,7 +274,7 @@ LineString3d ComputeCenterline3d(const LineString3d& left, const LineString3d& r
   return LineString3d{centerline};
 }
 
-maliput::math::Vector3 InterpolatedPointAtP(const LineString3d& line_string, double p) {
+Vector3 InterpolatedPointAtP(const LineString3d& line_string, double p) {
   // Implementation inspired on:
   // https://github.com/fzi-forschungszentrum-informatik/Lanelet2/blob/master/lanelet2_core/include/lanelet2_core/geometry/impl/LineString.h#L618
   static constexpr double kEpsilon{1e-12};
@@ -281,7 +283,6 @@ maliput::math::Vector3 InterpolatedPointAtP(const LineString3d& line_string, dou
 
   const auto line_string_points_length = GetBoundPointsAtP(line_string, p);
   const double partial_length{(*line_string_points_length.first - *line_string_points_length.second).norm()};
-  const double length_up_to_second{line_string_points_length.length + partial_length};
   const double remaining_distance = p - line_string_points_length.length;
   if (remaining_distance < kEpsilon) {
     return *line_string_points_length.first;
@@ -291,18 +292,18 @@ maliput::math::Vector3 InterpolatedPointAtP(const LineString3d& line_string, dou
 }
 
 double GetSlopeAtP(const LineString3d& line_string, double p) {
-  const LineStringPointsAndLength bound_points = GetBoundPointsAtP(line_string, p);
-  const double dist{(*bound_points.second - *bound_points.first).norm()};
+  const BoundPointsResult bound_points = GetBoundPointsAtP(line_string, p);
+  const double dist{(To2D(*bound_points.second) - To2D(*bound_points.first)).norm()};
   const double delta_z{bound_points.second->z() - bound_points.first->z()};
   MALIPUT_THROW_UNLESS(!(dist == 0. && delta_z == 0.));
   return delta_z / dist;
 }
 
-LineStringPointsAndLength GetBoundPointsAtP(const LineString3d& line_string, double p) {
+BoundPointsResult GetBoundPointsAtP(const LineString3d& line_string, double p) {
   MALIPUT_THROW_UNLESS(p >= 0);
   MALIPUT_THROW_UNLESS(p <= line_string.length());
 
-  LineStringPointsAndLength result;
+  BoundPointsResult result;
   double current_cumulative_length = 0.0;
   for (auto first = line_string.begin(), second = std::next(line_string.begin()); second != line_string.end();
        ++first, ++second) {
@@ -315,6 +316,17 @@ LineStringPointsAndLength GetBoundPointsAtP(const LineString3d& line_string, dou
     current_cumulative_length += current_length;
   }
   return {line_string.end() - 1, line_string.end() - 2, line_string.length()};
+}
+
+double Get2DHeadingAtP(const LineString3d& line_string, double p) {
+  const auto line_string_points_length = GetBoundPointsAtP(line_string, p);
+  const Vector3 heading_vector{*line_string_points_length.second - *line_string_points_length.first};
+  return std::atan2(heading_vector.y(), heading_vector.x());
+}
+
+Vector2 Get2DTangentAtP(const LineString3d& line_string, double p) {
+  const double heading = Get2DHeadingAtP(line_string, p);
+  return {std::cos(heading), std::sin(heading)};  // TODO: Should we multiply for a factor here?
 }
 
 }  // namespace utility
