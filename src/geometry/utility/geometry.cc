@@ -56,9 +56,9 @@
 // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include "maliput_sample/geometry/utility/geometry.h"
+#include "maliput_sparse/geometry/utility/geometry.h"
 
-namespace maliput_sample {
+namespace maliput_sparse {
 namespace geometry {
 namespace utility {
 
@@ -274,4 +274,4 @@ LineString3d ComputeCenterline3d(const LineString3d& left, const LineString3d& r
 
 }  // namespace utility
 }  // namespace geometry
-}  // namespace maliput_sample
+}  // namespace maliput_sparse

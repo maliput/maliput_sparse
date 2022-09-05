@@ -37,7 +37,7 @@
 #include <maliput/common/maliput_throw.h>
 #include <maliput/math/vector.h>
 
-namespace maliput_sample {
+namespace maliput_sparse {
 namespace geometry {
 namespace details {
 
@@ -157,4 +157,4 @@ using LineString2d = LineString<maliput::math::Vector2>;
 using LineString3d = LineString<maliput::math::Vector3>;
 
 }  // namespace geometry
-}  // namespace maliput_sample
+}  // namespace maliput_sparse

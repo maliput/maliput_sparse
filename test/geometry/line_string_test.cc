@@ -27,7 +27,7 @@
 // CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#include "maliput_sample/geometry/line_string.h"
+#include "maliput_sparse/geometry/line_string.h"
 
 #include <array>
 #include <cmath>
@@ -37,7 +37,7 @@
 #include <maliput/common/assertion_error.h>
 #include <maliput/math/vector.h>
 
-namespace maliput_sample {
+namespace maliput_sparse {
 namespace geometry {
 namespace test {
 namespace {
@@ -125,4 +125,4 @@ TEST_F(LineString2dTest, LengthWithInjectedDistanceFunction) {
 }  // namespace
 }  // namespace test
 }  // namespace geometry
-}  // namespace maliput_sample
+}  // namespace maliput_sparse
