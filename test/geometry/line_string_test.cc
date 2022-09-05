@@ -79,7 +79,7 @@ TEST_F(LineString3dTest, Api) {
   EXPECT_TRUE(p1 == dut.at(0));
   EXPECT_TRUE(p2 == dut.at(1));
   EXPECT_TRUE(p3 == dut.at(2));
-  EXPECT_EQ(3, dut.size());
+  EXPECT_EQ(static_cast<size_t>(3), dut.size());
   EXPECT_NEAR(2. * std::sqrt(2.), dut.length(), kTolerance);
 }
 
@@ -113,7 +113,7 @@ TEST_F(LineString2dTest, Api) {
   EXPECT_TRUE(p1 == dut.at(0));
   EXPECT_TRUE(p2 == dut.at(1));
   EXPECT_TRUE(p3 == dut.at(2));
-  EXPECT_EQ(3, dut.size());
+  EXPECT_EQ(static_cast<size_t>(3), dut.size());
   EXPECT_NEAR(1. + std::sqrt(2.), dut.length(), kTolerance);
 }
 

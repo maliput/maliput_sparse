@@ -31,6 +31,7 @@
 
 #include <cmath>
 #include <initializer_list>
+#include <iterator>
 #include <vector>
 
 #include <maliput/common/maliput_throw.h>
@@ -70,6 +71,9 @@ struct EuclideanDistance {
 template <typename CoordinateT, typename DistanceFunction = details::EuclideanDistance<CoordinateT>>
 class LineString final {
  public:
+  using iterator = typename std::vector<CoordinateT>::iterator;
+  using const_iterator = typename std::vector<CoordinateT>::const_iterator;
+
   /// Constructs a LineString from a std::vector.
   ///
   /// This function calls LineString(coordinates.begin, coordinates.end)
@@ -116,6 +120,23 @@ class LineString final {
 
   /// @return The accumulated length between consecutive points in this LineString by means of DistanceFunction.
   double length() const { return length_; }
+
+  /// @returns begin iterator of the underlying collection.
+  iterator begin() { return coordinates_.begin(); }
+  /// @returns begin const iterator of the underlying collection.
+  const_iterator begin() const { return coordinates_.begin(); }
+  /// @returns end iterator of the underlying collection.
+  iterator end() { return coordinates_.end(); }
+  /// @returns end const iterator of the underlying collection.
+  const_iterator end() const { return coordinates_.end(); }
+
+  const CoordinateT& operator[](std::size_t index) const { return coordinates_[index]; }
+  CoordinateT& operator[](std::size_t index) { return coordinates_[index]; }
+
+  /// Equality operator.
+  bool operator==(const LineString<CoordinateT, DistanceFunction>& other) const {
+    return coordinates_ == other.coordinates_;
+  }
 
  private:
   // @return The accumulated Length of this LineString.

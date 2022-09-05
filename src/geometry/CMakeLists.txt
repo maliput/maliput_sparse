@@ -4,6 +4,7 @@
 
 set(GEOMETRY_SOURCES
   line_string.cc
+  utility/geometry.cc
 )
 
 add_library(geometry ${GEOMETRY_SOURCES})
