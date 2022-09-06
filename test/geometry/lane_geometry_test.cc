@@ -32,6 +32,7 @@
 #include <gtest/gtest.h>
 #include <maliput/common/assertion_error.h>
 #include <maliput/math/vector.h>
+#include <maliput/test_utilities/maliput_math_compare.h>
 
 namespace maliput_sparse {
 namespace geometry {
@@ -102,13 +103,89 @@ TEST_P(OrientationTest, Test) {
   const LaneGeometry lane_geometry{case_.left, case_.right, 1., 1e-3};
   for (std::size_t i = 0; i < case_.p.size(); ++i) {
     const auto rpy = lane_geometry.Orientation(case_.p[i]);
-    std::cout << rpy.vector() << std::endl;
     EXPECT_EQ(case_.expected_rpy[i].vector(), rpy.vector())
         << "Expected RPY: " << case_.expected_rpy[i].vector() << " vs RPY: " << rpy.vector();
   }
 }
 
 INSTANTIATE_TEST_CASE_P(OrientationTestGroup, OrientationTest, ::testing::ValuesIn(OrientationTestCases()));
+
+struct WTestCase {
+  LineString3d left{};
+  LineString3d right{};
+  std::vector<Vector3> prh{};
+  std::vector<Vector3> expected_w{};
+};
+
+std::vector<WTestCase> WTestCases() {
+  return {
+      {
+          // No elevation along x
+          LineString3d{{0., 2., 0.}, {100., 2., 0.}} /* left*/,
+          LineString3d{{0., -2., 0.}, {100., -2., 0.}} /* right*/,
+          {{0., 0., 0.}, {50., 0., 0.}, {100., 0., 0.}, {0., 4., 2.}, {50., -2., -2.}, {100., 7., -1.}} /* prh */,
+          {{0., 0., 0.}, {50., 0., 0.}, {100., 0., 0.}, {0., 4., 2.}, {50., -2., -2.}, {100., 7., -1.}} /* expected_w */
+      },
+      {
+          // No elevation along -x
+          LineString3d{{0., 2., 0.}, {-100., 2., 0.}} /* line string*/,
+          LineString3d{{0., -2., 0.}, {-100., -2., 0.}} /* line string*/,
+          {{0., 0., 0.}, {50., 0., 0.}, {100., 0., 0.}, {0., 5., 1.}, {50., -6., -12.}, {100., -24., 4.}} /* prh */,
+          {{0., 0., 0.},
+           {-50., 0., 0.},
+           {-100., 0., 0.},
+           {0., -5., 1.},
+           {-50., 6., -12.},
+           {-100., 24., 4.}} /* expected_w
+                              */
+      },
+      {
+          // Linear Elevation. `h` value implies a movement in x.
+          LineString3d{{0., 2., 0.}, {100., 2., 100.}} /* left*/,
+          LineString3d{{0., -2., 0.}, {100., -2., 100.}} /* right*/,
+          {{0., 0., 0.},
+           {std::sqrt(2.) * 50., 0., 0.},
+           {std::sqrt(2.) * 100., 0., 0.},
+           {0., 5., 0.},
+           {std::sqrt(2.) * 50., 0., 5.},
+           {std::sqrt(2.) * 100., 5., 5.}} /* prh */,
+          {{0., 0., 0.},
+           {50., 0., 50.},
+           {100., 0., 100.},
+           {0., 5., 0.},
+           {50. - 5 * std::sqrt(2.) / 2., 0., 50. + 5 * std::sqrt(2.) / 2.},
+           {100. - 5 * std::sqrt(2.) / 2., 5., 100. + 5 * std::sqrt(2.) / 2.}} /* expected_w */
+      },
+      {
+          // Linear Elevation with negative yaw. `h` value implies a movement in x and y.
+          LineString3d{{1., 1., 0.}, {1. + 70.71067811865476, 1. - 70.71067811865476, 100.}} /* left*/,
+          LineString3d{{-1., -1., 0.}, {-1. + 70.71067811865476, -1. - 70.71067811865476, 100.}} /* right*/,
+          {{0., 0., 0.}, {141.4213562373095, 0., 0.}, {0., 5., -2.}} /* prh */,
+          {{0., 0., 0.},
+           {70.71067811865476, -70.71067811865476, 100.},
+           {0. + 5 * std::sqrt(2.) / 2. + 2 * std::sqrt(2.) / 2., 0. + 5 * std::sqrt(2.) / 2. - 2 * std::sqrt(2.) / 2.,
+            -2. * std::sqrt(2.) / 2.}} /* expected_w
+                                        */
+      },
+  };
+}
+
+class WTest : public ::testing::TestWithParam<WTestCase> {
+ public:
+  static constexpr double kTolerance{1e-12};
+  WTestCase case_ = GetParam();
+};
+
+TEST_P(WTest, Test) {
+  ASSERT_EQ(case_.prh.size(), case_.expected_w.size()) << ">>>>> Test case is ill-formed.";
+  const LaneGeometry lane_geometry{case_.left, case_.right, 1., 1e-3};
+  for (std::size_t i = 0; i < case_.prh.size(); ++i) {
+    const auto dut = lane_geometry.W(case_.prh[i]);
+    EXPECT_TRUE(maliput::math::test::CompareVectors(case_.expected_w[i], dut, kTolerance));
+  }
+}
+
+INSTANTIATE_TEST_CASE_P(WTestGroup, WTest, ::testing::ValuesIn(WTestCases()));
 
 }  // namespace
 }  // namespace test

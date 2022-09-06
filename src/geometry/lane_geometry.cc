@@ -49,13 +49,10 @@ double LaneGeometry::ArcLength() { return centerline_.length(); }
 maliput::math::Vector3 LaneGeometry::W(const maliput::math::Vector3& prh) const {
   // Obtains the point on the centerline (p, 0, 0).
   const maliput::math::Vector3 on_centerline_point = utility::InterpolatedPointAtP(centerline_, prh.x());
-  const double z = on_centerline_point.z();
-  // Get x,y of (p,0,0).
-  const maliput::math::Vector2 xy{on_centerline_point.x(), on_centerline_point.y()};
   // Calculates orientation of (p,r,h) basis at (p,0,0).
   const maliput::math::RollPitchYaw rpy = Orientation(prh.x());
   // Rotates (0,r,h) and sums with mapped (p,0,0).
-  return rpy.ToMatrix() * maliput::math::Vector3(0., prh.y(), prh.z()) + maliput::math::Vector3(xy.x(), xy.y(), z);
+  return rpy.ToMatrix() * maliput::math::Vector3(0., prh.y(), prh.z()) + on_centerline_point;
 }
 
 maliput::math::Vector3 LaneGeometry::WDot(const maliput::math::Vector3& prh) const {
