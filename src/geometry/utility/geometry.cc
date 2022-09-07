@@ -295,7 +295,7 @@ double GetSlopeAtP(const LineString3d& line_string, double p) {
   const BoundPointsResult bound_points = GetBoundPointsAtP(line_string, p);
   const double dist{(To2D(*bound_points.second) - To2D(*bound_points.first)).norm()};
   const double delta_z{bound_points.second->z() - bound_points.first->z()};
-  MALIPUT_THROW_UNLESS(bound_points.second != bound_points.first);
+  MALIPUT_THROW_UNLESS(*bound_points.second != *bound_points.first);
   return delta_z / dist;
 }
 
