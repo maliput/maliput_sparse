@@ -295,7 +295,7 @@ double GetSlopeAtP(const LineString3d& line_string, double p) {
   const BoundPointsResult bound_points = GetBoundPointsAtP(line_string, p);
   const double dist{(To2D(*bound_points.second) - To2D(*bound_points.first)).norm()};
   const double delta_z{bound_points.second->z() - bound_points.first->z()};
-  MALIPUT_THROW_UNLESS(!(dist == 0. && delta_z == 0.));
+  MALIPUT_THROW_UNLESS(bound_points.second != bound_points.first);
   return delta_z / dist;
 }
 
@@ -326,7 +326,7 @@ double Get2DHeadingAtP(const LineString3d& line_string, double p) {
 
 Vector2 Get2DTangentAtP(const LineString3d& line_string, double p) {
   const double heading = Get2DHeadingAtP(line_string, p);
-  return {std::cos(heading), std::sin(heading)};  // TODO: Should we multiply for a factor here?
+  return {std::cos(heading), std::sin(heading)};
 }
 
 }  // namespace utility

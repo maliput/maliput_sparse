@@ -54,32 +54,39 @@ struct BoundPointsResult {
 /// @returns The centerline.
 LineString3d ComputeCenterline3d(const LineString3d& left, const LineString3d& right);
 
-/// Returns the piecewise linearly interpolated point at the given distance.
-/// @param line_string the line_string to iterate. Size must be >0.
+/// Returns the piecewise linearly interpolated point at the given distance and the distance from the beginning to the
+/// first point.
+/// @param line_string the line_string to iterate.
 /// @param p distance along line_string.
 /// @return The interpolated point (a new point if not perfectly matching).
 maliput::math::Vector3 InterpolatedPointAtP(const LineString3d& line_string, double p);
 
 /// Returns the slope of a @p line_string for a given @p p .
-/// The result is expected to be contained within [-1., 1.].
+/// The slope is calculated as the variation in `z` divided by the variation in the `xy` plane.
+/// The result is expected to be contained within (-inf., inf.).
 /// @param line_string LineString to be computed the slope from.
 /// @param p P parameter at which compute the slope.
+/// @throws maliput::common::assertion_error When `p ∉ [0., line_string.length()]`.
+/// @throws maliput::common::assertion_error When the points that confine @p p are equal.
 double GetSlopeAtP(const LineString3d& line_string, double p);
 
 /// Obtains the points that confines @p p in the @p line_string .
 /// @param line_string LineString.
 /// @param p P parameter.
+/// @throws maliput::common::assertion_error When `p ∉ [0., line_string.length()]`.
 BoundPointsResult GetBoundPointsAtP(const LineString3d& line_string, double p);
 
 /// Returns the heading of a @p line_string for a given @p p .
 /// @param line_string LineString to be computed the heading from.
 /// @param p P parameter at which compute the heading.
+/// @throws maliput::common::assertion_error When `p ∉ [0., line_string.length()]`.
 double Get2DHeadingAtP(const LineString3d& line_string, double p);
 
 /// Returns the 2d-tangent of a @p line_string for a given @p p .
 /// The tangent is calculated from the @p line_string projected on the xy plane.
 /// @param line_string LineString to be computed the 2d-tangent from.
 /// @param p P parameter at which compute the 2d-tangent.
+/// @throws maliput::common::assertion_error When `p ∉ [0., line_string.length()]`.
 maliput::math::Vector2 Get2DTangentAtP(const LineString3d& line_string, double p);
 
 }  // namespace utility

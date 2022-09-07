@@ -187,13 +187,11 @@ struct LineStringPointAtPCase {
 std::vector<LineStringPointAtPCase> LineStringPointAtPTestCases() {
   return {
       {
-          LineString3d{{0., 0., 0.}, {10., 0., 0.}} /* line string*/,
-          double{5.} /* p */,
-          {5., 0., 0.} /* expected_point */
+          LineString3d{{0., 0., 0.}, {10., 0., 0.}} /* line string*/, {5.} /* p */, {5., 0., 0.} /* expected_point */
       },
       {
           LineString3d{{0., 0., 0.}, {10., 0., 0.}, {10., 10., 0.}, {10., 10., 10.}, {0., 10., 10.}} /* line string*/,
-          double{35.} /* p */,
+          {35.} /* p */,
           {5., 10., 10.} /* expected_point */
       },
       {
@@ -202,7 +200,7 @@ std::vector<LineStringPointAtPCase> LineStringPointAtPTestCases() {
                        {-385., 15., 25.},
                        {-67., 5468., 85.},
                        {0., 5468., 85.}} /* line string*/,
-          double{17000} /* p */,
+          {17000.} /* p */,
           {-11.4941296448815, 5468., 85.} /* expected_point */
       },
   };

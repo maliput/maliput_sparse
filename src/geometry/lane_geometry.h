@@ -44,6 +44,17 @@ class LaneGeometry {
  public:
   MALIPUT_NO_COPY_NO_MOVE_NO_ASSIGN(LaneGeometry);
 
+  /// Constructs a LaneGeometry
+  /// @param left Left boundary of the lane.
+  /// @param right Right boundary of the lane.
+  /// @param scale_length It is expected to be the same as
+  ///        maliput::api::RoadGeometry::scale_length(). It must be non
+  ///        negative.
+  /// @param linear_tolerance It is expected to be the same as
+  ///        maliput::api::RoadGeometry::linear_tolerance(). It must be non
+  ///        negative.
+  /// @throws maliput::common::assertion_error When @p linear_tolerance or
+  ///         @p scale_length are negative.
   LaneGeometry(const LineString3d& left, const LineString3d& right, double scale_length, double linear_tolerance);
   ~LaneGeometry() = default;
 
