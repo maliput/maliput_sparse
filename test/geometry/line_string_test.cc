@@ -75,7 +75,9 @@ TEST_F(LineString3dTest, ConstructorWithIteratorsIsSucceful) {
 TEST_F(LineString3dTest, Api) {
   const LineString3d dut(std::vector<Vector3>{p1, p2, p3});
   EXPECT_TRUE(p1 == dut.first());
+  EXPECT_TRUE(p1 == *dut.begin());
   EXPECT_TRUE(p3 == dut.last());
+  EXPECT_TRUE(p3 == *(dut.end() - 1));
   EXPECT_TRUE(p1 == dut.at(0));
   EXPECT_TRUE(p2 == dut.at(1));
   EXPECT_TRUE(p3 == dut.at(2));

@@ -4,6 +4,7 @@
 
 set(GEOMETRY_SOURCES
   line_string.cc
+  lane_geometry.cc
   utility/geometry.cc
 )
 
@@ -19,6 +20,7 @@ set_target_properties(geometry
 target_include_directories(geometry
   PUBLIC
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>
     $<INSTALL_INTERFACE:include>)
 
 target_link_libraries(geometry

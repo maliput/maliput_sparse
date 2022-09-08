@@ -1,3 +1,4 @@
+ament_add_gtest(lane_geometry_test lane_geometry_test.cc)
 ament_add_gtest(line_string_test line_string_test.cc)
 ament_add_gtest(geometry_test utility/geometry_test.cc)
 
@@ -7,6 +8,7 @@ if (TARGET ${target})
       target_include_directories(${target}
         PRIVATE
           ${PROJECT_SOURCE_DIR}/include
+          ${PROJECT_SOURCE_DIR}/src
           ${CMAKE_CURRENT_SOURCE_DIR}
           ${PROJECT_SOURCE_DIR}/test
       )
@@ -21,5 +23,6 @@ if (TARGET ${target})
     endif()
 endmacro()
 
+add_dependencies_to_test(lane_geometry_test)
 add_dependencies_to_test(line_string_test)
 add_dependencies_to_test(geometry_test)
