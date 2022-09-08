@@ -36,12 +36,12 @@ namespace geometry {
 
 namespace {}  // namespace
 
-LaneGeometry::LaneGeometry(const LineString3d& left, const LineString3d& right, double scale_length,
-                           double linear_tolerance)
+LaneGeometry::LaneGeometry(const LineString3d& left, const LineString3d& right, double linear_tolerance,
+                           double scale_length)
     : left_(left),
       right_(right),
-      scale_length_(scale_length),
       linear_tolerance_(linear_tolerance),
+      scale_length_(scale_length),
       centerline_(utility::ComputeCenterline3d(left_, right_)) {}
 
 double LaneGeometry::ArcLength() { return centerline_.length(); }

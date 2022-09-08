@@ -100,7 +100,7 @@ class OrientationTest : public ::testing::TestWithParam<OrientationTestCase> {
 
 TEST_P(OrientationTest, Test) {
   ASSERT_EQ(case_.p.size(), case_.expected_rpy.size()) << ">>>>> Test case is ill-formed.";
-  const LaneGeometry lane_geometry{case_.left, case_.right, 1., 1e-3};
+  const LaneGeometry lane_geometry{case_.left, case_.right, 1e-3, 1.};
   for (std::size_t i = 0; i < case_.p.size(); ++i) {
     const auto rpy = lane_geometry.Orientation(case_.p[i]);
     EXPECT_EQ(case_.expected_rpy[i].vector(), rpy.vector())
@@ -186,7 +186,7 @@ class WTest : public ::testing::TestWithParam<WTestCase> {
 
 TEST_P(WTest, Test) {
   ASSERT_EQ(case_.prh.size(), case_.expected_w.size()) << ">>>>> Test case is ill-formed.";
-  const LaneGeometry lane_geometry{case_.left, case_.right, 1., 1e-3};
+  const LaneGeometry lane_geometry{case_.left, case_.right, 1e-3, 1.};
   for (std::size_t i = 0; i < case_.prh.size(); ++i) {
     const auto dut = lane_geometry.W(case_.prh[i]);
     EXPECT_TRUE(maliput::math::test::CompareVectors(case_.expected_w[i], dut, kTolerance));
