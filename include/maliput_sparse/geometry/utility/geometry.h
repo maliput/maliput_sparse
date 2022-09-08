@@ -89,6 +89,23 @@ double Get2DHeadingAtP(const LineString3d& line_string, double p);
 /// @throws maliput::common::assertion_error When `p ∉ [0., line_string.length()]`.
 maliput::math::Vector2 Get2DTangentAtP(const LineString3d& line_string, double p);
 
+/// Returns the 3d-tangent of a @p line_string for a given @p p .
+/// @param line_string LineString to be computed the 3d-tangent from.
+/// @param p P parameter at which compute the 3d-tangent.
+/// @throws maliput::common::assertion_error When `p ∉ [0., line_string.length()]`.
+maliput::math::Vector3 GetTangentAtP(const LineString3d& line_string, double p);
+
+struct ClosestPointResult {
+  double p;
+  maliput::math::Vector3 point;
+  double distance;
+};
+
+ClosestPointResult GetClosestPoint(const std::pair<maliput::math::Vector3, maliput::math::Vector3>& segment,
+                                   const maliput::math::Vector3& xyz);
+
+ClosestPointResult GetClosestPoint(const LineString3d& line_string, const maliput::math::Vector3& xyz);
+
 }  // namespace utility
 }  // namespace geometry
 }  // namespace maliput_sparse

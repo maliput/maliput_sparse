@@ -388,6 +388,122 @@ TEST_P(Get2DHeadingAtPTest, Test) {
 
 INSTANTIATE_TEST_CASE_P(Get2DHeadingAtPTestGroup, Get2DHeadingAtPTest, ::testing::ValuesIn(HeadingTestCases()));
 
+struct GetClosestPointTestCase {
+  std::pair<maliput::math::Vector3, maliput::math::Vector3> segment;
+  std::vector<maliput::math::Vector3> eval_points;
+  std::vector<ClosestPointResult> expected_closest{};
+};
+
+std::vector<GetClosestPointTestCase> GetClosestPointTestCases() {
+  return {
+      {{{0., 0., 0.}, {10., 0., 0.}} /* segment */,
+       {{5., 5., 0.}, {-5., 5., 0.}, {10., 5., 0.}, {15., 5., 0.}} /* eval points */,
+       {
+           {5., {5., 0., 0.}, 5.}, /* expected: p, point, distance */
+           {0., {0., 0., 0.}, 5. * std::sqrt(2.)},
+           {10., {10., 0., 0.}, 5.},
+           {10., {10., 0., 0.}, 5. * std::sqrt(2.)},
+       }},
+      {{{0., -10., 0.}, {0., 10., 0.}} /* segment */,
+       {{0., 0., 0.}, {1., 5., 0.}, {100., 5., 0.}, {100., 15., 0.}} /* eval points */,
+       {
+           {10., {0., 0., 0.}, 0.},
+           {15., {0., 5., 0.}, 1.},
+           {15., {0., 5., 0.}, 100.},
+           {20., {0., 10., 0.}, std::sqrt(5. * 5. + 100. * 100.)},
+       }},
+      {{{0., 0., -10.}, {0., 0., 10.}} /* segment */,
+       {{0., 0., 0.}, {1., 5., 3.}, {100., 15., 50.}, {100., 15., -50.}} /* eval points */,
+       {
+           {10., {0., 0., 0.}, 0.},
+           {13., {0., 0., 3.}, std::sqrt(1. * 1. + 5. * 5.)},
+           {20., {0., 0., 10.}, std::sqrt(40. * 40. + 100. * 100. + 15. * 15.)},
+           {0., {0., 0., -10.}, std::sqrt(40. * 40. + 100. * 100. + 15. * 15.)},
+       }},
+      {{{-10., -10., 0.}, {10., 10., 0.}} /* segment */,
+       {{-10., 0., 0.}, {0., 0., 0.}, {10., 0., 0.}} /* eval points */,
+       {
+           {5. * std::sqrt(2.), {-5., -5., 0.}, 5. * std::sqrt(2.)},
+           {10 * std::sqrt(2.), {0., 0., 0.}, 0.},
+           {15. * std::sqrt(2.), {5., 5., 0.}, 5. * std::sqrt(2.)},
+       }},
+  };
+}
+
+class GetClosestPointTest : public ::testing::TestWithParam<GetClosestPointTestCase> {
+ public:
+  static constexpr double kTolerance{1e-12};
+  GetClosestPointTestCase case_ = GetParam();
+};
+
+TEST_P(GetClosestPointTest, Test) {
+  ASSERT_EQ(case_.eval_points.size(), case_.expected_closest.size()) << ">>>>> Test case is ill-formed.";
+  for (std::size_t i = 0; i < case_.eval_points.size(); ++i) {
+    const auto dut = GetClosestPoint(case_.segment, case_.eval_points[i]);
+    EXPECT_NEAR(case_.expected_closest[i].p, dut.p, kTolerance);
+    EXPECT_TRUE(maliput::math::test::CompareVectors(case_.expected_closest[i].point, dut.point, kTolerance));
+    EXPECT_NEAR(case_.expected_closest[i].distance, dut.distance, kTolerance);
+  }
+}
+
+INSTANTIATE_TEST_CASE_P(GetClosestPointTestGroup, GetClosestPointTest, ::testing::ValuesIn(GetClosestPointTestCases()));
+
+struct GetClosestPointLineStringTestCase {
+  LineString3d line_string;
+  std::vector<maliput::math::Vector3> eval_points;
+  std::vector<ClosestPointResult> expected_closest{};
+};
+
+std::vector<GetClosestPointLineStringTestCase> GetClosestPointLineStringTestCases() {
+  return {
+      {LineString3d{{0., 0., 0.}, {10., 0., 0.}} /* line_string */,
+       {{5., 5., 0.}, {-5., 5., 0.}, {10., 5., 0.}, {15., 5., 0.}} /* eval points */,
+       {
+           {5., {5., 0., 0.}, 5.}, /* expected: p, point, distance */
+           {0., {0., 0., 0.}, 5. * std::sqrt(2.)},
+           {10., {10., 0., 0.}, 5.},
+           {10., {10., 0., 0.}, 5. * std::sqrt(2.)},
+       }},
+      {LineString3d{{0., 0., 0.}, {10., 0., 0.}, {15., 0., 0.}} /* line_string */,
+       {{12.5, 0., 0.}} /* eval points */,
+       {
+           {12.5, {12.5, 0., 0.}, 0.}, /* expected: p, point, distance */
+       }},
+      {LineString3d{{-2., -4., -6.},
+                    {0., -2., -4.},
+                    {0., 0., 0.},
+                    {10., 0., 0.},
+                    {20., 10., 5.},
+                    {40., 20., 10.}} /* line_string */,
+       {{-1., -3., -5.}, {5., 5., 5.}} /* eval points */,
+       {
+           {std::sqrt(3.), {-1., -3., -5.}, 0.}, /* expected: p, point, distance */
+           {std::sqrt(2. * 2. + 2. * 2. + 2. * 2.) + std::sqrt(2. * 2. + 4. * 4.) + 5.,
+            {5., 0., 0.},
+            5. * std::sqrt(2.)},
+       }},
+  };
+}
+
+class GetClosestPointLineStringTest : public ::testing::TestWithParam<GetClosestPointLineStringTestCase> {
+ public:
+  static constexpr double kTolerance{1e-12};
+  GetClosestPointLineStringTestCase case_ = GetParam();
+};
+
+TEST_P(GetClosestPointLineStringTest, Test) {
+  ASSERT_EQ(case_.eval_points.size(), case_.expected_closest.size()) << ">>>>> Test case is ill-formed.";
+  for (std::size_t i = 0; i < case_.eval_points.size(); ++i) {
+    const auto dut = GetClosestPoint(case_.line_string, case_.eval_points[i]);
+    EXPECT_NEAR(case_.expected_closest[i].p, dut.p, kTolerance);
+    EXPECT_TRUE(maliput::math::test::CompareVectors(case_.expected_closest[i].point, dut.point, kTolerance));
+    EXPECT_NEAR(case_.expected_closest[i].distance, dut.distance, kTolerance);
+  }
+}
+
+INSTANTIATE_TEST_CASE_P(GetClosestPointLineStringTestGroup, GetClosestPointLineStringTest,
+                        ::testing::ValuesIn(GetClosestPointLineStringTestCases()));
+
 }  // namespace
 }  // namespace test
 }  // namespace utility
