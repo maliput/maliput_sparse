@@ -350,12 +350,10 @@ Vector3 GetTangentAtP(const LineString3d& line_string, double p) {
 ClosestPointResult GetClosestPoint(const Segment3d& segment, const maliput::math::Vector3& xyz) {
   const maliput::math::Vector3 d_segment{segment.second - segment.first};
   const maliput::math::Vector3 d_xyz_to_first{xyz - segment.first};
-  const maliput::math::Vector3 unit_vector{d_segment / d_segment.norm()};
 
-  const double unsaturated_p = d_xyz_to_first.dot(unit_vector);
-
+  const double unsaturated_p = d_xyz_to_first.dot(d_segment.normalized());
   const double p = std::clamp(unsaturated_p, 0., d_segment.norm());
-  const auto point = InterpolatedPointAtP(LineString3d{segment.first, segment.second}, p);
+  const maliput::math::Vector3 point = InterpolatedPointAtP(LineString3d{segment.first, segment.second}, p);
   const double distance = (xyz - point).norm();
   return {p, point, distance};
 }

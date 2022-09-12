@@ -89,7 +89,7 @@ class LaneGeometry {
 
   /// Evaluates @f$ W'(p, 0, 0) @f$ with respect to @f$ p @f$.
   ///
-  /// @param prh A vector in the LaneGeometry domain.
+  /// @param p P parameter of the lane.
   /// @return The derivative of @f$ W @f$ with respect to @f$ p @f$ at @p p.
   maliput::math::Vector3 WDot(double p) const;
 
@@ -103,7 +103,7 @@ class LaneGeometry {
   /// Evaluates the orientation in the INERTIAL Frame of the RoadCurve at @p p,
   /// i.e. at @f$ (p, 0, 0) @f$.
   ///
-  /// @param p The GroundCurve parameter.
+  /// @param p P parameter of the lane.
   /// @return The orientation in the INERTIAL Frame of the RoadCurve at @p p.
   maliput::math::RollPitchYaw Orientation(double p) const;
 

@@ -84,7 +84,7 @@ maliput::math::Vector3 LaneGeometry::WDot(const maliput::math::Vector3& prh) con
   const maliput::math::Matrix3 R = rpy_at_centerline.ToMatrix();
   const maliput::math::Matrix3 dR_dt = rpy_at_centerline.CalcRotationMatrixDt({d_alpha, d_beta, d_gamma});
 
-  // TODO(francocipollone): Compute dr/dp correctly. For convenience it is considered zero.
+  // TODO(francocipollone): Compute dr/dp correctly. We need to account for lane offset derivatives.
   const double r_dot = 0.;
   return WDot(p) + dR_dt * maliput::math::Vector3(0, r, h) + R * maliput::math::Vector3{0., r_dot, 0.};
 }
@@ -108,10 +108,9 @@ maliput::math::Vector3 LaneGeometry::WInverse(const maliput::math::Vector3& xyz)
 
   const maliput::math::Vector3 d_xyz = xyz - closest_centerline_point.point;
 
-  const maliput::math::Vector3 s_hat = utility::GetTangentAtP(centerline_, closest_centerline_point.p);
-  const maliput::math::Vector3 r_hat =
-      Orientation(closest_centerline_point.p).ToMatrix() * maliput::math::Vector3::UnitY();
-  const maliput::math::Vector3 h_hat = s_hat.cross(r_hat);
+  const maliput::math::Matrix3 rotation = Orientation(closest_centerline_point.p).ToMatrix();
+  const maliput::math::Vector3 r_hat = rotation * maliput::math::Vector3::UnitY();
+  const maliput::math::Vector3 h_hat = rotation * maliput::math::Vector3::UnitZ();
 
   const double r = d_xyz.dot(r_hat);
   const double h = d_xyz.dot(h_hat);
