@@ -50,6 +50,7 @@ SegmentBuilder& LaneBuilder::EndLane() {
   return End();
 }
 
+// TODO(maliput_sparse#10): Uncomment once LaneGeometry is ready.
 // void SetLaneGeometry(maliput::common::Passkey<LaneGeometryBuilder>, std::unique_ptr<LaneGeometry> lane_geometry) {
 //   MALIPUT_THROW_UNLESS(lane_geometry == nullptr);
 //   lane_geometry_ = std::move(lane_geometry);
@@ -63,6 +64,7 @@ SegmentBuilder& SegmentBuilder::Id(const maliput::api::SegmentId& segment_id) {
 LaneBuilder SegmentBuilder::StartLane() { return LaneBuilder(this); }
 
 JunctionBuilder& SegmentBuilder::EndSegment() {
+  MALIPUT_THROW_UNLESS(!lanes_.empty());
   auto segment = std::make_unique<maliput::geometry_base::Segment>(id_);
   for (std::unique_ptr<maliput::geometry_base::Lane>& lane : lanes_) {
     segment->AddLane(std::move(lane));
@@ -85,6 +87,7 @@ JunctionBuilder& JunctionBuilder::Id(const maliput::api::JunctionId& junction_id
 SegmentBuilder JunctionBuilder::StartSegment() { return SegmentBuilder(this); }
 
 RoadGeometryBuilder& JunctionBuilder::EndJunction() {
+  MALIPUT_THROW_UNLESS(!segments_.empty());
   auto junction = std::make_unique<maliput::geometry_base::Junction>(id_);
   for (std::unique_ptr<maliput::geometry_base::Segment>& segment : segments_) {
     junction->AddSegment(std::move(segment));
@@ -130,6 +133,7 @@ RoadGeometryBuilder& RoadGeometryBuilder::InertialToBackendFrameTranslation(cons
 JunctionBuilder RoadGeometryBuilder::StartJunction() { return JunctionBuilder(this); }
 
 std::unique_ptr<maliput::api::RoadGeometry> RoadGeometryBuilder::Build() {
+  MALIPUT_THROW_UNLESS(!junctions_.empty());
   auto road_geometry = std::make_unique<RoadGeometry>(id_, linear_tolerance_, angular_tolerance_, scale_length_,
                                                       inertial_to_backend_frame_translation_);
   for (std::unique_ptr<maliput::geometry_base::Junction>& junction : junctions_) {
