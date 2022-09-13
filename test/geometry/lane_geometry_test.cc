@@ -110,14 +110,14 @@ TEST_P(OrientationTest, Test) {
 
 INSTANTIATE_TEST_CASE_P(OrientationTestGroup, OrientationTest, ::testing::ValuesIn(OrientationTestCases()));
 
-struct WTestCase {
+struct WAndWInverseCase {
   LineString3d left{};
   LineString3d right{};
   std::vector<Vector3> prh{};
   std::vector<Vector3> expected_w{};
 };
 
-std::vector<WTestCase> WTestCases() {
+std::vector<WAndWInverseCase> WAndWInverseCases() {
   return {
       {
           // No elevation along x
@@ -178,22 +178,92 @@ std::vector<WTestCase> WTestCases() {
   };
 }
 
-class WTest : public ::testing::TestWithParam<WTestCase> {
+class WAndWInverseTest : public ::testing::TestWithParam<WAndWInverseCase> {
  public:
   static constexpr double kTolerance{1e-12};
-  WTestCase case_ = GetParam();
+  WAndWInverseCase case_ = GetParam();
 };
 
-TEST_P(WTest, Test) {
+TEST_P(WAndWInverseTest, Test) {
   ASSERT_EQ(case_.prh.size(), case_.expected_w.size()) << ">>>>> Test case is ill-formed.";
   const LaneGeometry lane_geometry{case_.left, case_.right, 1e-3, 1.};
   for (std::size_t i = 0; i < case_.prh.size(); ++i) {
-    const auto dut = lane_geometry.W(case_.prh[i]);
-    EXPECT_TRUE(maliput::math::test::CompareVectors(case_.expected_w[i], dut, kTolerance));
+    const auto dut_w = lane_geometry.W(case_.prh[i]);
+    EXPECT_TRUE(maliput::math::test::CompareVectors(case_.expected_w[i], dut_w, kTolerance));
+    const auto dut_w_inverse = lane_geometry.WInverse(case_.expected_w[i]);
+    EXPECT_TRUE(maliput::math::test::CompareVectors(case_.prh[i], dut_w_inverse, kTolerance));
   }
 }
 
-INSTANTIATE_TEST_CASE_P(WTestGroup, WTest, ::testing::ValuesIn(WTestCases()));
+INSTANTIATE_TEST_CASE_P(WAndWInverseTestGroup, WAndWInverseTest, ::testing::ValuesIn(WAndWInverseCases()));
+
+struct WDotCase {
+  LineString3d left{};
+  LineString3d right{};
+  std::vector<Vector3> prh{};
+  std::vector<Vector3> expected_w_dot{};
+};
+
+std::vector<WDotCase> WDotCases() {
+  return {
+      {
+          // Straight flat lane.
+          LineString3d{{0., 2., 0.}, {100., 2., 0.}} /* left*/,
+          LineString3d{{0., -2., 0.}, {100., -2., 0.}} /* right*/,
+          {{0., 0., 0.}, {50., 0., 0.}, {100., 0., 0.}, {0., 4., 2.}, {50., -2., -2.}, {100., 7., -1.}} /* prh */,
+          {{1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}} /* expected_w_dot */
+      },
+      {
+          // Straight linearly elevated lane.
+          LineString3d{{0., 2., 0.}, {100., 2., 100.}} /* left*/,
+          LineString3d{{0., -2., 0.}, {100., -2., 100.}} /* right*/,
+          {{0., 0., 0.}, {50., -2., -2.}, {100. * std::sqrt(2.), 7., -1.}} /* prh */,
+          {{std::sqrt(2.) / 2., 0., std::sqrt(2.) / 2.},
+           {std::sqrt(2.) / 2., 0., std::sqrt(2.) / 2.},
+           {std::sqrt(2.) / 2., 0., std::sqrt(2.) / 2.}} /* expected_w_dot */
+      },
+      {
+          // Arc-like lane:
+          //    | |  --> no elevation
+          //  __/ /  --> no elevation
+          //  ___/   --> linear elevation
+          LineString3d{{0., 2., 0.}, {100., 2., 100.}, {200., 102., 100.}, {200., 200., 100.}} /* left*/,
+          LineString3d{{0., -2., 0.}, {100., -2., 100.}, {204., 102., 100.}, {204., 200., 100.}} /* right*/,
+          {{50., -2., -2.}, {100. * (1. + std::sqrt(2.)), 0., 0.}, {100. * (2. + std::sqrt(2.)), 0., 0.}} /* prh */,
+          {
+              {std::sqrt(2.) / 2., 0., std::sqrt(2.) / 2.},
+              {std::sqrt(2.) / 2., std::sqrt(2.) / 2., 0.},
+              {0., 1., 0.},
+          } /* expected_w_dot */
+      },
+      // TODO(francocipollone): Once r_dot is taking into account in WDot, this test case should be uncommented.
+      // {
+      // Straight increasing width.
+      // LineString3d{{0., 2., 0.}, {100., 102., 0.}} /* left*/,
+      // LineString3d{{0., -2., 0.}, {100., -2., 0.}} /* right*/,
+      // {{0., 0., 0.}, {50., -2., -2.}, {100. * std::sqrt(2.), 7., -1.}} /* prh */,
+      // {{std::sqrt(2.)/2., std::sqrt(2.)/2., 0.}, {std::sqrt(2.)/2., std::sqrt(2.)/2., 0.}, {std::sqrt(2.)/2.,
+      // std::sqrt(2.)/2., 0.}} /* expected_w_dot */
+      // },
+  };
+}
+
+class WDotTest : public ::testing::TestWithParam<WDotCase> {
+ public:
+  static constexpr double kTolerance{1e-12};
+  WDotCase case_ = GetParam();
+};
+
+TEST_P(WDotTest, Test) {
+  ASSERT_EQ(case_.prh.size(), case_.expected_w_dot.size()) << ">>>>> Test case is ill-formed.";
+  const LaneGeometry lane_geometry{case_.left, case_.right, 1e-3, 1.};
+  for (std::size_t i = 0; i < case_.prh.size(); ++i) {
+    const auto dut = lane_geometry.WDot(case_.prh[i]);
+    EXPECT_TRUE(maliput::math::test::CompareVectors(case_.expected_w_dot[i], dut, kTolerance));
+  }
+}
+
+INSTANTIATE_TEST_CASE_P(WDotTestGroup, WDotTest, ::testing::ValuesIn(WDotCases()));
 
 }  // namespace
 }  // namespace test

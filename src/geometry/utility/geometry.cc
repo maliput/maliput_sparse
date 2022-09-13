@@ -58,6 +58,7 @@
 
 #include "maliput_sparse/geometry/utility/geometry.h"
 
+#include <algorithm>
 #include <cmath>
 
 namespace maliput_sparse {
@@ -78,6 +79,14 @@ namespace {
 Vector2 To2D(const Vector3& vector) { return {vector.x(), vector.y()}; }
 
 Segment2d To2D(const Segment3d& segment) { return {To2D(segment.first), To2D(segment.second)}; }
+
+LineString2d To2D(const LineString3d& line_string) {
+  std::vector<Vector2> points;
+  for (const auto& point : line_string) {
+    points.push_back(To2D(point));
+  }
+  return LineString2d{points};
+}
 
 // Determines whether two line segments intersects.
 //
@@ -325,8 +334,44 @@ double Get2DHeadingAtP(const LineString3d& line_string, double p) {
 }
 
 Vector2 Get2DTangentAtP(const LineString3d& line_string, double p) {
-  const double heading = Get2DHeadingAtP(line_string, p);
-  return {std::cos(heading), std::sin(heading)};
+  // const double heading = Get2DHeadingAtP(line_string, p);
+  // return {std::cos(heading), std::sin(heading)};
+  const auto line_string_points_length = GetBoundPointsAtP(line_string, p);
+  const Vector2 d_xy{To2D(*line_string_points_length.second) - To2D(*line_string_points_length.first)};
+  return (d_xy / (To2D(line_string).length())).normalized();
+}
+
+Vector3 GetTangentAtP(const LineString3d& line_string, double p) {
+  const auto line_string_points_length = GetBoundPointsAtP(line_string, p);
+  const Vector3 d_xyz{*line_string_points_length.second - *line_string_points_length.first};
+  return (d_xyz / (line_string.length())).normalized();
+}
+
+ClosestPointResult GetClosestPoint(const Segment3d& segment, const maliput::math::Vector3& xyz) {
+  const maliput::math::Vector3 d_segment{segment.second - segment.first};
+  const maliput::math::Vector3 d_xyz_to_first{xyz - segment.first};
+
+  const double unsaturated_p = d_xyz_to_first.dot(d_segment.normalized());
+  const double p = std::clamp(unsaturated_p, 0., d_segment.norm());
+  const maliput::math::Vector3 point = InterpolatedPointAtP(LineString3d{segment.first, segment.second}, p);
+  const double distance = (xyz - point).norm();
+  return {p, point, distance};
+}
+
+ClosestPointResult GetClosestPoint(const LineString3d& line_string, const maliput::math::Vector3& xyz) {
+  ClosestPointResult result;
+  result.distance = std::numeric_limits<double>::max();
+  double length{};
+  for (auto first = line_string.begin(), second = std::next(line_string.begin()); second != line_string.end();
+       ++first, ++second) {
+    const auto closest_point_res = GetClosestPoint(Segment3d{*first, *second}, xyz);
+    if (closest_point_res.distance < result.distance) {
+      result = closest_point_res;
+      result.p += length;
+    }
+    length += (*second - *first).norm();  //> Adds segment length
+  }
+  return result;
 }
 
 }  // namespace utility

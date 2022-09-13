@@ -61,6 +61,9 @@ class LaneGeometry {
   double p0() const { return 0.; }
   double p1() const { return centerline_.length(); }
 
+  /// @return The centerline of the lane.
+  const LineString3d& centerline() const { return centerline_; }
+
   /// @return The arc length of the centerline of the lane.
   double ArcLength();
 
@@ -84,6 +87,12 @@ class LaneGeometry {
   /// @return The derivative of @f$ W @f$ with respect to @f$ p @f$ at @p prh.
   maliput::math::Vector3 WDot(const maliput::math::Vector3& prh) const;
 
+  /// Evaluates @f$ W'(p, 0, 0) @f$ with respect to @f$ p @f$.
+  ///
+  /// @param p P parameter of the lane.
+  /// @return The derivative of @f$ W @f$ with respect to @f$ p @f$ at @p p.
+  maliput::math::Vector3 WDot(double p) const;
+
   /// Evaluates the orientation in the INERTIAL Frame of the LaneGeometry at
   /// @p prh.
   ///
@@ -94,7 +103,7 @@ class LaneGeometry {
   /// Evaluates the orientation in the INERTIAL Frame of the RoadCurve at @p p,
   /// i.e. at @f$ (p, 0, 0) @f$.
   ///
-  /// @param p The GroundCurve parameter.
+  /// @param p P parameter of the lane.
   /// @return The orientation in the INERTIAL Frame of the RoadCurve at @p p.
   maliput::math::RollPitchYaw Orientation(double p) const;
 

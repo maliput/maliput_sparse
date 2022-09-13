@@ -45,6 +45,16 @@ struct BoundPointsResult {
   double length;
 };
 
+/// Holds the result of #GetClosestPoint method.
+struct ClosestPointResult {
+  /// P coordinate in the line string matching the closest point.
+  double p;
+  /// Closest point.
+  maliput::math::Vector3 point;
+  /// Distance between the closest point and the given point.
+  double distance;
+};
+
 /// Computes a 3-dimensional centerline out of the @p left and @p right line string.
 ///
 /// Inspired on https://github.com/fzi-forschungszentrum-informatik/Lanelet2/blob/master/lanelet2_core/src/Lanelet.cpp
@@ -88,6 +98,27 @@ double Get2DHeadingAtP(const LineString3d& line_string, double p);
 /// @param p P parameter at which compute the 2d-tangent.
 /// @throws maliput::common::assertion_error When `p ∉ [0., line_string.length()]`.
 maliput::math::Vector2 Get2DTangentAtP(const LineString3d& line_string, double p);
+
+/// Returns the 3d-tangent of a @p line_string for a given @p p .
+/// @param line_string LineString to be computed the 3d-tangent from.
+/// @param p P parameter at which compute the 3d-tangent.
+/// @throws maliput::common::assertion_error When `p ∉ [0., line_string.length()]`.
+maliput::math::Vector3 GetTangentAtP(const LineString3d& line_string, double p);
+
+/// Gets the closest point in the @p segment to the given @p xyz point.
+/// @param segment Segment to be computed the closest point from.
+/// @param xyz Point to be computed the closest point to.
+/// @return A ClosestPointResult struct containing the closest point, the distance between the closest point and @p xyz
+/// and the p coordinate in the segment matching the closest point.
+ClosestPointResult GetClosestPoint(const std::pair<maliput::math::Vector3, maliput::math::Vector3>& segment,
+                                   const maliput::math::Vector3& xyz);
+
+/// Gets the closest point in the @p line_string to the given @p xyz point.
+/// @param segment Segment to be computed the closest point from.
+/// @param xyz Point to be computed the closest point to.
+/// @return A ClosestPointResult struct containing the closest point, the distance between the closest point and @p xyz
+/// and the p coordinate in the LineString3d matching the closest point.
+ClosestPointResult GetClosestPoint(const LineString3d& line_string, const maliput::math::Vector3& xyz);
 
 }  // namespace utility
 }  // namespace geometry

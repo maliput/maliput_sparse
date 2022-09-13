@@ -55,8 +55,38 @@ maliput::math::Vector3 LaneGeometry::W(const maliput::math::Vector3& prh) const 
   return rpy.ToMatrix() * maliput::math::Vector3(0., prh.y(), prh.z()) + on_centerline_point;
 }
 
+maliput::math::Vector3 LaneGeometry::WDot(double p) const { return utility::GetTangentAtP(centerline_, p); };
+
 maliput::math::Vector3 LaneGeometry::WDot(const maliput::math::Vector3& prh) const {
-  MALIPUT_THROW_MESSAGE("LaneGeometry::WDot is not implemented yet.");
+  // Implementation based on
+  // https://github.com/maliput/maliput_malidrive/blob/2eb648a030fa4439370b6ed757b84cb726459896/src/maliput_malidrive/road_curve/road_curve.cc#L92-L122
+  MALIPUT_THROW_UNLESS(prh.x() >= p0());
+  MALIPUT_THROW_UNLESS(prh.x() <= p1());
+  const double p = prh.x();
+  const double r = prh.y();
+  const double h = prh.z();
+
+  const maliput::math::RollPitchYaw rpy_at_centerline = Orientation(p);
+
+  // Evaluate dα/dp, dβ/dp, dγ/dp...
+
+  // TODO(francocipollone): Once superelevation is computed (roll) d_alpha should be updated to be the derivative of
+  // the superelevation at p
+  const double d_alpha = 0.;
+  // For computing dβ/dp we need the second derivative of the elevation.
+  // As the lane is linearly changing elevation, the second derivative is zero.
+  const double d_beta = 0.;
+  // For computing dγ/dp we need the second derivative of the heading.
+  // As the lane is linearly changing heading, the second derivative is zero.
+  const double d_gamma = 0.;
+
+  // compute rotation matrix at centerline (R) and its time derivative (dR_dt)
+  const maliput::math::Matrix3 R = rpy_at_centerline.ToMatrix();
+  const maliput::math::Matrix3 dR_dt = rpy_at_centerline.CalcRotationMatrixDt({d_alpha, d_beta, d_gamma});
+
+  // TODO(francocipollone): Compute dr/dp correctly. We need to account for lane offset derivatives.
+  const double r_dot = 0.;
+  return WDot(p) + dR_dt * maliput::math::Vector3(0, r, h) + R * maliput::math::Vector3{0., r_dot, 0.};
 }
 
 maliput::math::RollPitchYaw LaneGeometry::Orientation(double p) const {
@@ -68,11 +98,23 @@ maliput::math::RollPitchYaw LaneGeometry::Orientation(double p) const {
 }
 
 maliput::math::RollPitchYaw LaneGeometry::Orientation(const maliput::math::Vector3& prh) const {
-  MALIPUT_THROW_MESSAGE("LaneGeometry::Orientation(prh) is not implemented yet.");
+  // TODO: Take into account r and h displacement.
+  return Orientation(prh.x());
 }
 
 maliput::math::Vector3 LaneGeometry::WInverse(const maliput::math::Vector3& xyz) const {
-  MALIPUT_THROW_MESSAGE("LaneGeometry::WInverse is not implemented yet.");
+  const utility::ClosestPointResult closest_centerline_point = utility::GetClosestPoint(centerline_, xyz);
+  const double p = closest_centerline_point.p;
+
+  const maliput::math::Vector3 d_xyz = xyz - closest_centerline_point.point;
+
+  const maliput::math::Matrix3 rotation = Orientation(closest_centerline_point.p).ToMatrix();
+  const maliput::math::Vector3 r_hat = rotation * maliput::math::Vector3::UnitY();
+  const maliput::math::Vector3 h_hat = rotation * maliput::math::Vector3::UnitZ();
+
+  const double r = d_xyz.dot(r_hat);
+  const double h = d_xyz.dot(h_hat);
+  return {p, r, h};
 }
 
 }  // namespace geometry
