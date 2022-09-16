@@ -265,6 +265,104 @@ TEST_P(WDotTest, Test) {
 
 INSTANTIATE_TEST_CASE_P(WDotTestGroup, WDotTest, ::testing::ValuesIn(WDotCases()));
 
+struct RBoundsCase {
+  LineString3d left{};
+  LineString3d right{};
+  double length{};
+  std::vector<double> p{};
+  std::vector<double> expected_left_p{};
+  std::vector<double> expected_right_p{};
+  std::vector<maliput::api::RBounds> expected_r_bounds{};
+};
+
+std::vector<RBoundsCase> RBoundsCases() {
+  return {
+      {
+          // Straight lane.
+          LineString3d{{0., 2., 0.}, {100., 2., 0.}} /* left */,
+          LineString3d{{0., -2., 0.}, {100., -2., 0.}} /* right */,
+          100. /* length */,
+          {0., 50., 100.} /* p */,
+          {0., 50., 100.} /* expected_left_p */,
+          {0., 50., 100.} /* expected_right_p */,
+          {{-2., 2.}, {-2., 2.}, {-2., 2.}} /* expected_r_bounds */
+      },
+      {
+          // Left LineString with linear elevation.
+          // Right LineString with zero elevation.
+          LineString3d{{0., 2., 0.}, {10., 2., 10.}} /* left */,
+          LineString3d{{0., -2., 0.}, {10., -2., 0.}} /* right */,
+          // centerline: {0, 0, 0}, {5, 0, 0}, {10, 0, 5}
+          // length: 5.*(std::sqrt(2.) + 1.) = 12.071067811865476
+          12.071067811865476 /* length */,
+          {0., 2.5, 5., 7.5, 12.071067811865476} /* p */,
+          {0., 2.928932188134525, 5.85786437626905, 8.786796564403575, 14.142135623730951} /* expected_left_p */,
+          {0., 2.071067811865475, 4.14213562373095, 6.213203435596426, 10.} /* expected_right_p */,
+          {{-2., 2.},
+           {-2.6864458697336402, 2.045478629078747},
+           {-4.1070628975017831, 2.1762194944608613},
+           {-5.4419740342632519, 2.4671732743644945},
+           {-5.3851648071345037, 5.3851648071345037}} /* expected_r_bounds */
+      },
+      {
+          // Arc-like lane:
+          /*
+                  ______________
+                 /              \
+                /    ________    \
+               /    /        \    \
+              /    /          \    \
+          */
+          LineString3d{
+              {0., 0., 0.},
+              {5., 5., 0.},
+              {15., 5., 0.},
+              {20., 0., 0.},
+          } /* left */,
+          LineString3d{{2., -2., 0.}, {5., 1., 0.}, {15., 1., 0.}, {18., -2., 0.}} /* right */,
+          // centerline:
+          // {1., -1., 0.}, {2.5, 0.5, 0.}, {5., 3., 0.}, {10., 3., 0.}, {15., 3., 0.}, {17.5, 0.5, 0.}, {19., -1., 0.}
+          21.313708498984759 /* length */,
+          {0., 5.656854249492381, 10.656854249492381, 15.656854249492381, 21.313708498984759} /* p */,
+          {0., 6.407544820340815, 12.071067811865479, 17.73459080339014, 24.14213562373095} /* expected_left_p */,
+          {0., 4.906163678643947, 9.242640687119287, 13.579117695594627, 18.48528137423857} /* expected_right_p */,
+          {{-1.4142135623730951, 1.4142135623730951},
+           {-2.1071930999037169, 1.6011047227338844},
+           {-2., 2.},
+           {-2.1071930999037161, 1.6011047227338822},
+           {-1.4142135623730951, 1.4142135623730951}} /* expected_r_bounds */
+      },
+  };
+}
+
+class RBoundsCaseTest : public ::testing::TestWithParam<RBoundsCase> {
+ public:
+  static constexpr double kLinearTolerance{1e-3};
+  static constexpr double kScaleLength{1.};
+  RBoundsCase case_ = GetParam();
+};
+
+TEST_P(RBoundsCaseTest, Test) {
+  ASSERT_EQ(case_.p.size(), case_.expected_left_p.size()) << ">>>>> Test case is ill-formed.";
+  ASSERT_EQ(case_.p.size(), case_.expected_right_p.size()) << ">>>>> Test case is ill-formed.";
+  ASSERT_EQ(case_.p.size(), case_.expected_r_bounds.size()) << ">>>>> Test case is ill-formed.";
+
+  const LaneGeometry lane_geometry{case_.left, case_.right, kLinearTolerance, kScaleLength};
+  ASSERT_DOUBLE_EQ(case_.length, lane_geometry.ArcLength());
+  for (std::size_t i = 0; i < case_.p.size(); ++i) {
+    const double p_left = lane_geometry.FromCenterPToLateralP(LaneGeometry::LineStringType::kLeftBoundary, case_.p[i]);
+    const double p_right =
+        lane_geometry.FromCenterPToLateralP(LaneGeometry::LineStringType::kRightBoundary, case_.p[i]);
+    EXPECT_DOUBLE_EQ(case_.expected_left_p[i], p_left);
+    EXPECT_DOUBLE_EQ(case_.expected_right_p[i], p_right);
+    const maliput::api::RBounds r_bounds = lane_geometry.RBounds(case_.p[i]);
+    EXPECT_DOUBLE_EQ(case_.expected_r_bounds[i].min(), r_bounds.min());
+    EXPECT_DOUBLE_EQ(case_.expected_r_bounds[i].max(), r_bounds.max());
+  }
+}
+
+INSTANTIATE_TEST_CASE_P(RBoundsCaseTestGroup, RBoundsCaseTest, ::testing::ValuesIn(RBoundsCases()));
+
 }  // namespace
 }  // namespace test
 }  // namespace geometry
