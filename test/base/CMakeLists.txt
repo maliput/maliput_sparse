@@ -1,4 +1,5 @@
 ament_add_gtest(lane_test lane_test.cc)
+ament_add_gtest(road_geometry_test road_geometry_test.cc)
 
 macro(add_dependencies_to_test target)
 if (TARGET ${target})
@@ -12,7 +13,9 @@ if (TARGET ${target})
       )
 
       target_link_libraries(${target}
+          maliput::api
           maliput::common
+          maliput::geometry_base
           maliput::math
           maliput::test_utilities
           maliput_sparse::base
@@ -23,3 +26,4 @@ if (TARGET ${target})
 endmacro()
 
 add_dependencies_to_test(lane_test)
+add_dependencies_to_test(road_geometry_test)
