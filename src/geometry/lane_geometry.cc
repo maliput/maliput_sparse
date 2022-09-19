@@ -29,6 +29,8 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "geometry/lane_geometry.h"
 
+#include <algorithm>
+
 #include "maliput_sparse/geometry/utility/geometry.h"
 
 namespace maliput_sparse {
@@ -134,6 +136,9 @@ maliput::api::RBounds LaneGeometry::RBounds(double p) const {
 
 double LaneGeometry::FromCenterPToLateralP(const LineStringType& line_string_type, double p) const {
   MALIPUT_THROW_UNLESS(line_string_type != LineStringType::kCenterLine);
+  // For computing the lane bounds the equivalent point in the lateral line string is needed.
+  // Given p in centerline, let's compute p_at_a_border as: p_at_a_border = p / length * length_at_a_border.
+  // See https://github.com/maliput/maliput_sparse/issues/15 for more details.
   const double lateral_length = line_string_type == LineStringType::kLeftBoundary ? left_.length() : right_.length();
   const double p_equivalent = p * lateral_length / centerline_.length();
   return std::clamp(p_equivalent, 0., lateral_length);
