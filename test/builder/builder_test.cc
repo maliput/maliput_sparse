@@ -38,11 +38,19 @@
 #include <maliput/api/road_geometry.h>
 #include <maliput/api/segment.h>
 #include <maliput/common/assertion_error.h>
+#include <maliput/math/vector.h>
+#include <maliput/test_utilities/maliput_types_compare.h>
+
+#include "maliput_sparse/geometry/lane_geometry.h"
+#include "maliput_sparse/geometry/line_string.h"
 
 namespace maliput_sparse {
 namespace builder {
 namespace test {
 namespace {
+using maliput::api::test::IsHBoundsClose;
+using maliput::math::Vector3;
+using maliput_sparse::geometry::LineString3d;
 
 GTEST_TEST(RoadGeometryBuilderTest, LinearToleranceConstraintFails) {
   EXPECT_THROW(RoadGeometryBuilder().LinearTolerance(-1.0), maliput::common::assertion_error);
@@ -64,12 +72,12 @@ GTEST_TEST(RoadGeometryBuilderTest, RoadGeometryBuilderWithoutJunctions) {
 }
 
 GTEST_TEST(RoadGeometryBuilderTest, JunctionBuilderWithoutSegments) {
-  const maliput::api::JunctionId kJunctionAId("junction_a");
+  const maliput::api::JunctionId kJunctionId("junction_a");
   EXPECT_THROW(
       // clang-format off
       RoadGeometryBuilder()
           .StartJunction()
-              .Id(kJunctionAId)
+              .Id(kJunctionId)
           .EndJunction()
       // clang-format on
       ,
@@ -77,15 +85,98 @@ GTEST_TEST(RoadGeometryBuilderTest, JunctionBuilderWithoutSegments) {
 }
 
 GTEST_TEST(RoadGeometryBuilderTest, SegmentBuilderWithoutLane) {
-  const maliput::api::JunctionId kJunctionAId("junction_a");
-  const maliput::api::SegmentId kSegmentAId("segment_a");
+  const maliput::api::JunctionId kJunctionId("junction_a");
+  const maliput::api::SegmentId kSegmentId("segment_a");
   EXPECT_THROW(
       // clang-format off
       RoadGeometryBuilder()
           .StartJunction()
-              .Id(kJunctionAId)
+              .Id(kJunctionId)
               .StartSegment()
-                  .Id(kSegmentAId)
+                  .Id(kSegmentId)
+              .EndSegment()
+      // clang-format on
+      ,
+      maliput::common::assertion_error);
+}
+
+GTEST_TEST(RoadGeometryBuilderTest, LaneBuilderWithoutLaneGeometry) {
+  const maliput::api::JunctionId kJunctionId("junction_a");
+  const maliput::api::SegmentId kSegmentId("segment_a");
+  const maliput::api::LaneId kLaneId("lane_a");
+
+  EXPECT_THROW(
+      // clang-format off
+      RoadGeometryBuilder()
+          .StartJunction()
+              .Id(kJunctionId)
+              .StartSegment()
+                  .Id(kSegmentId)
+                  .StartLane()
+                    .Id(kLaneId)
+                  .EndLane()
+              .EndSegment()
+      // clang-format on
+      ,
+      maliput::common::assertion_error);
+}
+
+GTEST_TEST(RoadGeometryBuilderTest, LaneGeometryBuilderWithMissingLineStrings) {
+  const maliput::api::JunctionId kJunctionId("junction_a");
+  const maliput::api::SegmentId kSegmentId("segment_a");
+  const maliput::api::LaneId kLaneId("lane_a");
+  const LineString3d kLeftLineString{Vector3{0., 0., 0.}, Vector3{10., 0., 0.}};
+  const LineString3d kRightLineString{Vector3{0., 5., 0.}, Vector3{10., 5., 0.}};
+
+  // Fails because of missing left and right LineString3d.
+  EXPECT_THROW(
+      // clang-format off
+      RoadGeometryBuilder()
+          .StartJunction()
+              .Id(kJunctionId)
+              .StartSegment()
+                  .Id(kSegmentId)
+                  .StartLane()
+                    .Id(kLaneId)
+                    .StartLaneGeometry()
+                    .EndLaneGeometry()
+                  .EndLane()
+              .EndSegment()
+      // clang-format on
+      ,
+      maliput::common::assertion_error);
+  // Fails because of missing right LineString3d.
+  EXPECT_THROW(
+      // clang-format off
+      RoadGeometryBuilder()
+          .StartJunction()
+              .Id(kJunctionId)
+              .StartSegment()
+                  .Id(kSegmentId)
+                  .StartLane()
+                    .Id(kLaneId)
+                    .StartLaneGeometry()
+                        .LeftLineString(kLeftLineString)
+                    .EndLaneGeometry()
+                  .EndLane()
+              .EndSegment()
+      // clang-format on
+      ,
+      maliput::common::assertion_error);
+  // Fails because of missing left LineString3d.
+  EXPECT_THROW(
+      // clang-format off
+      RoadGeometryBuilder()
+          .StartJunction()
+              .Id(kJunctionId)
+              .StartSegment()
+                  .Id(kSegmentId)
+                  .StartLane()
+                    .Id(kLaneId)
+                    .StartLaneGeometry()
+                        .RightLineString(kRightLineString)
+                    .EndLaneGeometry()
+                  .EndLane()
               .EndSegment()
       // clang-format on
       ,
@@ -94,6 +185,8 @@ GTEST_TEST(RoadGeometryBuilderTest, SegmentBuilderWithoutLane) {
 
 // Evaluates a case where all calls are executed at once and none of them fail their invariants.
 GTEST_TEST(RoadGeometryBuilderTest, CompleteCase) {
+  static constexpr double kEqualityTolerance{0.};
+
   const maliput::api::RoadGeometryId kRoadGeometryId("custom_rg_id");
   static constexpr double kLinearTolerance{1.};
   static constexpr double kAngularTolerance{2.};
@@ -108,6 +201,18 @@ GTEST_TEST(RoadGeometryBuilderTest, CompleteCase) {
   const maliput::api::JunctionId kJunctionBId("junction_b");
   const maliput::api::SegmentId kSegmentCId("segment_c");
   const maliput::api::LaneId kLaneDId("lane_d");
+  const LineString3d kLeftLineStringA{Vector3{0., 0., 0.}, Vector3{10., 0., 0.}};
+  const LineString3d kRigthLineStringA{Vector3{0., 5., 0.}, Vector3{10., 5., 0.}};
+  const LineString3d kLeftLineStringB{Vector3{0., 5., 0.}, Vector3{10., 5., 0.}};
+  const LineString3d kRigthLineStringB{Vector3{0., 10., 0.}, Vector3{10., 10., 0.}};
+  const LineString3d kLeftLineStringC{Vector3{0., 0., 0.}, Vector3{0., 10., 0.}};
+  const LineString3d kRigthLineStringC{Vector3{5., 0., 0.}, Vector3{5., 10., 0.}};
+  const LineString3d kLeftLineStringD{Vector3{20., 0., 0.}, Vector3{30., 5., 0.}};
+  const LineString3d kRigthLineStringD{Vector3{20., 0., 0.}, Vector3{30., 5., 0.}};
+  const maliput::api::HBounds kHBoundsA{0., 1.};
+  const maliput::api::HBounds kHBoundsB{-1., 2.};
+  const maliput::api::HBounds kHBoundsC{-2., 3.};
+  const maliput::api::HBounds kHBoundsD{-3., 4.};
 
   RoadGeometryBuilder dut;
 
@@ -124,15 +229,30 @@ GTEST_TEST(RoadGeometryBuilderTest, CompleteCase) {
                       .Id(kSegmentAId)
                   .StartLane()
                       .Id(kLaneAId)
+                      .HeightBounds(kHBoundsA)
+                      .StartLaneGeometry()
+                          .LeftLineString(kLeftLineStringA)  
+                          .RightLineString(kRigthLineStringA)
+                      .EndLaneGeometry()
                   .EndLane()
                   .StartLane()
                       .Id(kLaneBId)
+                      .HeightBounds(kHBoundsB)
+                      .StartLaneGeometry()
+                          .LeftLineString(kLeftLineStringB)  
+                          .RightLineString(kRigthLineStringB)
+                      .EndLaneGeometry()
                   .EndLane()
               .EndSegment()
               .StartSegment()
                   .Id(kSegmentBId)
                   .StartLane()
                       .Id(kLaneCId)
+                      .HeightBounds(kHBoundsC)
+                      .StartLaneGeometry()
+                          .LeftLineString(kLeftLineStringC)  
+                          .RightLineString(kRigthLineStringC)
+                      .EndLaneGeometry()
                   .EndLane()
               .EndSegment()
           .EndJunction()
@@ -142,6 +262,11 @@ GTEST_TEST(RoadGeometryBuilderTest, CompleteCase) {
                   .Id(kSegmentCId)
                   .StartLane()
                       .Id(kLaneDId)
+                      .HeightBounds(kHBoundsD)
+                      .StartLaneGeometry()
+                          .LeftLineString(kLeftLineStringD)  
+                          .RightLineString(kRigthLineStringD)
+                      .EndLaneGeometry()
                   .EndLane()
               .EndSegment()
           .EndJunction()
@@ -165,10 +290,12 @@ GTEST_TEST(RoadGeometryBuilderTest, CompleteCase) {
   auto* lane_a = segment_a->lane(0);
   ASSERT_NE(nullptr, lane_a);
   ASSERT_EQ(kLaneAId, lane_a->id());
+  ASSERT_TRUE(IsHBoundsClose(kHBoundsA, lane_a->elevation_bounds(0., 0.), kEqualityTolerance));
 
   auto* lane_b = segment_a->lane(1);
   ASSERT_NE(nullptr, lane_b);
   ASSERT_EQ(kLaneBId, lane_b->id());
+  ASSERT_TRUE(IsHBoundsClose(kHBoundsB, lane_b->elevation_bounds(0., 0.), kEqualityTolerance));
 
   ASSERT_EQ(lane_a, lane_b->to_right());
   ASSERT_EQ(lane_b, lane_a->to_left());
@@ -181,6 +308,7 @@ GTEST_TEST(RoadGeometryBuilderTest, CompleteCase) {
   auto* lane_c = segment_b->lane(0);
   ASSERT_NE(nullptr, lane_c);
   ASSERT_EQ(kLaneCId, lane_c->id());
+  ASSERT_TRUE(IsHBoundsClose(kHBoundsC, lane_c->elevation_bounds(0., 0.), kEqualityTolerance));
 
   auto* junction_b = rg->junction(1);
   ASSERT_NE(nullptr, junction_b);
@@ -195,6 +323,7 @@ GTEST_TEST(RoadGeometryBuilderTest, CompleteCase) {
   auto* lane_d = segment_c->lane(0);
   ASSERT_NE(nullptr, lane_d);
   ASSERT_EQ(kLaneDId, lane_d->id());
+  ASSERT_TRUE(IsHBoundsClose(kHBoundsD, lane_d->elevation_bounds(0., 0.), kEqualityTolerance));
 }
 
 }  // namespace

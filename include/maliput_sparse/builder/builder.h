@@ -80,6 +80,7 @@
  * @endcode{cpp}
  */
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -93,6 +94,7 @@
 #include <maliput/geometry_base/road_geometry.h>
 #include <maliput/geometry_base/segment.h>
 
+#include "maliput_sparse/geometry/lane_geometry.h"
 #include "maliput_sparse/geometry/line_string.h"
 
 namespace maliput_sparse {
@@ -158,9 +160,19 @@ class LaneGeometryBuilder final : public details::NestedBuilder<LaneBuilder> {
    */
   explicit LaneGeometryBuilder(LaneBuilder* parent) : details::NestedBuilder<LaneBuilder>(parent) {}
 
-  // TODO(maliput_sparse#10): implement me!
-  // LaneGeometryBuilder& LeftLineString(LineString3d&& left_line_string);
-  // LaneGeometryBuilder& RightLineString(LineString3d&& right_line_string);
+  /**
+   * @brief Set the left maliput_sparse::geometry::LineString of the LaneGeometry.
+   * @param left_line_string The left maliput_sparse::geometry::LineString to set in the LaneGeometry.
+   * @return A reference to this LaneGeometryBuilder.
+   */
+  LaneGeometryBuilder& LeftLineString(const maliput_sparse::geometry::LineString3d& left_line_string);
+
+  /**
+   * @brief Set the right maliput_sparse::geometry::LineString of the LaneGeometry.
+   * @param left_line_string The right maliput_sparse::geometry::LineString to set in the LaneGeometry.
+   * @return A reference to this LaneGeometryBuilder.
+   */
+  LaneGeometryBuilder& RightLineString(const maliput_sparse::geometry::LineString3d& right_line_string);
 
   /**
    * @brief Finalizes the construction of the LaneGeometry and sets it to the parent LaneBuilder.
@@ -168,7 +180,11 @@ class LaneGeometryBuilder final : public details::NestedBuilder<LaneBuilder> {
    * @throws maliput::common::assertion_error When the left and right LineStrings were not set.
    * @return The reference to the parent LaneBuilder.
    */
-  LaneBuilder& EndLaneGeometry() { return End(); }
+  LaneBuilder& EndLaneGeometry();
+
+ private:
+  std::optional<maliput_sparse::geometry::LineString3d> left_line_string_{};
+  std::optional<maliput_sparse::geometry::LineString3d> right_line_string_{};
 };
 
 /**
@@ -190,6 +206,13 @@ class LaneBuilder final : public details::NestedBuilder<SegmentBuilder> {
   LaneBuilder& Id(const maliput::api::LaneId& lane_id);
 
   /**
+   * @brief Sets the maliput::api::maliput::api::HBounds of the maliput::api::Lane.
+   * @param hbounds A maliput::api::HBounds to set to the Lane.
+   * @return A reference to this LaneBuilder.
+   */
+  LaneBuilder& HeightBounds(const maliput::api::HBounds& hbounds);
+
+  /**
    * @brief Starts the LaneGeometry builder for this Lane.
    * @return A LaneGeometryBuilder.
    */
@@ -198,15 +221,25 @@ class LaneBuilder final : public details::NestedBuilder<SegmentBuilder> {
   /**
    * @brief Finanlizes the construction process of this Lane by inserting the Lane into the
    * parent SegmentBuilder.
+   * @throws maliput::common::assertion_error When there is no LaneGeometry to be set into the Lane.
    * @return A reference to the SegmentBuilder.
    */
   SegmentBuilder& EndLane();
 
-  // TODO(maliput_sparse#10): implement me!
-  // void SetLaneGeometry(maliput::common::Passkey<LaneGeometryBuilder>, std::unique_ptr<LaneGeometry> lane_geometry);
+  /**
+   * @brief Sets a maliput_sparse::geometry::LaneGeometry into this builder to fill in the Lane.
+   * @details This method is only intended to be called by LaneGeometryBuilder instances.
+   * @see maliput::common::Passkey class description for further details.
+   * @param lane_geometry A maliput_sparse::geometry::LaneGeometry to be stored into the Lane. It must not be nullptr.
+   * @throws maliput::common::assertion_error When @p lane_geometry is nullptr.
+   */
+  void SetLaneGeometry(maliput::common::Passkey<LaneGeometryBuilder>,
+                       std::unique_ptr<maliput_sparse::geometry::LaneGeometry> lane_geometry);
 
  private:
   maliput::api::LaneId id_{"l_id"};
+  maliput::api::HBounds hbounds_{};
+  std::unique_ptr<maliput_sparse::geometry::LaneGeometry> lane_geometry_{};
 };
 
 /**
@@ -373,6 +406,20 @@ class RoadGeometryBuilder final : public details::BuilderBase {
    */
   void SetJunction(maliput::common::Passkey<JunctionBuilder>,
                    std::unique_ptr<maliput::geometry_base::Junction> junction);
+
+  /**
+   * @brief Getter for LaneGeometry of linear_tolerance.
+   * @see maliput::common::Passkey class description for further details.
+   * @return The linear_tolerance.
+   */
+  double linear_tolerance(maliput::common::Passkey<LaneGeometryBuilder>) const { return linear_tolerance_; }
+
+  /**
+   * @brief Getter for LaneGeometry of scale_length.
+   * @see maliput::common::Passkey class description for further details.
+   * @return The scale_length.
+   */
+  double scale_length(maliput::common::Passkey<LaneGeometryBuilder>) const { return scale_length_; }
 
  private:
   maliput::api::RoadGeometryId id_{"rg_id"};

@@ -37,24 +37,52 @@
 namespace maliput_sparse {
 namespace builder {
 
+LaneGeometryBuilder& LaneGeometryBuilder::LeftLineString(
+    const maliput_sparse::geometry::LineString3d& left_line_string) {
+  left_line_string_.emplace(left_line_string);
+  return *this;
+}
+
+LaneGeometryBuilder& LaneGeometryBuilder::RightLineString(
+    const maliput_sparse::geometry::LineString3d& right_line_string) {
+  right_line_string_.emplace(right_line_string);
+  return *this;
+}
+
+LaneBuilder& LaneGeometryBuilder::EndLaneGeometry() {
+  MALIPUT_THROW_UNLESS(left_line_string_.has_value() && right_line_string_.has_value());
+  const double linear_tolerance = Parent()->Parent()->Parent()->Parent()->linear_tolerance({});
+  const double scale_length = Parent()->Parent()->Parent()->Parent()->scale_length({});
+  auto lane_geometry = std::make_unique<maliput_sparse::geometry::LaneGeometry>(
+      left_line_string_.value(), right_line_string_.value(), linear_tolerance, scale_length);
+  Parent()->SetLaneGeometry({}, std::move(lane_geometry));
+  return End();
+}
+
 LaneBuilder& LaneBuilder::Id(const maliput::api::LaneId& lane_id) {
   id_ = lane_id;
+  return *this;
+}
+
+LaneBuilder& LaneBuilder::HeightBounds(const maliput::api::HBounds& hbounds) {
+  hbounds_ = hbounds;
   return *this;
 }
 
 LaneGeometryBuilder LaneBuilder::StartLaneGeometry() { return LaneGeometryBuilder(this); }
 
 SegmentBuilder& LaneBuilder::EndLane() {
-  auto lane = std::make_unique<Lane>(id_);
+  MALIPUT_THROW_UNLESS(lane_geometry_ != nullptr);
+  auto lane = std::make_unique<Lane>(id_, hbounds_, std::move(lane_geometry_));
   Parent()->SetLane({}, std::move(lane));
   return End();
 }
 
-// TODO(maliput_sparse#10): Uncomment once LaneGeometry is ready.
-// void SetLaneGeometry(maliput::common::Passkey<LaneGeometryBuilder>, std::unique_ptr<LaneGeometry> lane_geometry) {
-//   MALIPUT_THROW_UNLESS(lane_geometry == nullptr);
-//   lane_geometry_ = std::move(lane_geometry);
-// }
+void LaneBuilder::SetLaneGeometry(maliput::common::Passkey<LaneGeometryBuilder>,
+                                  std::unique_ptr<maliput_sparse::geometry::LaneGeometry> lane_geometry) {
+  MALIPUT_THROW_UNLESS(lane_geometry != nullptr);
+  lane_geometry_ = std::move(lane_geometry);
+}
 
 SegmentBuilder& SegmentBuilder::Id(const maliput::api::SegmentId& segment_id) {
   id_ = segment_id;
