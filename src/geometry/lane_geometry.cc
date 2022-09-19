@@ -29,6 +29,8 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maliput_sparse/geometry/lane_geometry.h"
 
+#include <algorithm>
+
 #include "maliput_sparse/geometry/utility/geometry.h"
 
 namespace maliput_sparse {
@@ -44,7 +46,7 @@ LaneGeometry::LaneGeometry(const LineString3d& left, const LineString3d& right, 
       scale_length_(scale_length),
       centerline_(utility::ComputeCenterline3d(left_, right_)) {}
 
-double LaneGeometry::ArcLength() { return centerline_.length(); }
+double LaneGeometry::ArcLength() const { return centerline_.length(); }
 
 maliput::math::Vector3 LaneGeometry::W(const maliput::math::Vector3& prh) const {
   // Obtains the point on the centerline (p, 0, 0).
@@ -115,6 +117,31 @@ maliput::math::Vector3 LaneGeometry::WInverse(const maliput::math::Vector3& xyz)
   const double r = d_xyz.dot(r_hat);
   const double h = d_xyz.dot(h_hat);
   return {p, r, h};
+}
+
+maliput::api::RBounds LaneGeometry::RBounds(double p) const {
+  MALIPUT_THROW_UNLESS(p >= p0());
+  MALIPUT_THROW_UNLESS(p <= p1());
+
+  // Get p equivalent left and right.
+  // Get distance from centerline to left and right.
+  const double p_left = FromCenterPToLateralP(LineStringType::kLeftBoundary, p);
+  const double p_right = FromCenterPToLateralP(LineStringType::kRightBoundary, p);
+
+  const maliput::math::Vector3 on_centerline = utility::InterpolatedPointAtP(centerline_, p);
+  const maliput::math::Vector3 on_left = utility::InterpolatedPointAtP(left_, p_left);
+  const maliput::math::Vector3 on_right = utility::InterpolatedPointAtP(right_, p_right);
+  return {-(on_right - on_centerline).norm(), (on_left - on_centerline).norm()};
+}
+
+double LaneGeometry::FromCenterPToLateralP(const LineStringType& line_string_type, double p) const {
+  MALIPUT_THROW_UNLESS(line_string_type != LineStringType::kCenterLine);
+  // For computing the lane bounds the equivalent point in the lateral line string is needed.
+  // Given p in centerline, let's compute p_at_a_border as: p_at_a_border = p / length * length_at_a_border.
+  // See https://github.com/maliput/maliput_sparse/issues/15 for more details.
+  const double lateral_length = line_string_type == LineStringType::kLeftBoundary ? left_.length() : right_.length();
+  const double p_equivalent = p * lateral_length / centerline_.length();
+  return std::clamp(p_equivalent, 0., lateral_length);
 }
 
 }  // namespace geometry

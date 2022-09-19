@@ -41,10 +41,7 @@ Lane::Lane(const maliput::api::LaneId& id, const maliput::api::HBounds& elevatio
 
 double Lane::do_length() const { return lane_geometry_->ArcLength(); }
 
-maliput::api::RBounds Lane::do_lane_bounds(double s) const {
-  // TODO: Implement
-  MALIPUT_THROW_MESSAGE("Not implemented");
-}
+maliput::api::RBounds Lane::do_lane_bounds(double s) const { return lane_geometry_->RBounds(s); }
 
 maliput::api::RBounds Lane::do_segment_bounds(double s) const {
   // TODO: Implement
