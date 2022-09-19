@@ -26,6 +26,7 @@ target_link_libraries(base
   maliput::api
   maliput::common
   maliput::geometry_base
+  maliput::math
 )
 
 ##############################################################################
