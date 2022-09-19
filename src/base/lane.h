@@ -54,6 +54,8 @@ class Lane : public maliput::geometry_base::Lane {
     return DoToBackendPosition(lane_pos);
   }
 
+  maliput::api::LanePositionResult ToLanePositionBackend(const maliput::api::InertialPosition& backend_pos) const;
+
   const geometry::LaneGeometry* lane_geometry() const { return lane_geometry_.get(); }
 
  private:
@@ -67,6 +69,8 @@ class Lane : public maliput::geometry_base::Lane {
   maliput::math::Vector3 DoToBackendPosition(const maliput::api::LanePosition& lane_pos) const override;
   void DoToLanePositionBackend(const maliput::math::Vector3& backend_pos, maliput::api::LanePosition* lane_position,
                                maliput::math::Vector3* nearest_backend_pos, double* distance) const override;
+  void DoToSegmentPositionBackend(const maliput::math::Vector3& backend_pos, maliput::api::LanePosition* lane_position,
+                                  maliput::math::Vector3* nearest_backend_pos, double* distance) const override;
   maliput::api::Rotation DoGetOrientation(const maliput::api::LanePosition& lane_pos) const override;
   maliput::api::LanePosition DoEvalMotionDerivatives(const maliput::api::LanePosition& position,
                                                      const maliput::api::IsoLaneVelocity& velocity) const override;
