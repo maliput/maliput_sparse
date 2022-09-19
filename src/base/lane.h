@@ -36,7 +36,7 @@
 #include <maliput/geometry_base/lane.h>
 #include <maliput/math/vector.h>
 
-#include "geometry/lane_geometry.h"
+#include "maliput_sparse/geometry/lane_geometry.h"
 
 namespace maliput_sparse {
 
