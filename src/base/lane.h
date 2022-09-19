@@ -59,6 +59,9 @@ class Lane : public maliput::geometry_base::Lane {
   const geometry::LaneGeometry* lane_geometry() const { return lane_geometry_.get(); }
 
  private:
+  static constexpr bool kUseLaneBoundaries{true};
+  static constexpr bool kUseSegmentBoundaries{false};
+
   // maliput::api::Lane private virtual method implementations.
   //@{
   double do_length() const override;
@@ -75,6 +78,10 @@ class Lane : public maliput::geometry_base::Lane {
   maliput::api::LanePosition DoEvalMotionDerivatives(const maliput::api::LanePosition& position,
                                                      const maliput::api::IsoLaneVelocity& velocity) const override;
   //@}
+
+  void InertialToLaneSegmentPositionBackend(bool use_lane_boundaries, const maliput::math::Vector3& backend_pos,
+                                            maliput::api::LanePosition* lane_position,
+                                            maliput::math::Vector3* nearest_backend_pos, double* distance) const;
 
   const maliput::api::HBounds elevation_bounds_;
   std::unique_ptr<geometry::LaneGeometry> lane_geometry_;

@@ -44,8 +44,28 @@ double Lane::do_length() const { return lane_geometry_->ArcLength(); }
 maliput::api::RBounds Lane::do_lane_bounds(double s) const { return lane_geometry_->RBounds(s); }
 
 maliput::api::RBounds Lane::do_segment_bounds(double s) const {
-  // TODO: Implement
-  MALIPUT_THROW_MESSAGE("Not implemented");
+  const maliput::api::RBounds lane_bounds = do_lane_bounds(s);
+  double bound_left = lane_bounds.max();
+  maliput::api::Lane const* other_lane = const_cast<maliput::api::Lane const*>(to_left());
+  while (other_lane != nullptr) {
+    const maliput::api::RBounds other_lane_bounds = other_lane->lane_bounds(s);
+    bound_left += other_lane_bounds.max() - other_lane_bounds.min();
+    other_lane = const_cast<maliput::api::Lane const*>(to_left());
+  }
+
+  double bound_right = -lane_bounds.min();
+  other_lane = const_cast<maliput::api::Lane const*>(to_right());
+  while (other_lane != nullptr) {
+    const maliput::api::RBounds other_lane_bounds = other_lane->lane_bounds(s);
+    bound_right += other_lane_bounds.max() - other_lane_bounds.min();
+    other_lane = const_cast<maliput::api::Lane const*>(to_right());
+  }
+
+  const double tolerance = lane_geometry_->linear_tolerance();
+  bound_left = bound_left < tolerance ? tolerance : bound_left;
+  bound_right = bound_right < tolerance ? tolerance : bound_right;
+
+  return {-bound_right, bound_left};
 }
 
 maliput::api::HBounds Lane::do_elevation_bounds(double, double) const { return elevation_bounds_; }
@@ -64,8 +84,9 @@ maliput::api::LanePositionResult Lane::ToLanePositionBackend(const maliput::api:
   return {lane_position, maliput::api::InertialPosition::FromXyz(nearest_backend_pos), distance};
 }
 
-void Lane::DoToLanePositionBackend(const maliput::math::Vector3& backend_pos, maliput::api::LanePosition* lane_position,
-                                   maliput::math::Vector3* nearest_backend_pos, double* distance) const {
+void Lane::InertialToLaneSegmentPositionBackend(bool use_lane_boundaries, const maliput::math::Vector3& backend_pos,
+                                                maliput::api::LanePosition* lane_position,
+                                                maliput::math::Vector3* nearest_backend_pos, double* distance) const {
   MALIPUT_THROW_UNLESS(lane_position != nullptr);
   MALIPUT_THROW_UNLESS(nearest_backend_pos != nullptr);
   MALIPUT_THROW_UNLESS(distance != nullptr);
@@ -73,7 +94,8 @@ void Lane::DoToLanePositionBackend(const maliput::math::Vector3& backend_pos, ma
   const maliput::math::Vector3 unsaturated_srh = lane_geometry_->WInverse(backend_pos);
 
   // Saturates r coordinates to the lane bounds.
-  const maliput::api::RBounds r_bounds = lane_geometry_->RBounds(unsaturated_srh.x());
+  const maliput::api::RBounds r_bounds =
+      use_lane_boundaries ? lane_geometry_->RBounds(unsaturated_srh.x()) : do_segment_bounds(unsaturated_srh.x());
   const double saturated_r = std::clamp(unsaturated_srh.y(), r_bounds.min(), r_bounds.max());
 
   // Saturates h coordinates to the elevation bounds.
@@ -85,11 +107,16 @@ void Lane::DoToLanePositionBackend(const maliput::math::Vector3& backend_pos, ma
   *distance = (backend_pos - *nearest_backend_pos).norm();
 }
 
+void Lane::DoToLanePositionBackend(const maliput::math::Vector3& backend_pos, maliput::api::LanePosition* lane_position,
+                                   maliput::math::Vector3* nearest_backend_pos, double* distance) const {
+  InertialToLaneSegmentPositionBackend(kUseLaneBoundaries, backend_pos, lane_position, nearest_backend_pos, distance);
+}
+
 void Lane::DoToSegmentPositionBackend(const maliput::math::Vector3& backend_pos,
                                       maliput::api::LanePosition* lane_position,
                                       maliput::math::Vector3* nearest_backend_pos, double* distance) const {
-  // TODO: Implement
-  MALIPUT_THROW_MESSAGE("Not implemented");
+  InertialToLaneSegmentPositionBackend(kUseSegmentBoundaries, backend_pos, lane_position, nearest_backend_pos,
+                                       distance);
 }
 
 maliput::api::Rotation Lane::DoGetOrientation(const maliput::api::LanePosition& lane_pos) const {
