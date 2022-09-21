@@ -39,13 +39,6 @@
 
 #include "maliput_sparse/geometry/line_string.h"
 
-#define IsLanePositionResultClose(lpr_a, lpr_b, tolerance)                                           \
-  do {                                                                                               \
-    EXPECT_TRUE(IsLanePositionClose(lpr_a.lane_position, lpr_b.lane_position, tolerance));           \
-    EXPECT_TRUE(IsInertialPositionClose(lpr_a.nearest_position, lpr_b.nearest_position, tolerance)); \
-    EXPECT_NEAR(lpr_a.distance, lpr_b.distance, tolerance);                                          \
-  } while (0);
-
 namespace maliput_sparse {
 namespace test {
 namespace {
@@ -195,7 +188,7 @@ std::vector<ToLaneSegmentPositionTestCase> ToLaneSegmentPositionTestCases() {
               {50., 0., 50.} /* nearest_position */,
               0. /* distance */
           },
-          // A the edge of the lane.
+          // At the edge of the lane.
           {
               {50. * std::sqrt(2.), 2., 0.} /* lane_position */,
               {50., 2., 50.} /* nearest_position */,
