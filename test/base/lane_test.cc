@@ -50,6 +50,7 @@ using maliput::api::LanePositionResult;
 using maliput::api::Rotation;
 using maliput::api::test::IsInertialPositionClose;
 using maliput::api::test::IsLanePositionClose;
+using maliput::api::test::IsLanePositionResultClose;
 using maliput::api::test::IsRotationClose;
 using maliput::math::Vector2;
 using maliput::math::Vector3;
@@ -150,9 +151,10 @@ TEST_P(LaneTest, Test) {
     const auto backend_pos = dut->ToBackendPosition(case_.srh[i]);
     const auto rpy = dut->GetOrientation(case_.srh[i]);
     const auto lane_position_result = dut->ToLanePositionBackend(case_.expected_backend_pos[i]);
-    IsRotationClose(case_.expected_rotation[i], rpy, kTolerance);
-    IsInertialPositionClose(case_.expected_backend_pos[i], InertialPosition::FromXyz(backend_pos), kTolerance);
-    IsLanePositionResultClose(case_.expected_lane_position_result[i], lane_position_result, kTolerance);
+    EXPECT_TRUE(IsRotationClose(case_.expected_rotation[i], rpy, kTolerance));
+    EXPECT_TRUE(
+        IsInertialPositionClose(case_.expected_backend_pos[i], InertialPosition::FromXyz(backend_pos), kTolerance));
+    EXPECT_TRUE(IsLanePositionResultClose(case_.expected_lane_position_result[i], lane_position_result, kTolerance));
   }
 }
 
@@ -226,7 +228,7 @@ TEST_P(ToLaneSegmentPositionTest, Test) {
   EXPECT_DOUBLE_EQ(case_.expected_length, dut->length());
   for (std::size_t i = 0; i < case_.backend_pos.size(); ++i) {
     const auto lane_position_result = dut->ToLanePositionBackend(case_.backend_pos[i]);
-    IsLanePositionResultClose(case_.expected_lane_position_result[i], lane_position_result, kTolerance);
+    EXPECT_TRUE(IsLanePositionResultClose(case_.expected_lane_position_result[i], lane_position_result, kTolerance));
   }
 }
 
