@@ -31,6 +31,7 @@
 
 #include <memory>
 
+#include <maliput/api/lane_data.h>
 #include <maliput/common/maliput_copyable.h>
 #include <maliput/math/roll_pitch_yaw.h>
 #include <maliput/math/vector.h>
@@ -43,6 +44,13 @@ namespace geometry {
 class LaneGeometry {
  public:
   MALIPUT_NO_COPY_NO_MOVE_NO_ASSIGN(LaneGeometry);
+
+  /// Enum for the type of LineString of the Lane.
+  enum class LineStringType {
+    kCenterLine = 0,
+    kLeftBoundary,
+    kRightBoundary,
+  };
 
   /// Constructs a LaneGeometry
   /// @param left Left boundary of the lane.
@@ -65,7 +73,7 @@ class LaneGeometry {
   const LineString3d& centerline() const { return centerline_; }
 
   /// @return The arc length of the centerline of the lane.
-  double ArcLength();
+  double ArcLength() const;
 
   /// @return The linear tolerance used to compute all the methods.
   /// @see maliput::api::RoadGeometry::linear_tolerance().
@@ -114,6 +122,16 @@ class LaneGeometry {
   /// @return A vector in LaneGeometry's domain whose image through @f$ W @f$ would
   ///         minimize the Euclidean distance to @p xyz.
   maliput::math::Vector3 WInverse(const maliput::math::Vector3& xyz) const;
+
+  /// Obtains the bounds of the lane.
+  /// @param p P parameter of the lane.
+  /// @throws maliput::common::assertion_error When @p is not in the domain of [p0(), p1()].
+  maliput::api::RBounds RBounds(double p) const;
+
+  /// Converts from p coordinate in the centerline to an equivalent p coordinate in a boundary.
+  /// @param line_string_type The type of LineString to convert p coordinate to.
+  /// @param p P parameter of the centerline.
+  double FromCenterPToLateralP(const LineStringType& line_string_type, double p) const;
 
  private:
   const LineString3d left_;
