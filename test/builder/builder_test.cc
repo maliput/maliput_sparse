@@ -198,9 +198,9 @@ GTEST_TEST(RoadGeometryBuilderTest, CompleteCase) {
   const maliput::api::LaneId kLaneBId("lane_b");
   const maliput::api::SegmentId kSegmentBId("segment_b");
   const maliput::api::LaneId kLaneCId("lane_c");
-  const maliput::api::JunctionId kJunctionBId("junction_b");
-  const maliput::api::SegmentId kSegmentCId("segment_c");
-  const maliput::api::LaneId kLaneDId("lane_d");
+  const maliput::api::JunctionId kJunctionBId("unset_id");
+  const maliput::api::SegmentId kSegmentCId("unset_id");
+  const maliput::api::LaneId kLaneDId("unset_id");
   const LineString3d kLeftLineStringA{Vector3{0., 0., 0.}, Vector3{10., 0., 0.}};
   const LineString3d kRigthLineStringA{Vector3{0., 5., 0.}, Vector3{10., 5., 0.}};
   const LineString3d kLeftLineStringB{Vector3{0., 5., 0.}, Vector3{10., 5., 0.}};
@@ -212,7 +212,7 @@ GTEST_TEST(RoadGeometryBuilderTest, CompleteCase) {
   const maliput::api::HBounds kHBoundsA{0., 1.};
   const maliput::api::HBounds kHBoundsB{-1., 2.};
   const maliput::api::HBounds kHBoundsC{-2., 3.};
-  const maliput::api::HBounds kHBoundsD{-3., 4.};
+  const maliput::api::HBounds kHBoundsD{0, 5.};
 
   RoadGeometryBuilder dut;
 
@@ -257,12 +257,8 @@ GTEST_TEST(RoadGeometryBuilderTest, CompleteCase) {
               .EndSegment()
           .EndJunction()
           .StartJunction()
-              .Id(kJunctionBId)
               .StartSegment()
-                  .Id(kSegmentCId)
                   .StartLane()
-                      .Id(kLaneDId)
-                      .HeightBounds(kHBoundsD)
                       .StartLaneGeometry()
                           .LeftLineString(kLeftLineStringD)  
                           .RightLineString(kRigthLineStringD)

@@ -156,7 +156,7 @@ class LaneGeometryBuilder final : public details::NestedBuilder<LaneBuilder> {
   LaneGeometryBuilder& LeftLineString(const maliput_sparse::geometry::LineString3d& left_line_string);
 
   /// @brief Set the right maliput_sparse::geometry::LineString of the LaneGeometry.
-  /// @param left_line_string The right maliput_sparse::geometry::LineString to set in the LaneGeometry.
+  /// @param right_line_string The right maliput_sparse::geometry::LineString to set in the LaneGeometry.
   /// @return A reference to this LaneGeometryBuilder.
   LaneGeometryBuilder& RightLineString(const maliput_sparse::geometry::LineString3d& right_line_string);
 
@@ -208,7 +208,7 @@ class LaneBuilder final : public details::NestedBuilder<SegmentBuilder> {
 
  private:
   maliput::api::LaneId id_{"unset_id"};
-  maliput::api::HBounds hbounds_{};
+  maliput::api::HBounds hbounds_{0., 5.};
   std::unique_ptr<maliput_sparse::geometry::LaneGeometry> lane_geometry_{};
 };
 
@@ -240,7 +240,7 @@ class SegmentBuilder final : public details::NestedBuilder<JunctionBuilder> {
 
   /// @brief Sets a maliput::geometry_base::Lane into this builder to fill in the Segment.
   /// @details This method is only intended to be called by LaneBuilder instances. Call this method
-  /// in order to determine a specific left to right ordering for this Segment.
+  /// in order to determine a specific rigth to left ordering for this Segment.
   /// @see maliput::common::Passkey class description for further details.
   /// @param lane A lane to be stored into the Segment. It must not be nullptr.
   /// @throws maliput::common::assertion_error When @p lane is nullptr.
