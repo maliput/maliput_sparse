@@ -80,19 +80,26 @@
 ///       .EndLane()
 ///     .EndSegment()
 ///   .EndJunction()
+///   .StartBranchPoints()
+///   .EndBranchPoints()
 ///   .Build();
 /// @endcode{cpp}
 
 #include <memory>
 #include <optional>
 #include <string>
+#include <unordered_map>
+#include <utility>
 #include <vector>
 
+#include <maliput/api/branch_point.h>
 #include <maliput/api/junction.h>
 #include <maliput/api/lane.h>
+#include <maliput/api/lane_data.h>
 #include <maliput/api/road_geometry.h>
 #include <maliput/api/segment.h>
 #include <maliput/common/passkey.h>
+#include <maliput/geometry_base/branch_point.h>
 #include <maliput/geometry_base/junction.h>
 #include <maliput/geometry_base/lane.h>
 #include <maliput/geometry_base/road_geometry.h>
@@ -285,6 +292,35 @@ class JunctionBuilder final : public details::NestedBuilder<RoadGeometryBuilder>
   std::vector<std::unique_ptr<maliput::geometry_base::Segment>> segments_{};
 };
 
+
+class BranchPointBuilder final : details::NestedBuilder<RoadGeometryBuilder> {
+ public:
+  using LaneEnd = std::pair<maliput::api::LaneId, maliput::api::LaneEnd::Which>;
+
+  /// @brief Construct a new BranchPoint Builder object.
+  /// @param parent The parent RoadGeometryBuilder. It must not be nullptr.
+  explicit BranchPointBuilder(RoadGeometryBuilder* parent) : details::NestedBuilder<RoadGeometryBuilder>(parent) {}
+
+  /// @brief Creates a connection between @p lane_id_a at @p which_a end with @p lane_id_b at @p which_b end.
+  /// @param lane_id_a The maliput::api::LaneId of Lane A.
+  /// @param which_a The maliput::api::LaneEnd::Which end of Lane A.
+  /// @param lane_id_b The maliput::api::LaneId of Lane B. 
+  /// @param which_b The maliput::api::LaneEnd::Which end of Lane B.
+  /// @throws maliput::common::assertion_error When @p lane_id_a or @p lane_id_b do not exist.
+  /// @return A reference to this builder.
+  BranchPointBuilder& Connect(
+      const maliput::api::LaneId& lane_id_a, const maliput::api::LaneEnd::Which which_a,
+      const maliput::api::LaneId& lane_id_b, const maliput::api::LaneEnd::Which which_b);
+  
+  /// @brief Finalizes the construction process of all the BranchPoints.
+  /// @throws maliput::common::assertion_error When there are no BranchPoints to be created.
+  /// @return A reference to the RoadGeometryBuilder.
+  RoadGeometryBuilder& EndBranchPoints();
+
+ private:
+  std::unordered_multimap<LaneEnd, LaneEnd> lane_ends_{};
+};
+
 /// @brief Builder class for maliput::api::RoadGeometry.
 class RoadGeometryBuilder final {
  public:
@@ -320,12 +356,15 @@ class RoadGeometryBuilder final {
   /// @return A JunctionBuilder.
   JunctionBuilder StartJunction();
 
-  // TODO(maliput_sparse#10): Provide a mechanism to build BranchPoints.
+  /// @brief Starts the BranchPoint builder for this RoadGeometry.
+  /// @return A BranchPointBuilder.
+  BranchPointBuilder StartBranchPoints();
 
   /// @brief Builds a maliput::api::RoadGeometry.
   /// @details The underlying type of the RoadGeometry is maliput_sparse::RoadGeometry which is derived from
   /// maliput::geometry_base::RoadGeometry.
   /// @throws maliput::common::assertion_error When there is no Junction to add to the RoadGeometry.
+  /// @throws maliput::common::assertion_error When there is no BranchPoint to add to the RoadGeometry.
   /// @return A std::unique_ptr<maliput::api::RoadGeometry>.
   std::unique_ptr<maliput::api::RoadGeometry> Build();
 
@@ -336,6 +375,12 @@ class RoadGeometryBuilder final {
   /// @throws maliput::common::assertion_error When @p junction is nullptr.
   void SetJunction(maliput::common::Passkey<JunctionBuilder>,
                    std::unique_ptr<maliput::geometry_base::Junction> junction);
+
+  void SetBranchPoints(maliput::common::Passkey<BranchPointBuilder>,
+                       std::vector<std::unique_ptr<maliput::geometry_base::BranchPoint>>&& branch_points);
+
+  std::unordered_map<maliput::api::LaneId, maliput::geometry_base::Lane*> GetLanes(
+      maliput::common::Passkey<BranchPointBuilder>) const;
 
   /// @brief Getter for LaneGeometry of linear_tolerance.
   /// @see maliput::common::Passkey class description for further details.
@@ -354,6 +399,7 @@ class RoadGeometryBuilder final {
   double scale_length_{1.};
   maliput::math::Vector3 inertial_to_backend_frame_translation_{0., 0., 0.};
   std::vector<std::unique_ptr<maliput::geometry_base::Junction>> junctions_{};
+  std::vector<std::unique_ptr<maliput::geometry_base::BranchPoint>> branch_points_{};
 };
 
 }  // namespace builder
