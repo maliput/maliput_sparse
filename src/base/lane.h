@@ -55,12 +55,15 @@ class Lane : public maliput::geometry_base::Lane {
   }
 
   maliput::api::LanePositionResult ToLanePositionBackend(const maliput::api::InertialPosition& backend_pos) const;
+  maliput::api::LanePositionResult ToSegmentPositionBackend(const maliput::api::InertialPosition& backend_pos) const;
 
   const geometry::LaneGeometry* lane_geometry() const { return lane_geometry_.get(); }
 
  private:
   static constexpr bool kUseLaneBoundaries{true};
-  static constexpr bool kUseSegmentBoundaries{false};
+  static constexpr bool kUseSegmentBoundaries{!kUseLaneBoundaries};
+  static constexpr bool kToLeft{true};
+  static constexpr bool kToRight{!kToLeft};
 
   // maliput::api::Lane private virtual method implementations.
   //@{
@@ -82,6 +85,12 @@ class Lane : public maliput::geometry_base::Lane {
   void InertialToLaneSegmentPositionBackend(bool use_lane_boundaries, const maliput::math::Vector3& backend_pos,
                                             maliput::api::LanePosition* lane_position,
                                             maliput::math::Vector3* nearest_backend_pos, double* distance) const;
+
+  /// Computes distance from the centerline of the lane at certain @p s to the boundary of the segment according
+  /// to the @p to_left parameter.
+  /// To calculate this the lane bounds at s_adjacent of the adjacent lanes are used. The @p s coordinate is scaled to
+  /// the length of the adjacent lane.
+  double ComputeDistanceToSegmentBoundary(bool to_left, double s) const;
 
   const maliput::api::HBounds elevation_bounds_;
   std::unique_ptr<geometry::LaneGeometry> lane_geometry_;
