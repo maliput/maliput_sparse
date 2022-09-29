@@ -112,21 +112,14 @@ namespace maliput_sparse {
 namespace builder {
 namespace details {
 
-/// @brief Base class of the builder's hierarchy.
-/// @details Its sole purpose is to offer a template
-/// hierachy to avoid duplicating code that is related to storing the parent, returning
-/// it and making sure each children can call Passkey-protected methods.
-class BuilderBase {
- public:
-  virtual ~BuilderBase() = default;
-};
-
 /// @brief Holds the parent Builder class and offers a small set of convenient methods to manage
 /// the Builder lifecycle.
 /// @tparam ParentT The parent BuilderBase type.
 template <typename ParentT>
-class NestedBuilder : public BuilderBase {
+class NestedBuilder {
  public:
+  virtual ~NestedBuilder() = default;
+
   /// @brief Construct a new nested builder object.
   /// @param parent The pointer to the parent builder. Must not be nullptr.
   /// @throws maliput::common::assertion_error When @p parent is nulltr.
@@ -291,7 +284,6 @@ class JunctionBuilder final : public details::NestedBuilder<RoadGeometryBuilder>
   maliput::api::JunctionId id_{"unset_id"};
   std::vector<std::unique_ptr<maliput::geometry_base::Segment>> segments_{};
 };
-
 
 class BranchPointBuilder final : details::NestedBuilder<RoadGeometryBuilder> {
  public:

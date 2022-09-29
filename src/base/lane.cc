@@ -41,10 +41,7 @@ Lane::Lane(const maliput::api::LaneId& id, const maliput::api::HBounds& elevatio
 
 double Lane::do_length() const { return lane_geometry_->ArcLength(); }
 
-maliput::api::RBounds Lane::do_lane_bounds(double s) const {
-  // TODO: Implement
-  MALIPUT_THROW_MESSAGE("Not implemented");
-}
+maliput::api::RBounds Lane::do_lane_bounds(double s) const { return lane_geometry_->RBounds(s); }
 
 maliput::api::RBounds Lane::do_segment_bounds(double s) const {
   // TODO: Implement
@@ -59,8 +56,38 @@ maliput::math::Vector3 Lane::DoToBackendPosition(const maliput::api::LanePositio
   return lane_geometry_->W(lane_pos.srh());
 }
 
+maliput::api::LanePositionResult Lane::ToLanePositionBackend(const maliput::api::InertialPosition& backend_pos) const {
+  maliput::api::LanePosition lane_position;
+  maliput::math::Vector3 nearest_backend_pos;
+  double distance{};
+  DoToLanePositionBackend(backend_pos.xyz(), &lane_position, &nearest_backend_pos, &distance);
+  return {lane_position, maliput::api::InertialPosition::FromXyz(nearest_backend_pos), distance};
+}
+
 void Lane::DoToLanePositionBackend(const maliput::math::Vector3& backend_pos, maliput::api::LanePosition* lane_position,
                                    maliput::math::Vector3* nearest_backend_pos, double* distance) const {
+  MALIPUT_THROW_UNLESS(lane_position != nullptr);
+  MALIPUT_THROW_UNLESS(nearest_backend_pos != nullptr);
+  MALIPUT_THROW_UNLESS(distance != nullptr);
+  // Obtains srh coordinates without saturation in r and h.
+  const maliput::math::Vector3 unsaturated_srh = lane_geometry_->WInverse(backend_pos);
+
+  // Saturates r coordinates to the lane bounds.
+  const maliput::api::RBounds r_bounds = lane_geometry_->RBounds(unsaturated_srh.x());
+  const double saturated_r = std::clamp(unsaturated_srh.y(), r_bounds.min(), r_bounds.max());
+
+  // Saturates h coordinates to the elevation bounds.
+  const maliput::api::HBounds h_bounds = do_elevation_bounds(unsaturated_srh.x(), saturated_r);
+  const double saturated_h = std::clamp(unsaturated_srh.z(), h_bounds.min(), h_bounds.max());
+
+  *lane_position = maliput::api::LanePosition(unsaturated_srh.x(), saturated_r, saturated_h);
+  *nearest_backend_pos = DoToBackendPosition(*lane_position);
+  *distance = (backend_pos - *nearest_backend_pos).norm();
+}
+
+void Lane::DoToSegmentPositionBackend(const maliput::math::Vector3& backend_pos,
+                                      maliput::api::LanePosition* lane_position,
+                                      maliput::math::Vector3* nearest_backend_pos, double* distance) const {
   // TODO: Implement
   MALIPUT_THROW_MESSAGE("Not implemented");
 }

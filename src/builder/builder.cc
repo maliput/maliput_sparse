@@ -132,7 +132,6 @@ void JunctionBuilder::SetSegment(maliput::common::Passkey<SegmentBuilder>,
   segments_.push_back(std::move(segment));
 }
 
-
 BranchPointBuilder& BranchPointBuilder::Connect(
     const maliput::api::LaneId& lane_id_a, const maliput::api::LaneEnd::Which which_a,
     const maliput::api::LaneId& lane_id_b, const maliput::api::LaneEnd::Which which_b) {
@@ -269,7 +268,6 @@ RoadGeometryBuilder& BranchPointBuilder::EndBranchPoints() {
   return End();
 }
 
-
 RoadGeometryBuilder& RoadGeometryBuilder::Id(const maliput::api::RoadGeometryId& road_geometry_id) {
   id_ = road_geometry_id;
   return *this;
@@ -322,7 +320,6 @@ void RoadGeometryBuilder::SetJunction(maliput::common::Passkey<JunctionBuilder>,
   junctions_.push_back(std::move(junction));
 }
 
-
 void RoadGeometryBuilder::SetBranchPoints(
     maliput::common::Passkey<BranchPointBuilder>,
     std::vector<std::unique_ptr<maliput::geometry_base::BranchPoint>>&& branch_points) {
@@ -345,7 +342,6 @@ std::unordered_map<maliput::api::LaneId, maliput::geometry_base::Lane*> RoadGeom
       });
   return lanes;
 }
-
 
 }  // namespace builder
 }  // namespace maliput_sparse
