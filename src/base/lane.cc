@@ -53,13 +53,12 @@ maliput::api::RBounds Lane::do_segment_bounds(double s) const {
 double Lane::ComputeDistanceToSegmentBoundary(bool to_left, double s) const {
   const maliput::api::RBounds lane_bounds = do_lane_bounds(s);
   double lane_bound = to_left ? lane_bounds.max() : -lane_bounds.min();
-  maliput::api::Lane const* other_lane =
-      const_cast<maliput::api::Lane const*>(to_left ? this->to_left() : this->to_right());
+  maliput::api::Lane const* other_lane = to_left ? this->to_left() : this->to_right();
   while (other_lane != nullptr) {
     const double s_other_lane = s * other_lane->length() / length();
     const maliput::api::RBounds other_lane_bounds = other_lane->lane_bounds(s_other_lane);
     lane_bound += other_lane_bounds.max() - other_lane_bounds.min();
-    other_lane = const_cast<maliput::api::Lane const*>(to_left ? other_lane->to_left() : other_lane->to_right());
+    other_lane = to_left ? other_lane->to_left() : other_lane->to_right();
   }
   return lane_bound;
 }
