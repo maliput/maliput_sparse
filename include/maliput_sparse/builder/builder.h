@@ -85,10 +85,12 @@
 ///   .Build();
 /// @endcode{cpp}
 
+#include <cstddef>
+#include <functional>
+#include <map>
 #include <memory>
 #include <optional>
 #include <string>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -285,9 +287,57 @@ class JunctionBuilder final : public details::NestedBuilder<RoadGeometryBuilder>
   std::vector<std::unique_ptr<maliput::geometry_base::Segment>> segments_{};
 };
 
+/// maliput::api::LaneEnd is not convenient in the building stage because there is no
+/// valid Lane pointer yet. This struct aims for the same functionality but at the building
+/// phase.
+/// Note the non-default constructor definitions, those are required by maliput::api::LaneId
+/// whose default constructor / empty string is not allowed.
+struct LaneEnd {
+  /// Constructs a LaneEnd from a @p lane_id_in and @p end_in.
+  /// @param lane_id_in The LaneId that this LaneEnd refers to.
+  /// @param end_in The end this LaneEnd refers to.
+  LaneEnd(const maliput::api::LaneId& lane_id_in, const maliput::api::LaneEnd::Which end_in)
+      : lane_id(lane_id_in), end(end_in) {}
+
+  /// Copy constructor.
+  LaneEnd(const LaneEnd& lane_end) : lane_id(lane_end.lane_id), end(lane_end.end) {}
+
+  /// Move constructor.
+  LaneEnd(LaneEnd&& lane_end) : lane_id(lane_end.lane_id), end(lane_end.end) {}
+
+  /// Assingment operator.
+  LaneEnd& operator=(LaneEnd other) {
+    std::swap(lane_id, other.lane_id);
+    std::swap(end, other.end);
+    return *this;
+  }
+
+  /// Returns true when this LaneEnd is equal to @p other.
+  bool operator==(const LaneEnd& other) const { return lane_id == other.lane_id && end == other.end; }
+
+  /// Returns true when this LaneEnd is different from @p other.
+  bool operator!=(const LaneEnd& other) const { return !(*this == other); }
+
+  /// Returns true when this LaneEnd is less from @p other.
+  /// First, LaneIds are compared by their string values and then the end are used.
+  /// ends are compared by their int-value representation.
+  bool operator<(const LaneEnd& other) const {
+    if (lane_id.string() < other.lane_id.string()) {
+      return true;
+    } else if (lane_id.string() == other.lane_id.string()) {
+      return static_cast<int>(end) < static_cast<int>(other.end);
+    }
+    return false;
+  }
+
+  maliput::api::LaneId lane_id;
+  maliput::api::LaneEnd::Which end;
+};
+
 class BranchPointBuilder final : details::NestedBuilder<RoadGeometryBuilder> {
  public:
-  using LaneEnd = std::pair<maliput::api::LaneId, maliput::api::LaneEnd::Which>;
+  // Convenient alias.
+  using LaneEndsMultimap = std::multimap<LaneEnd, LaneEnd>;
 
   /// @brief Construct a new BranchPoint Builder object.
   /// @param parent The parent RoadGeometryBuilder. It must not be nullptr.
@@ -296,21 +346,20 @@ class BranchPointBuilder final : details::NestedBuilder<RoadGeometryBuilder> {
   /// @brief Creates a connection between @p lane_id_a at @p which_a end with @p lane_id_b at @p which_b end.
   /// @param lane_id_a The maliput::api::LaneId of Lane A.
   /// @param which_a The maliput::api::LaneEnd::Which end of Lane A.
-  /// @param lane_id_b The maliput::api::LaneId of Lane B. 
+  /// @param lane_id_b The maliput::api::LaneId of Lane B.
   /// @param which_b The maliput::api::LaneEnd::Which end of Lane B.
   /// @throws maliput::common::assertion_error When @p lane_id_a or @p lane_id_b do not exist.
   /// @return A reference to this builder.
-  BranchPointBuilder& Connect(
-      const maliput::api::LaneId& lane_id_a, const maliput::api::LaneEnd::Which which_a,
-      const maliput::api::LaneId& lane_id_b, const maliput::api::LaneEnd::Which which_b);
-  
+  BranchPointBuilder& Connect(const maliput::api::LaneId& lane_id_a, const maliput::api::LaneEnd::Which which_a,
+                              const maliput::api::LaneId& lane_id_b, const maliput::api::LaneEnd::Which which_b);
+
   /// @brief Finalizes the construction process of all the BranchPoints.
   /// @throws maliput::common::assertion_error When there are no BranchPoints to be created.
   /// @return A reference to the RoadGeometryBuilder.
   RoadGeometryBuilder& EndBranchPoints();
 
  private:
-  std::unordered_multimap<LaneEnd, LaneEnd> lane_ends_{};
+  LaneEndsMultimap lane_ends_{};
 };
 
 /// @brief Builder class for maliput::api::RoadGeometry.
@@ -371,7 +420,7 @@ class RoadGeometryBuilder final {
   void SetBranchPoints(maliput::common::Passkey<BranchPointBuilder>,
                        std::vector<std::unique_ptr<maliput::geometry_base::BranchPoint>>&& branch_points);
 
-  std::unordered_map<maliput::api::LaneId, maliput::geometry_base::Lane*> GetLanes(
+  std::unordered_map<maliput::api::LaneId, const maliput::geometry_base::Lane*> GetLanes(
       maliput::common::Passkey<BranchPointBuilder>) const;
 
   /// @brief Getter for LaneGeometry of linear_tolerance.

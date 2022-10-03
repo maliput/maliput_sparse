@@ -30,8 +30,8 @@
 #include "maliput_sparse/builder/builder.h"
 
 #include <algorithm>
-#include <set>
 #include <utility>
+#include <vector>
 
 #include "base/lane.h"
 #include "base/road_geometry.h"
@@ -132,23 +132,46 @@ void JunctionBuilder::SetSegment(maliput::common::Passkey<SegmentBuilder>,
   segments_.push_back(std::move(segment));
 }
 
-BranchPointBuilder& BranchPointBuilder::Connect(
-    const maliput::api::LaneId& lane_id_a, const maliput::api::LaneEnd::Which which_a,
-    const maliput::api::LaneId& lane_id_b, const maliput::api::LaneEnd::Which which_b) {
-  const LaneEnd lane_end_a = std::make_pair(lane_id_a, which_a);
-  const LaneEnd lane_end_b = std::make_pair(lane_id_a, which_b);
+BranchPointBuilder& BranchPointBuilder::Connect(const maliput::api::LaneId& lane_id_a,
+                                                const maliput::api::LaneEnd::Which which_a,
+                                                const maliput::api::LaneId& lane_id_b,
+                                                const maliput::api::LaneEnd::Which which_b) {
+  const LaneEnd lane_end_a{lane_id_a, which_a};
+  const LaneEnd lane_end_b{lane_id_b, which_b};
+  //@{ Asserts that we are not inserting duplicate keys.
+  auto range_a_b = lane_ends_.equal_range(lane_end_a);
+  auto range_b_a = lane_ends_.equal_range(lane_end_b);
+  if (range_a_b.first != lane_ends_.end()) {
+    for (auto i = range_a_b.first; i != range_a_b.second; ++i) {
+      MALIPUT_THROW_UNLESS(i->second != lane_end_b);
+    }
+  }
+  if (range_b_a.first != lane_ends_.end()) {
+    for (auto i = range_b_a.first; i != range_b_a.second; ++i) {
+      MALIPUT_THROW_UNLESS(i->second != lane_end_a);
+    }
+  }
+  //@}
   lane_ends_.emplace(lane_end_a, lane_end_b);
   lane_ends_.emplace(lane_end_b, lane_end_a);
+  return *this;
 }
 
 namespace {
+
+// Convenient alias.
+using LaneEndSet = std::vector<LaneEnd>;
+
 // Holds the A and B side sets of LaneEnds for a future maliput::geometry_base::BranchPoint.
 struct BranchPointSets {
-  std::set<BranchPointBuilder::LaneEnd> a_side{};
-  std::set<BranchPointBuilder::LaneEnd> b_side{};
+  LaneEndSet a_side{};
+  LaneEndSet b_side{};
 };
 
-// Proivdes maliput::api::BranchPointId with an increasing counter to make each ID
+// Convenient alias.
+using SetOfBranchPointSet = std::vector<BranchPointSets>;
+
+// Provides maliput::api::BranchPointId with an increasing counter to make each ID
 // that an instance provides pragmatically unique.
 // This is not true when the number of requests exceeds the int maximum.
 class BranchPointIdBuilder {
@@ -160,19 +183,82 @@ class BranchPointIdBuilder {
   }
 
  private:
-  int branch_point_count_{0};
+  std::size_t branch_point_count_{0};
 };
-  
+
 // Returns a set of BranchPointBuilder::LaneEnds for a given @p key by collecting all the connections
 // in @p lane_ends.
-std::set<BranchPointBuilder::LaneEnd> GetLaneEndSet(
-    const BranchPointBuilder::LaneEnd& key
-    const std::unordered_multimap<BranchPointBuilder::LaneEnd, BranchPointBuilder::LaneEnd>& lane_ends) {
-  auto its = lane_ends.equal_range(key);
-  if (its.first == lane_ends.end()) {
-    return {};
+LaneEndSet GetLaneEndSet(const LaneEnd& key, const BranchPointBuilder::LaneEndsMultimap& lane_ends) {
+  LaneEndSet result{};
+  auto range = lane_ends.equal_range(key);
+  if (range.first != lane_ends.end()) {
+    for (auto i = range.first; i != range.second; ++i) {
+      result.push_back(i->second);
+    }
   }
-  return std::set<BranchPointBuilder::LaneEnd>{its.first, its.second};
+  return result;
+}
+
+// Returns true when @p lane_end is in @p lane_end_set.
+bool Contains(const LaneEndSet& lane_end_set, const LaneEnd& lane_end) {
+  return std::find(lane_end_set.begin(), lane_end_set.end(), lane_end) != lane_end_set.end();
+}
+
+// Convenient enumneration to determine A and B BranchPoint sides.
+enum class BranchPointSide { kASide, kBSide };
+
+// Returns a pair holding a pointer to a BranchPointSets and BranchPointSide indicating
+// the struct where @p lane_end is stored and on which side. When @p lane_end cannot be found
+// the pair is stuffed with a nullptr and BranchPointSide::kASide.
+std::pair<BranchPointSets*, BranchPointSide> FindBranchPointSetsFor(const LaneEnd& lane_end,
+                                                                    SetOfBranchPointSet* set_of_branch_point_sets) {
+  auto it_a_side_lane_end = std::find_if(
+      set_of_branch_point_sets->begin(), set_of_branch_point_sets->end(),
+      [lane_end](const BranchPointSets& branch_point_sets) { return Contains(branch_point_sets.a_side, lane_end); });
+  if (it_a_side_lane_end != set_of_branch_point_sets->end()) {
+    return std::make_pair(&(*it_a_side_lane_end), BranchPointSide::kASide);
+  }
+
+  auto it_b_side_lane_end = std::find_if(
+      set_of_branch_point_sets->begin(), set_of_branch_point_sets->end(),
+      [lane_end](const BranchPointSets& branch_point_sets) { return Contains(branch_point_sets.b_side, lane_end); });
+  if (it_b_side_lane_end != set_of_branch_point_sets->end()) {
+    return std::make_pair(&(*it_b_side_lane_end), BranchPointSide::kBSide);
+  }
+
+  return std::make_pair(nullptr, BranchPointSide::kASide);
+}
+
+// Makes succesive calls to FindBranchPointSetsFor() for each element in @p lane_end_set and
+// returns the first valid match or a nullptr-ed pair.
+std::pair<BranchPointSets*, BranchPointSide> FindBranchPointSetsFor(const LaneEndSet lane_end_set,
+                                                                    SetOfBranchPointSet* set_of_branch_point_sets) {
+  for (const LaneEnd& lane_end : lane_end_set) {
+    auto branch_point_sets_result = FindBranchPointSetsFor(lane_end, set_of_branch_point_sets);
+    if (branch_point_sets_result.first != nullptr) {
+      return branch_point_sets_result;
+    }
+  }
+  return std::make_pair(nullptr, BranchPointSide::kASide);
+}
+
+// Attaches all the elements in @p lane_end_set to the @p side of @p branch_point_sets.
+// Existing elements of @p lane_end_set in @p branch_point_sets are omitted.
+void AttachLaneEndSetToBranchPointSets(const LaneEndSet& lane_end_set, const BranchPointSide side,
+                                       BranchPointSets* branch_point_sets) {
+  if (side == BranchPointSide::kASide) {
+    std::for_each(lane_end_set.begin(), lane_end_set.end(), [&](const LaneEnd& le) {
+      if (!Contains(branch_point_sets->a_side, le)) {
+        branch_point_sets->a_side.push_back(le);
+      }
+    });
+  } else {
+    std::for_each(lane_end_set.begin(), lane_end_set.end(), [&](const LaneEnd& le) {
+      if (!Contains(branch_point_sets->b_side, le)) {
+        branch_point_sets->b_side.push_back(le);
+      }
+    });
+  }
 }
 
 // @brief Updates @p branch_point_sets based on the @p lane_end under evaluation.
@@ -181,49 +267,51 @@ std::set<BranchPointBuilder::LaneEnd> GetLaneEndSet(
 // When @p lane_ends appears on the A side of a BranchPointSets, the B side of such entity is updated.
 // When @p lane_ends appears on the B side of a BranchPointSets, the A side of such entity is updated.
 // This function uses @p lane_ends to get the set of BranchPointBuilder::LaneEnd a @p lane_end is connected to.
-void UpdateBranchPointSetsFor(
-    const BranchPointBuilder::LaneEnd& lane_end,
-    const std::unordered_multimap<BranchPointBuilder::LaneEnd, BranchPointBuilder::LaneEnd>& lane_ends,
-    std::set<BranchPointSets>* branch_point_sets) {
-  
-  auto it_a_side = std::find_if(
-        branch_point_sets->begin(), branch_point_sets->end(),
-        [lane_end](const BranchPointSets& branch_point_sets) { return branch_point_sets.a_side.find(lane_end); });
-   
-  auto it_b_side = std::find_if(
-        branch_point_sets->begin(), branch_point_sets->end(),
-        [lane_end](const BranchPointSets& branch_point_sets) { return branch_point_sets.b_side.find(lane_end); });
-  
-  if (it_a_side == branch_point_sets->end() && it_b_side == branch_point_sets->end()) {
-    BranchPointSets branch_point_set;
-    branch_point_set.a_side.emplace(lane_end);
-    branch_point_set.b_side = GetLaneEndSet(lane_end, lane_ends);
-    branch_point_sets->emplace(branch_point_set);
-  } else if (it_a_side != branch_point_sets->end()) {
-    auto b_side_set = GetLaneEndSet(lane_end, lane_ends);
-    it_a_side->b_side.insert(b_side_set.begin(), b_side_set.end());
-  } else if (it_b_side != branch_point_sets->end()) {
-    auto a_side_set = GetLaneEndSet(lane_end, lane_ends);
-    it_b_side->b_side.insert(a_side_set.begin(), a_side_set.end());
+void UpdateBranchPointSetsFor(const LaneEnd& lane_end, const BranchPointBuilder::LaneEndsMultimap& lane_ends,
+                              SetOfBranchPointSet* set_of_branch_point_sets) {
+  // Obtains all the other LaneEnds to which `lane_end` is connected to.
+  const LaneEndSet lane_end_set = GetLaneEndSet(lane_end, lane_ends);
+  // Tries to find `lane_end` the already existing `set_of_branch_point_sets`.
+  auto branch_point_set_result = FindBranchPointSetsFor(lane_end, set_of_branch_point_sets);
+
+  // The `lane_end` has not been assigned yet.
+  if (branch_point_set_result.first == nullptr) {
+    // Tries to find a BranchPointSets for one of the existing and connecting LaneEnds in lane_end_set.
+    branch_point_set_result = FindBranchPointSetsFor(lane_end_set, set_of_branch_point_sets);
+    if (branch_point_set_result.first == nullptr) {
+      // A new BranchPointSets is required.
+      set_of_branch_point_sets->push_back(BranchPointSets{{lane_end}, {lane_end_set}});
+    } else {
+      // Connect lane_end to the opposing corner.
+      if (branch_point_set_result.second == BranchPointSide::kASide) {
+        AttachLaneEndSetToBranchPointSets({lane_end}, BranchPointSide::kBSide, branch_point_set_result.first);
+        AttachLaneEndSetToBranchPointSets(lane_end_set, BranchPointSide::kASide, branch_point_set_result.first);
+      } else {
+        AttachLaneEndSetToBranchPointSets({lane_end}, BranchPointSide::kASide, branch_point_set_result.first);
+        AttachLaneEndSetToBranchPointSets(lane_end_set, BranchPointSide::kBSide, branch_point_set_result.first);
+      }
+    }
+  } else if (branch_point_set_result.second == BranchPointSide::kASide) {
+    AttachLaneEndSetToBranchPointSets(lane_end_set, BranchPointSide::kBSide, branch_point_set_result.first);
+  } else {
+    AttachLaneEndSetToBranchPointSets(lane_end_set, BranchPointSide::kASide, branch_point_set_result.first);
   }
 }
 
 // Functor that makes a maliput::geometry_base::BranchPoint from a BranchPointSets.
 // Note: default branch is selected by picking the first value in the opposing side.
 struct MakeBranchPointFromSets {
-  std::unique_ptr<maliput::geometry_base::BranchPoint> operator()(const BranchPointSets& branch_point_set) {
+  std::unique_ptr<maliput::geometry_base::BranchPoint> operator()(const BranchPointSets& branch_point_sets) {
     auto branch_point = std::make_unique<maliput::geometry_base::BranchPoint>(branch_point_id_builder_());
     // Populate the A and B side.
-    std::for_each(branch_point_set.a_side.begin(), branch_point_set.a_side.end(),
-                  [&](BranchPointBuilder::LaneEnd lane_end) {
-                    maliput::geometry_base::Lane* lane = lanes_->at(lane_end.first);
-                    branch_point->AddABranch(lane, lane_end.second);
-                  });
-    std::for_each(branch_point_set.b_side.begin(), branch_point_set.b_side.end(),
-                  [&](BranchPointBuilder::LaneEnd lane_end) {
-                    maliput::geometry_base::Lane* lane = lanes_->at(lane_end.first);
-                    branch_point->AddBBranch(lane, lane_end.second);
-                  });
+    std::for_each(branch_point_sets.a_side.begin(), branch_point_sets.a_side.end(), [&](LaneEnd lane_end) {
+      auto* lane = const_cast<maliput::geometry_base::Lane*>(lanes_.at(lane_end.lane_id));
+      branch_point->AddABranch(lane, lane_end.end);
+    });
+    std::for_each(branch_point_sets.b_side.begin(), branch_point_sets.b_side.end(), [&](LaneEnd lane_end) {
+      auto* lane = const_cast<maliput::geometry_base::Lane*>(lanes_.at(lane_end.lane_id));
+      branch_point->AddBBranch(lane, lane_end.end);
+    });
     // Set the default branches for each LaneEnd.
     const maliput::api::LaneEndSet* a_side_set = branch_point->GetASide();
     const maliput::api::LaneEndSet* b_side_set = branch_point->GetBSide();
@@ -237,30 +325,29 @@ struct MakeBranchPointFromSets {
         branch_point->SetDefault(a_side_set->get(i), b_side_set->get(0));
       }
     }
-
-    return std::move(branch_point);
+    return branch_point;
   }
 
-  const std::unordered_map<maliput::api::LaneId, maliput::geometry_base::Lane*> lanes_;
+  const std::unordered_map<maliput::api::LaneId, const maliput::geometry_base::Lane*> lanes_;
   BranchPointIdBuilder branch_point_id_builder_;
 };
 
-} // namespace
+}  // namespace
 
 RoadGeometryBuilder& BranchPointBuilder::EndBranchPoints() {
   // Creates set of BranchPointSets from the dictionary of Lanes.
-  const std::unordered_map<maliput::api::LaneId, maliput::geometry_base::Lane*> lanes = Parent()->GetLanes();
-  std::set<BranchPointSets> branch_point_sets;
+  const std::unordered_map<maliput::api::LaneId, const maliput::geometry_base::Lane*> lanes = Parent()->GetLanes({});
+  SetOfBranchPointSet set_of_branch_point_sets;
   for (const auto& it : lanes) {
-    UpdateBranchPointSetsFor(
-        std::make_pair(it->first, maliput::api::LaneEnd::Which::kStart), lane_ends_, &branch_point_sets);
-    UpdateBranchPointSetsFor(
-        std::make_pair(it->fist, maliput::api::LaneEnd::Which::kFinish), lane_ends_, &branch_point_sets);
+    UpdateBranchPointSetsFor(LaneEnd(it.first, maliput::api::LaneEnd::Which::kStart), lane_ends_,
+                             &set_of_branch_point_sets);
+    UpdateBranchPointSetsFor(LaneEnd(it.first, maliput::api::LaneEnd::Which::kFinish), lane_ends_,
+                             &set_of_branch_point_sets);
   }
 
   // Transforms the set of BranchPointSets into a vector of maliput::geometry_base::BranchPoints
-  std::vector<std::unique_ptr<maliput::geometry_base::BranchPoint>> branch_points(branch_point_sets.size());
-  std::transform(branch_point_sets.begin(), branch_point_sets.end(), std::back_inserter(branch_points),
+  std::vector<std::unique_ptr<maliput::geometry_base::BranchPoint>> branch_points;
+  std::transform(set_of_branch_point_sets.begin(), set_of_branch_point_sets.end(), std::back_inserter(branch_points),
                  MakeBranchPointFromSets{lanes, BranchPointIdBuilder()});
 
   // Registers the BranchPoints into the RoadGeometry.
@@ -323,23 +410,24 @@ void RoadGeometryBuilder::SetJunction(maliput::common::Passkey<JunctionBuilder>,
 void RoadGeometryBuilder::SetBranchPoints(
     maliput::common::Passkey<BranchPointBuilder>,
     std::vector<std::unique_ptr<maliput::geometry_base::BranchPoint>>&& branch_points) {
-  std::for_each(branch_points.begin(), branch_points.end(), [](const auto& bp) { MALIPUT_THROW_UNLESS(bp != nullptr)});
+  MALIPUT_THROW_UNLESS(!branch_points.empty());
+  std::for_each(branch_points.begin(), branch_points.end(),
+                [](const auto& bp) { MALIPUT_THROW_UNLESS(bp != nullptr); });
   branch_points_ = std::move(branch_points);
 }
 
-std::unordered_map<maliput::api::LaneId, maliput::geometry_base::Lane*> RoadGeometryBuilder::GetLanes(
+std::unordered_map<maliput::api::LaneId, const maliput::geometry_base::Lane*> RoadGeometryBuilder::GetLanes(
     maliput::common::Passkey<BranchPointBuilder>) const {
-  std::unordered_map<maliput::api::LaneId, maliput::geometry_base::Lane*> lanes;
-  std::for_each(junctions_.begin(), junctions_.end(),
-      [lanes](const auto junction) {
-        for (int i = 0; i < junction->num_segments(); ++i) {
-          const maliput::api::Segment* segment = junction->segment(j);
-          for (int j = 0; j < segment->num_lanes(); ++j) {
-            maliput::geometry_base::Lane* lane = segment->lane(j);
-            lanes[lane->id()] = lane;
-          }
-        }
-      });
+  std::unordered_map<maliput::api::LaneId, const maliput::geometry_base::Lane*> lanes;
+  for (const auto& junction : junctions_) {
+    for (int i = 0; i < junction->num_segments(); ++i) {
+      const maliput::api::Segment* segment = junction->segment(i);
+      for (int j = 0; j < segment->num_lanes(); ++j) {
+        const maliput::geometry_base::Lane* lane = static_cast<const maliput::geometry_base::Lane*>(segment->lane(j));
+        lanes.emplace(lane->id(), lane);
+      }
+    }
+  }
   return lanes;
 }
 
