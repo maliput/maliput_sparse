@@ -45,6 +45,7 @@ namespace {
 
 using geometry::LineString3d;
 using maliput::api::InertialPosition;
+using maliput::api::IsoLaneVelocity;
 using maliput::api::LanePosition;
 using maliput::api::LanePositionResult;
 using maliput::api::Rotation;
@@ -67,6 +68,10 @@ struct LaneTestCase {
 
 std::vector<LaneTestCase> LaneTestCases() {
   return {{
+              // Straight lane:
+              //   ______
+              //  0______100m
+              //
               LineString3d{{0., 2., 0.}, {100., 2., 0.}} /* left*/,
               LineString3d{{0., -2., 0.}, {100., -2., 0.}} /* right*/,
               {{0., 0., 0.}} /* srh */,
@@ -234,6 +239,71 @@ TEST_P(ToLaneSegmentPositionTest, Test) {
 
 INSTANTIATE_TEST_CASE_P(ToLaneSegmentPositionTestGroup, ToLaneSegmentPositionTest,
                         ::testing::ValuesIn(ToLaneSegmentPositionTestCases()));
+
+struct EvalMotionDerivativesTestCase {
+  LineString3d left{};
+  LineString3d right{};
+  IsoLaneVelocity velocity{};
+  std::vector<LanePosition> srh{};
+  std::vector<LanePosition> expected_motion_derivatives{};
+};
+
+std::vector<EvalMotionDerivativesTestCase> EvalMotionDerivativesTestCases() {
+  return {{
+              // Straight lane:
+              //   ______
+              //  0______100m
+              //
+              LineString3d{{0., 2., 0.}, {100., 2., 0.}} /* left*/,
+              LineString3d{{0., -2., 0.}, {100., -2., 0.}} /* right*/,
+              {3., 2., 1.}, /* velocity */
+              {{0., 0., 0.}, {50., 2., 0.}, {50., -2., 0.}} /* srh */,
+              {{3., 2., 1.}, {3., 2., 1.}, {3., 2., 1.}} /* expected_motion_derivatives */
+          },
+          {
+              // Arc-like no elevated lane:
+              //    | |
+              //  __/ /
+              //  __ /
+              LineString3d{{0., 2., 0.}, {100., 2., 0.}, {200., 102., 0.}, {200., 200., 0.}} /* left*/,
+              LineString3d{{0., -2., 0.}, {100., -2., 0.}, {204., 102., 0.}, {204., 200., 0.}} /* right*/,
+              // Centerline : {0., 0., 0.}, {100., 0., 0.}, {202., 102, 0.}, {202., 200., 0.}
+              {3., 2., 1.}, /* velocity */
+              {{50., 0., 0.},
+               {50., -2., 0.},
+               {100., 0., 0.},
+               {100. + 50 * std::sqrt(2.), 0., 0.},
+               {100. + 50 * std::sqrt(2.), 2., 0.}} /* srh */,
+              {{3, 2., 1.}, {3, 2., 1.}, {3, 2., 1.}, {3, 2., 1.}, {3, 2., 1.}} /* expected_motion_derivatives */
+          }};
+}
+
+class LaneEvalMotionDerivativesTestTest : public ::testing::TestWithParam<EvalMotionDerivativesTestCase> {
+ public:
+  static constexpr double kTolerance{1.e-5};
+  static constexpr double kScaleLength{1.};
+
+  void SetUp() override {
+    ASSERT_EQ(case_.srh.size(), case_.expected_motion_derivatives.size()) << ">>>>> Test case is ill-formed.";
+  }
+
+  const maliput::api::LaneId kLaneId{"dut id"};
+  const maliput::api::HBounds kHBounds{-5., 5.};
+  EvalMotionDerivativesTestCase case_ = GetParam();
+  std::unique_ptr<geometry::LaneGeometry> lane_geometry_ =
+      std::make_unique<geometry::LaneGeometry>(case_.left, case_.right, kTolerance, kScaleLength);
+};
+
+TEST_P(LaneEvalMotionDerivativesTestTest, Test) {
+  std::unique_ptr<Lane> dut = std::make_unique<Lane>(kLaneId, kHBounds, std::move(lane_geometry_));
+  for (std::size_t i = 0; i < case_.srh.size(); ++i) {
+    IsLanePositionClose(case_.expected_motion_derivatives[i], dut->EvalMotionDerivatives(case_.srh[i], case_.velocity),
+                        kTolerance);
+  }
+}
+
+INSTANTIATE_TEST_CASE_P(LaneEvalMotionDerivativesTestTestGroup, LaneEvalMotionDerivativesTestTest,
+                        ::testing::ValuesIn(EvalMotionDerivativesTestCases()));
 
 }  // namespace
 }  // namespace test
