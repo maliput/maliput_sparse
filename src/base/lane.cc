@@ -132,8 +132,10 @@ maliput::api::Rotation Lane::DoGetOrientation(const maliput::api::LanePosition& 
 
 maliput::api::LanePosition Lane::DoEvalMotionDerivatives(const maliput::api::LanePosition& position,
                                                          const maliput::api::IsoLaneVelocity& velocity) const {
-  // TODO: Implement
-  MALIPUT_THROW_MESSAGE("Not implemented");
+  // The definition of path-length of a path along σ yields dσ = |∂W/∂s| ds
+  // evaluated at (s, r, h).
+  const double ds_dsigma = lane_geometry_->WDot(position.s()).norm() / lane_geometry_->WDot(position.srh()).norm();
+  return {ds_dsigma * velocity.sigma_v, velocity.rho_v, velocity.eta_v};
 }
 
 }  // namespace maliput_sparse
