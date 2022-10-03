@@ -33,6 +33,7 @@
 #include <maliput/api/lane.h>
 #include <maliput/api/lane_data.h>
 #include <maliput/common/assertion_error.h>
+#include <maliput/geometry_base/segment.h>
 #include <maliput/math/vector.h>
 #include <maliput/test_utilities/maliput_math_compare.h>
 #include <maliput/test_utilities/maliput_types_compare.h>
@@ -46,8 +47,10 @@ namespace {
 using geometry::LineString3d;
 using maliput::api::InertialPosition;
 using maliput::api::IsoLaneVelocity;
+using maliput::api::LaneId;
 using maliput::api::LanePosition;
 using maliput::api::LanePositionResult;
+using maliput::api::RBounds;
 using maliput::api::Rotation;
 using maliput::api::test::IsInertialPositionClose;
 using maliput::api::test::IsLanePositionClose;
@@ -165,51 +168,149 @@ TEST_P(LaneTest, Test) {
 
 INSTANTIATE_TEST_CASE_P(LaneTestGroup, LaneTest, ::testing::ValuesIn(LaneTestCases()));
 
+// left / right
+using LaneLimits = std::pair<LineString3d, LineString3d>;
+
 struct ToLaneSegmentPositionTestCase {
-  LineString3d left{};
-  LineString3d right{};
+  std::vector<LaneLimits> lanes;
   double expected_length{};
+  RBounds segment_bounds{};  //-> at s=0
   std::vector<InertialPosition> backend_pos{};
   std::vector<LanePositionResult> expected_lane_position_result{};
+  std::vector<LanePositionResult> expected_segment_lane_position_result{};
 };
 
 std::vector<ToLaneSegmentPositionTestCase> ToLaneSegmentPositionTestCases() {
   return {{
-      // Arc-like lane:
-      //    | |  --> no elevation
-      //  __/ /  --> no elevation
-      //  __ /   --> linear elevation
-      LineString3d{{0., 2., 0.}, {100., 2., 100.}, {200., 102., 100.}, {200., 200., 100.}} /* left*/,
-      LineString3d{{0., -2., 0.}, {100., -2., 100.}, {204., 102., 100.}, {204., 200., 100.}} /* right*/,
-      // Centerline : {0., 0., 0.}, {100., 0., 100.}, {202., 102, 100.}, {202., 200., 100.}
-      100. * std::sqrt(2.) + 102. * std::sqrt(2.) + 98. /* expected_length */,
-      {
-          {50., 0., 50.},
-          {50., 2., 50.},
-          {50., 10., 50.},
-      } /* backend_pos */,
-      {
-          // In the centerline.
-          {
-              {50. * std::sqrt(2.), 0., 0.} /* lane_position */,
-              {50., 0., 50.} /* nearest_position */,
-              0. /* distance */
+              // 5-lane straight road:
+              //   _____________
+              //  4_____________
+              //  3_____________
+              //  2_____________
+              //  1_____________
+              //  0_____________
+              //
+              {{
+                   LineString3d{{0., -4., 0.}, {100., -4., 0.}} /* left */,
+                   LineString3d{{0., -8., 0.}, {100., -8., 0.}} /* right */,
+               },
+               {
+                   LineString3d{{0., 0., 0.}, {100., 0., 0.}} /* left */,
+                   LineString3d{{0., -4., 0.}, {100., -4., 0.}} /* right */,
+               },
+               {
+                   LineString3d{{0., 4., 0.}, {100., 4., 0.}} /* left */,
+                   LineString3d{{0., 0., 0.}, {100., 0., 0.}} /* right */,
+               },
+               {
+                   LineString3d{{0., 8., 0.}, {100., 8., 0.}} /* left */,
+                   LineString3d{{0., 4., 0.}, {100., 4., 0.}} /* right */,
+               },
+               {
+                   LineString3d{{0., 12., 0.}, {100., 12., 0.}} /* left */,
+                   LineString3d{{0., 8., 0.}, {100., 8., 0.}} /* right */,
+               }},
+              100. /* expected_length */,
+              {-10., 10.} /* segment_bounds */,
+              {
+                  // In the central lane's centerline.
+                  {50., 2., 0.},
+                  // In the adjacent's lane's centerline.
+                  {50., 6., 0.},
+                  // In the rightmost lane's right boundary.
+                  {50., -8., 0.},
+                  // Outside the segment boundaries.
+                  {50., -80., 0.},
+              } /* backend_pos */,
+              {
+                  {
+                      {50., 0., 0.} /* lane_position */, {50., 2., 0.} /* nearest_position */, 0. /* distance */
+                  },
+                  {
+                      {50., 2., 0.} /* lane_position */, {50., 4., 0.} /* nearest_position */, 2. /* distance */
+                  },
+                  {
+                      {50., -2., 0.} /* lane_position */, {50., 0., 0.} /* nearest_position */, 8. /* distance */
+                  },
+                  {
+                      {50., -2., 0.} /* lane_position */, {50., 0., 0.} /* nearest_position */, 80. /* distance */
+                  },
+              } /* expected_lane_position_result */,
+              {
+                  {
+                      {50., 0., 0.} /* lane_position */, {50., 2., 0.} /* nearest_position */, 0. /* distance */
+                  },
+                  {
+                      {50., 4., 0.} /* lane_position */, {50., 6., 0.} /* nearest_position */, 0. /* distance */
+                  },
+                  {
+                      {50., -10., 0.} /* lane_position */, {50., -8., 0.} /* nearest_position */, 0. /* distance */
+                  },
+                  {
+                      {50., -10., 0.} /* lane_position */, {50., -8., 0.} /* nearest_position */, 72. /* distance */
+                  },
+              } /* expected_segment_lane_position_result */
           },
-          // At the edge of the lane.
           {
-              {50. * std::sqrt(2.), 2., 0.} /* lane_position */,
-              {50., 2., 50.} /* nearest_position */,
-              0. /* distance */
-          },
-          // Outside boundary of the lane.
-          // Because of the scaling of the boundaries' linestring the r value is slightly different.
-          {
-              {50. * std::sqrt(2.), 2.066817, 0.} /* lane_position */,
-              {50., 2.066817, 50.} /* nearest_position */,
-              7.9331829811625667, /* distance */
-          },
-      } /* expected_lane_position_result */
-  }};
+              // Arc-like lane:
+              //    | |  --> no elevation
+              //  __/ /  --> no elevation
+              //  __ /   --> linear elevation
+              {{
+                  LineString3d{{0., 2., 0.}, {100., 2., 100.}, {200., 102., 100.}, {200., 200., 100.}} /* left*/,
+                  LineString3d{{0., -2., 0.}, {100., -2., 100.}, {204., 102., 100.}, {204., 200., 100.}} /* right*/,
+                  // Centerline : {0., 0., 0.}, {100., 0., 100.}, {202., 102, 100.}, {202., 200., 100.}
+              }},
+              100. * std::sqrt(2.) + 102. * std::sqrt(2.) + 98. /* expected_length */,
+              {-2., 2.} /* segment_bounds */,
+              {
+                  {50., 0., 50.},
+                  {50., 2., 50.},
+                  {50., 10., 50.},
+              } /* backend_pos */,
+              {
+                  // In the centerline.
+                  {
+                      {50. * std::sqrt(2.), 0., 0.} /* lane_position */,
+                      {50., 0., 50.} /* nearest_position */,
+                      0. /* distance */
+                  },
+                  // At the edge of the lane.
+                  {
+                      {50. * std::sqrt(2.), 2., 0.} /* lane_position */,
+                      {50., 2., 50.} /* nearest_position */,
+                      0. /* distance */
+                  },
+                  // Outside boundary of the lane.
+                  // Because of the scaling of the boundaries' linestring the r value is slightly different.
+                  {
+                      {50. * std::sqrt(2.), 2.066817, 0.} /* lane_position */,
+                      {50., 2.066817, 50.} /* nearest_position */,
+                      7.9331829811625667, /* distance */
+                  },
+              } /* expected_lane_position_result */,
+              {
+                  // In the centerline.
+                  {
+                      {50. * std::sqrt(2.), 0., 0.} /* lane_position */,
+                      {50., 0., 50.} /* nearest_position */,
+                      0. /* distance */
+                  },
+                  // At the edge of the lane.
+                  {
+                      {50. * std::sqrt(2.), 2., 0.} /* lane_position */,
+                      {50., 2., 50.} /* nearest_position */,
+                      0. /* distance */
+                  },
+                  // Outside boundary of the lane.
+                  // Because of the scaling of the boundaries' linestring the r value is slightly different.
+                  {
+                      {50. * std::sqrt(2.), 2.066817, 0.} /* lane_position */,
+                      {50., 2.066817, 50.} /* nearest_position */,
+                      7.9331829811625667, /* distance */
+                  },
+              } /* expected_segment_lane_position_result */
+          }};
 }
 
 class ToLaneSegmentPositionTest : public ::testing::TestWithParam<ToLaneSegmentPositionTestCase> {
@@ -219,21 +320,34 @@ class ToLaneSegmentPositionTest : public ::testing::TestWithParam<ToLaneSegmentP
 
   void SetUp() override {
     ASSERT_EQ(case_.backend_pos.size(), case_.expected_lane_position_result.size()) << ">>>>> Test case is ill-formed.";
+    for (int i = 0; i < static_cast<int>(case_.lanes.size()); ++i) {
+      auto lane_geometry = std::make_unique<geometry::LaneGeometry>(case_.lanes[i].first, case_.lanes[i].second,
+                                                                    kTolerance, kScaleLength);
+      auto lane = std::make_unique<Lane>(LaneId(std::to_string(i)), kHBounds, std::move(lane_geometry));
+      segment_.AddLane(std::move(lane));
+    }
+    // Store pointer of the lane in the middle of the segment.
+    // When having odd number of lanes, from the two lanes in the middle the leftmost lane is picked.
+    dut_ = dynamic_cast<const Lane*>(segment_.lane(segment_.num_lanes() / 2));
   }
 
-  const maliput::api::LaneId kLaneId{"dut id"};
   const maliput::api::HBounds kHBounds{-5., 5.};
-  ToLaneSegmentPositionTestCase case_ = GetParam();
-  std::unique_ptr<geometry::LaneGeometry> lane_geometry_ =
-      std::make_unique<geometry::LaneGeometry>(case_.left, case_.right, kTolerance, kScaleLength);
+  const Lane* dut_{nullptr};
+  const ToLaneSegmentPositionTestCase case_ = GetParam();
+  maliput::geometry_base::Segment segment_{maliput::api::SegmentId{"segment_id"}};
 };
 
 TEST_P(ToLaneSegmentPositionTest, Test) {
-  std::unique_ptr<Lane> dut = std::make_unique<Lane>(kLaneId, kHBounds, std::move(lane_geometry_));
-  EXPECT_DOUBLE_EQ(case_.expected_length, dut->length());
+  EXPECT_DOUBLE_EQ(case_.expected_length, dut_->length());
+  const RBounds seg_bounds = dut_->segment_bounds(0.);
+  EXPECT_DOUBLE_EQ(case_.segment_bounds.min(), seg_bounds.min());
+  EXPECT_DOUBLE_EQ(case_.segment_bounds.max(), seg_bounds.max());
   for (std::size_t i = 0; i < case_.backend_pos.size(); ++i) {
-    const auto lane_position_result = dut->ToLanePositionBackend(case_.backend_pos[i]);
+    const LanePositionResult lane_position_result = dut_->ToLanePositionBackend(case_.backend_pos[i]);
     EXPECT_TRUE(IsLanePositionResultClose(case_.expected_lane_position_result[i], lane_position_result, kTolerance));
+    const LanePositionResult segment_position_result = dut_->ToSegmentPositionBackend(case_.backend_pos[i]);
+    EXPECT_TRUE(
+        IsLanePositionResultClose(case_.expected_segment_lane_position_result[i], segment_position_result, kTolerance));
   }
 }
 
