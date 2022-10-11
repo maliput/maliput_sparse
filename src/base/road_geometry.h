@@ -47,16 +47,16 @@ class RoadGeometry final : public maliput::geometry_base::RoadGeometry {
                                              inertial_to_backend_frame_translation) {}
 
  private:
+  // TODO(https://github.com/maliput/maliput/pull/517): Remove these overrides once default implementations are
+  // provided.
+  // @{
   maliput::api::RoadPositionResult DoToRoadPosition(
       const maliput::api::InertialPosition& inertial_position,
-      const std::optional<maliput::api::RoadPosition>& hint = std::nullopt) const override {
-    return maliput::api::RoadPositionResult();
-  }
+      const std::optional<maliput::api::RoadPosition>& hint = std::nullopt) const override;
 
   std::vector<maliput::api::RoadPositionResult> DoFindRoadPositions(
-      const maliput::api::InertialPosition& inertial_position, double radius) const {
-    return std::vector<maliput::api::RoadPositionResult>();
-  }
+      const maliput::api::InertialPosition& inertial_position, double radius) const override;
+  // @}
 };
 
 }  // namespace maliput_sparse

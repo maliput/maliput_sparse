@@ -53,6 +53,8 @@ GTEST_TEST(RoadGeometryTest, Stub) {
   });
 }
 
+// TODO(francocipollone): Add tests for the ToRoadPosition and FindRoadPosition methods.
+
 }  // namespace
 }  // namespace test
 }  // namespace maliput_sparse
