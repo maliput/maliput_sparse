@@ -139,8 +139,8 @@ BranchPointBuilder& BranchPointBuilder::Connect(const maliput::api::LaneId& lane
   const LaneEnd lane_end_a{lane_id_a, which_a};
   const LaneEnd lane_end_b{lane_id_b, which_b};
   //@{ Asserts that we are not inserting duplicate keys.
-  auto range_a_b = lane_ends_.equal_range(lane_end_a);
-  auto range_b_a = lane_ends_.equal_range(lane_end_b);
+  const auto range_a_b = lane_ends_.equal_range(lane_end_a);
+  const auto range_b_a = lane_ends_.equal_range(lane_end_b);
   if (range_a_b.first != lane_ends_.end()) {
     for (auto i = range_a_b.first; i != range_a_b.second; ++i) {
       MALIPUT_THROW_UNLESS(i->second != lane_end_b);
@@ -261,12 +261,12 @@ void AttachLaneEndSetToBranchPointSets(const LaneEndSet& lane_end_set, const Bra
   }
 }
 
-// @brief Updates @p branch_point_sets based on the @p lane_end under evaluation.
-// @details When there are no BranchPointSets with @p lane_end in either the A or B side, a new
-// BranchPointSets is inserted using @p lane_end as the only element on the A side.
-// When @p lane_ends appears on the A side of a BranchPointSets, the B side of such entity is updated.
-// When @p lane_ends appears on the B side of a BranchPointSets, the A side of such entity is updated.
-// This function uses @p lane_ends to get the set of BranchPointBuilder::LaneEnd a @p lane_end is connected to.
+// @brief Updates @p set_of_branch_point_sets based on the @p lane_end under evaluation.
+// @details When there are no BranchPointSets with @p lane_end in either the A or B side,
+// the LaneEnds built for that @p lane_end in @p lane_ends are used to identify another BranchPointSets
+// with that information. If none exists, then a new BranchPoint is created and @p lane_end is
+// attached to the A side, the other LaneEnds are attached to the B side. Similarly, @p lane_end
+// is attached to the opposing side when the connecting LanEnds are already in a BranchPointSet.
 void UpdateBranchPointSetsFor(const LaneEnd& lane_end, const BranchPointBuilder::LaneEndsMultimap& lane_ends,
                               SetOfBranchPointSet* set_of_branch_point_sets) {
   // Obtains all the other LaneEnds to which `lane_end` is connected to.
@@ -328,7 +328,7 @@ struct MakeBranchPointFromSets {
     return branch_point;
   }
 
-  const std::unordered_map<maliput::api::LaneId, const maliput::geometry_base::Lane*> lanes_;
+  const std::unordered_map<maliput::api::LaneId, const maliput::geometry_base::Lane*>& lanes_;
   BranchPointIdBuilder branch_point_id_builder_;
 };
 
