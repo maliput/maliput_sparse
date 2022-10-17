@@ -4,6 +4,7 @@
 
 set(BASE_SOURCES
   lane.cc
+  road_geometry.cc
 )
 
 add_library(base ${BASE_SOURCES})
