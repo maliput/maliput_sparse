@@ -40,11 +40,15 @@ namespace {}  // namespace
 
 LaneGeometry::LaneGeometry(const LineString3d& left, const LineString3d& right, double linear_tolerance,
                            double scale_length)
+    : LaneGeometry(utility::ComputeCenterline3d(left, right), left, right, linear_tolerance, scale_length) {}
+
+LaneGeometry::LaneGeometry(const LineString3d& center, const LineString3d& left, const LineString3d& right,
+                           double linear_tolerance, double scale_length)
     : left_(left),
       right_(right),
       linear_tolerance_(linear_tolerance),
       scale_length_(scale_length),
-      centerline_(utility::ComputeCenterline3d(left_, right_)) {}
+      centerline_(center) {}
 
 double LaneGeometry::ArcLength() const { return centerline_.length(); }
 
