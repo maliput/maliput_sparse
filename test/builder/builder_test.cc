@@ -413,22 +413,24 @@ TEST_F(RoadGeometryBuilderTest, CompleteCase) {
   ASSERT_EQ(1, branch_point_validation.at(lane_d).at(finish));
 }
 
-/// Builds a geometry like follows to show and test how to define connecting lanes
-/// <pre>
-///                          *
-///                         //
-///                        //
-///                       lane_b
-///                      //
-///                     //
-/// *======lane_a======*======lane_c======*
-///                     \\
-///                      \\
-///                       lane_d
-///                        \\
-///                         \\
-///                          *
-/// </pre>
+/**
+  Builds a geometry like follows to show and test how to define connecting lanes
+   <pre>
+                            *
+                           //
+                          //
+                         lane_b
+                        //
+                       //
+   *======lane_a======*======lane_c======*
+                       \\
+                        \\
+                         lane_d
+                          \\
+                           \\
+                            *
+   </pre>
+**/
 TEST_F(RoadGeometryBuilderTest, OutgoingBranches) {
   const LineString3d kLeftLineStringA{Vector3{0., 0., 0.}, Vector3{100., 0., 0.}};
   const LineString3d kRigthLineStringA{Vector3{0., 5., 0.}, Vector3{100., 5., 0.}};
