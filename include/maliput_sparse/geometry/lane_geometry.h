@@ -149,6 +149,11 @@ class LaneGeometry {
   /// @param p P parameter of the centerline.
   double FromCenterPToLateralP(const LineStringType& line_string_type, double p) const;
 
+  /// Computes the inertial position in a lateral boundary for a given @p p .
+  /// @param line_string_type The type of LineString to convert p coordinate to.
+  /// @param p P parameter of the centerline.
+  maliput::math::Vector3 ToLateralPos(const LineStringType& line_string_type, double p) const;
+
  private:
   const LineString3d left_;
   const LineString3d right_;

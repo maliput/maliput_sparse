@@ -96,9 +96,17 @@ maliput::math::Vector3 LaneGeometry::WDot(const maliput::math::Vector3& prh) con
 }
 
 maliput::math::RollPitchYaw LaneGeometry::Orientation(double p) const {
-  const double superelevation{0.}; /* TODO: Take superelevation into account */
+  const maliput::math::Vector3 on_left = ToLateralPos(LineStringType::kLeftBoundary, p);
+  const maliput::math::Vector3 on_right = ToLateralPos(LineStringType::kRightBoundary, p);
+  const maliput::math::Vector2 on_left_2d{on_left.x(), on_left.y()};
+  const maliput::math::Vector2 on_right_2d{on_right.x(), on_right.y()};
+  const double xy_distance = (on_left_2d - on_right_2d).norm();
+  const double elevation_diff = on_left.z() - on_right.z();
+  MALIPUT_THROW_UNLESS(xy_distance != 0.);
+
+  const double superelevation{elevation_diff / xy_distance};
   return maliput::math::RollPitchYaw(
-      superelevation,
+      std::atan(superelevation),
       -std::atan2(utility::GetSlopeAtP(centerline_, p), utility::Get2DTangentAtP(centerline_, p).norm()),
       utility::Get2DHeadingAtP(centerline_, p));
 }
@@ -127,25 +135,26 @@ maliput::api::RBounds LaneGeometry::RBounds(double p) const {
   MALIPUT_THROW_UNLESS(p >= p0());
   MALIPUT_THROW_UNLESS(p <= p1());
 
-  // Get p equivalent left and right.
   // Get distance from centerline to left and right.
-  const double p_left = FromCenterPToLateralP(LineStringType::kLeftBoundary, p);
-  const double p_right = FromCenterPToLateralP(LineStringType::kRightBoundary, p);
-
+  const maliput::math::Vector3 on_left = ToLateralPos(LineStringType::kLeftBoundary, p);
+  const maliput::math::Vector3 on_right = ToLateralPos(LineStringType::kRightBoundary, p);
   const maliput::math::Vector3 on_centerline = utility::InterpolatedPointAtP(centerline_, p);
-  const maliput::math::Vector3 on_left = utility::InterpolatedPointAtP(left_, p_left);
-  const maliput::math::Vector3 on_right = utility::InterpolatedPointAtP(right_, p_right);
   return {-(on_right - on_centerline).norm(), (on_left - on_centerline).norm()};
 }
 
 double LaneGeometry::FromCenterPToLateralP(const LineStringType& line_string_type, double p) const {
   MALIPUT_THROW_UNLESS(line_string_type != LineStringType::kCenterLine);
-  // For computing the lane bounds the equivalent point in the lateral line string is needed.
   // Given p in centerline, let's compute p_at_a_border as: p_at_a_border = p / length * length_at_a_border.
   // See https://github.com/maliput/maliput_sparse/issues/15 for more details.
   const double lateral_length = line_string_type == LineStringType::kLeftBoundary ? left_.length() : right_.length();
   const double p_equivalent = p * lateral_length / centerline_.length();
   return std::clamp(p_equivalent, 0., lateral_length);
+}
+
+maliput::math::Vector3 LaneGeometry::ToLateralPos(const LineStringType& line_string_type, double p) const {
+  MALIPUT_THROW_UNLESS(line_string_type != LineStringType::kCenterLine);
+  const double p_lateral = FromCenterPToLateralP(line_string_type, p);
+  return utility::InterpolatedPointAtP(line_string_type == LineStringType::kLeftBoundary ? left_ : right_, p_lateral);
 }
 
 }  // namespace geometry
