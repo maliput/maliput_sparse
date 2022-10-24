@@ -96,17 +96,13 @@ maliput::math::Vector3 LaneGeometry::WDot(const maliput::math::Vector3& prh) con
 }
 
 maliput::math::RollPitchYaw LaneGeometry::Orientation(double p) const {
-  const maliput::math::Vector3 on_left = ToLateralPos(LineStringType::kLeftBoundary, p);
-  const maliput::math::Vector3 on_right = ToLateralPos(LineStringType::kRightBoundary, p);
-  const maliput::math::Vector2 on_left_2d{on_left.x(), on_left.y()};
-  const maliput::math::Vector2 on_right_2d{on_right.x(), on_right.y()};
-  const double xy_distance = (on_left_2d - on_right_2d).norm();
-  const double elevation_diff = on_left.z() - on_right.z();
-  MALIPUT_THROW_UNLESS(xy_distance != 0.);
-
-  const double superelevation{elevation_diff / xy_distance};
+  const maliput::math::Vector3 diff =
+      ToLateralPos(LineStringType::kLeftBoundary, p) - ToLateralPos(LineStringType::kRightBoundary, p);
+  const double ground_diff = maliput::math::Vector2(diff.x(), diff.y()).norm();
+  const double elevation_diff = diff.z();
+  const double superelevation = std::atan2(elevation_diff, ground_diff);
   return maliput::math::RollPitchYaw(
-      std::atan(superelevation),
+      superelevation,
       -std::atan2(utility::GetSlopeAtP(centerline_, p), utility::Get2DTangentAtP(centerline_, p).norm()),
       utility::Get2DHeadingAtP(centerline_, p));
 }
