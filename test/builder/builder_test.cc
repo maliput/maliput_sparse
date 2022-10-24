@@ -276,9 +276,9 @@ TEST_F(RoadGeometryBuilderTest, LaneGeometryBuilderWithMissingLineStrings) {
       maliput::common::assertion_error);
 }
 
-TEST_F(RoadGeometryBuilderTest, LaneGeometryBuilderWithAndWithoutCenter) {
-  // No throws as LaneGeometryBuilder is properly used.
-  // Centerline isn't passed to the builder.
+// No throws as LaneGeometryBuilder is properly used.
+// Centerline isn't passed to the builder.
+TEST_F(RoadGeometryBuilderTest, LaneGeometryBuilderWithoutCenter) {
   EXPECT_NO_THROW(
       // clang-format off
       RoadGeometryBuilder()
@@ -296,11 +296,14 @@ TEST_F(RoadGeometryBuilderTest, LaneGeometryBuilderWithAndWithoutCenter) {
               .EndSegment()
       // clang-format on
   );
+}
 
-  // No throws as LaneGeometryBuilder is properly used.
-  // Centerline is submitted to the builder.
-  EXPECT_NO_THROW(const auto kCenterline{geometry::utility::ComputeCenterline3d(kLeftLineStringA, kRightLineStringA)};
-                  // clang-format off
+// No throws as LaneGeometryBuilder is properly used.
+// Centerline is submitted to the builder.
+TEST_F(RoadGeometryBuilderTest, LaneGeometryBuilderWithCenter) {
+  const auto kCenterline{geometry::utility::ComputeCenterline3d(kLeftLineStringA, kRightLineStringA)};
+  EXPECT_NO_THROW(
+      // clang-format off
       RoadGeometryBuilder()
           .StartJunction()
               .Id(kJunctionAId)
@@ -315,7 +318,7 @@ TEST_F(RoadGeometryBuilderTest, LaneGeometryBuilderWithAndWithoutCenter) {
                       .EndLaneGeometry()
                   .EndLane()
               .EndSegment()
-                  // clang-format on
+      // clang-format on
   );
 }
 
