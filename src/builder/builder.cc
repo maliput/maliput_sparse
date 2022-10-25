@@ -68,7 +68,6 @@ LaneBuilder& LaneGeometryBuilder::EndLaneGeometry() {
                 scale_length)
           : std::make_unique<maliput_sparse::geometry::LaneGeometry>(
                 left_line_string_.value(), right_line_string_.value(), linear_tolerance, scale_length);
-
   Parent()->SetLaneGeometry({}, std::move(lane_geometry));
   return End();
 }

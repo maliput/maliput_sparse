@@ -87,51 +87,115 @@ std::vector<LaneTestCase> LaneTestCases() {
           },
           {
               // Arc-like lane:
-              //    | |  --> no elevation
-              //  __/ /  --> no elevation
-              //  __ /   --> linear elevation
-              LineString3d{{0., 2., 0.}, {100., 2., 100.}, {200., 102., 100.}, {200., 200., 100.}} /* left*/,
-              LineString3d{{0., -2., 0.}, {100., -2., 100.}, {204., 102., 100.}, {204., 200., 100.}} /* right*/,
-              // Centerline : {0., 0., 0.}, {100., 0., 100.}, {202., 102, 100.}, {202., 200., 100.}
+              //    | |  --> no elevation change
+              //  __/ /  --> no elevation change
+              //  __ /   --> no elevation change
+              LineString3d{{0., 2., 100.}, {100., 2., 100.}, {200., 102., 100.}, {200., 200., 100.}} /* left*/,
+              LineString3d{{0., -2., 100.}, {100., -2., 100.}, {204., 102., 100.}, {204., 200., 100.}} /* right*/,
               {
-                  {50. * std::sqrt(2.), 0., 0.},
-                  {50. * std::sqrt(2.), -2., -2.},
-                  {100. * std::sqrt(2.) + 102. * std::sqrt(2.), 0., 0.},
-                  {100. * std::sqrt(2.) + 102. * std::sqrt(2.) + 98., -1., 4.},
+                  {50., 0., 0.},
+                  {50., -2., -2.},
+                  {100. + 102. * std::sqrt(2.), 0., 0.},
+                  {100. + 102. * std::sqrt(2.) + 98., -1., 4.},
               } /* srh */,
               {
-                  {50., 0., 50.},
-                  {50. + 2 * std::sqrt(2.) / 2., -2., 50. - 2 * std::sqrt(2.) / 2.},
+                  {50., 0., 100.},
+                  {50., -2., 98.},
                   {202., 102., 100.},
                   {203., 200., 104.},
               } /* expected_backend_pos */,
               {
-                  Rotation::FromRpy(0., -M_PI / 4., 0.),
-                  Rotation::FromRpy(0., -M_PI / 4., 0.),
+                  Rotation::FromRpy(0., 0., 0.),
+                  Rotation::FromRpy(0., 0., 0.),
                   Rotation::FromRpy(0., 0., M_PI / 4.),
                   Rotation::FromRpy(0., 0., M_PI / 2.),
               } /* expected_rotation */,
-              100. * std::sqrt(2.) + 102. * std::sqrt(2.) + 98. /* expected_length */,
+              100. + 102. * std::sqrt(2.) + 98. /* expected_length */,
               {{
-                   {50. * std::sqrt(2.), 0., 0.} /* lane_position */,
-                   {50., 0., 50.} /* nearest_position */,
-                   0. /* distance */
+                   {50., 0., 0.} /* lane_position */, {50., 0., 100.} /* nearest_position */, 0. /* distance */
                },
                {
-                   {50. * std::sqrt(2.), -2., -2.} /* lane_position */,
-                   {50. + 2 * std::sqrt(2.) / 2., -2., 50. - 2 * std::sqrt(2.) / 2.} /* nearest_position */,
-                   0. /* distance */
+                   {50., -2., -2.} /* lane_position */, {50., -2., 98.} /* nearest_position */, 0. /* distance */
                },
                {
-                   {100. * std::sqrt(2.) + 102. * std::sqrt(2.), 0., 0.} /* lane_position */,
+                   {100. + 102. * std::sqrt(2.), 0., 0.} /* lane_position */,
                    {202., 102., 100.} /* nearest_position */,
                    0. /* distance */
                },
                {
-                   {100. * std::sqrt(2.) + 102. * std::sqrt(2.) + 98., -1., 4.} /* lane_position */,
+                   {100. + 102. * std::sqrt(2.) + 98., -1., 4.} /* lane_position */,
                    {203., 200., 104.} /* nearest_position */,
                    0. /* distance */
                }}     /* expected_lane_position_result */
+          },
+          {
+              // Lane with elevation:
+              //  __
+              //  __   --> linear elevation
+              LineString3d{{0., 2., 0.}, {100., 2., 100.}} /* left*/,
+              LineString3d{{0., -2., 0.}, {100., -2., 100.}} /* right*/,
+              {
+                  {50. * std::sqrt(2.), 0., 0.}, {50. * std::sqrt(2.), 4., 4.},  //< Off the lane
+              } /* srh */,
+              {
+                  {50., 0., 50.},
+                  {50. - 4. / std::sqrt(2.), 4., 50. + 4. / std::sqrt(2.)},
+              } /* expected_backend_pos */,
+              {
+                  Rotation::FromRpy(0., -M_PI / 4., 0.),
+                  Rotation::FromRpy(0., -M_PI / 4., 0.),
+              } /* expected_rotation */,
+              100. * std::sqrt(2.) /* expected_length */,
+              {
+                  {
+                      {50. * std::sqrt(2.), 0., 0.} /* lane_position */,
+                      {50., 0., 50.} /* nearest_position */,
+                      0. /* distance */
+                  },
+                  {
+                      {50. * std::sqrt(2.), 2., 4.} /* lane_position */,
+                      {50. - 4. / std::sqrt(2.), 2., 50. + 4. / std::sqrt(2.)} /* nearest_position */,
+                      2. /* distance */
+                  },
+              } /* expected_lane_position_result */
+          },
+          {
+              // Lane with superelevation:
+              //  __
+              //  __   --> constant superelevation
+              LineString3d{{0., 2., 0.}, {100., 2., 0.}} /* left*/,
+              LineString3d{{0., -2., 4.}, {100., -2., 4.}} /* right*/,
+              {
+                  {50., 0., 0.},
+                  {50., 2., 0.},
+                  {50., -2., 0.},
+              } /* srh */,
+              {
+                  {50., 0., 2.},
+                  {50., 2. / std::sqrt(2.), 2. - 2. / std::sqrt(2.)},
+                  {50., -2. / std::sqrt(2.), 2. + 2. / std::sqrt(2.)},
+              } /* expected_backend_pos */,
+              {
+                  Rotation::FromRpy(-M_PI_4, 0., 0.),
+                  Rotation::FromRpy(-M_PI_4, 0., 0.),
+                  Rotation::FromRpy(-M_PI_4, 0., 0.),
+              } /* expected_rotation */,
+              100. /* expected_length */,
+              {
+                  {
+                      {50., 0., 0.} /* lane_position */, {50., 0., 2.} /* nearest_position */, 0. /* distance */
+                  },
+                  {
+                      {50., 2., 0.} /* lane_position */,
+                      {50., 2. / std::sqrt(2.), 2. - 2. / std::sqrt(2.)} /* nearest_position */,
+                      0. /* distance */
+                  },
+                  {
+                      {50., -2., 0.} /* lane_position */,
+                      {50., -2. / std::sqrt(2.), 2. + 2. / std::sqrt(2.)} /* nearest_position */,
+                      0. /* distance */
+                  },
+              } /* expected_lane_position_result */
           }};
 }
 
@@ -255,59 +319,51 @@ std::vector<ToLaneSegmentPositionTestCase> ToLaneSegmentPositionTestCases() {
               // Arc-like lane:
               //    | |  --> no elevation
               //  __/ /  --> no elevation
-              //  __ /   --> linear elevation
+              //  __ /   --> no elevation
               {{
-                  LineString3d{{0., 2., 0.}, {100., 2., 100.}, {200., 102., 100.}, {200., 200., 100.}} /* left*/,
-                  LineString3d{{0., -2., 0.}, {100., -2., 100.}, {204., 102., 100.}, {204., 200., 100.}} /* right*/,
-                  // Centerline : {0., 0., 0.}, {100., 0., 100.}, {202., 102, 100.}, {202., 200., 100.}
+                  LineString3d{{0., 2., 100.}, {100., 2., 100.}, {200., 102., 100.}, {200., 200., 100.}} /* left*/,
+                  LineString3d{{0., -2., 100.}, {100., -2., 100.}, {204., 102., 100.}, {204., 200., 100.}} /* right*/,
+                  // LineString3d{{0., 0., 0.}, {100., 0., 100.}, {202., 102, 100.}, {202., 200., 100.}} /* center */
               }},
-              100. * std::sqrt(2.) + 102. * std::sqrt(2.) + 98. /* expected_length */,
+              100. + 102. * std::sqrt(2.) + 98. /* expected_length */,
               {-2., 2.} /* segment_bounds */,
               {
-                  {50., 0., 50.},
-                  {50., 2., 50.},
-                  {50., 10., 50.},
+                  {50., 0., 100.},
+                  {50., 2., 100.},
+                  {50., 10., 100.},
               } /* backend_pos */,
               {
                   // In the centerline.
                   {
-                      {50. * std::sqrt(2.), 0., 0.} /* lane_position */,
-                      {50., 0., 50.} /* nearest_position */,
-                      0. /* distance */
+                      {50., 0., 0.} /* lane_position */, {50., 0., 100.} /* nearest_position */, 0. /* distance */
                   },
                   // At the edge of the lane.
                   {
-                      {50. * std::sqrt(2.), 2., 0.} /* lane_position */,
-                      {50., 2., 50.} /* nearest_position */,
-                      0. /* distance */
+                      {50., 2., 0.} /* lane_position */, {50., 2., 100.} /* nearest_position */, 0. /* distance */
                   },
                   // Outside boundary of the lane.
-                  // Because of the scaling of the boundaries' linestring the r value is slightly different.
                   {
-                      {50. * std::sqrt(2.), 2.066817, 0.} /* lane_position */,
-                      {50., 2.066817, 50.} /* nearest_position */,
-                      7.9331829811625667, /* distance */
+                      // Because of the scaling of the boundaries' linestring the r value is slightly different.
+                      {50., 2.042240, 0.} /* lane_position */,
+                      {50., 2.042240, 100.} /* nearest_position */,
+                      7.9577602284126803, /* distance */
                   },
               } /* expected_lane_position_result */,
               {
                   // In the centerline.
                   {
-                      {50. * std::sqrt(2.), 0., 0.} /* lane_position */,
-                      {50., 0., 50.} /* nearest_position */,
-                      0. /* distance */
+                      {50., 0., 0.} /* lane_position */, {50., 0., 100.} /* nearest_position */, 0. /* distance */
                   },
                   // At the edge of the lane.
                   {
-                      {50. * std::sqrt(2.), 2., 0.} /* lane_position */,
-                      {50., 2., 50.} /* nearest_position */,
-                      0. /* distance */
+                      {50., 2., 0.} /* lane_position */, {50., 2., 100.} /* nearest_position */, 0. /* distance */
                   },
                   // Outside boundary of the lane.
-                  // Because of the scaling of the boundaries' linestring the r value is slightly different.
                   {
-                      {50. * std::sqrt(2.), 2.066817, 0.} /* lane_position */,
-                      {50., 2.066817, 50.} /* nearest_position */,
-                      7.9331829811625667, /* distance */
+                      // Because of the scaling of the boundaries' linestring the r value is slightly different.
+                      {50., 2.042240, 0.} /* lane_position */,
+                      {50., 2.042240, 100.} /* nearest_position */,
+                      7.9577602284126803, /* distance */
                   },
               } /* expected_segment_lane_position_result */
           }};
