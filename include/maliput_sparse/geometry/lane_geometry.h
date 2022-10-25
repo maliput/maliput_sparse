@@ -64,6 +64,22 @@ class LaneGeometry {
   /// @throws maliput::common::assertion_error When @p linear_tolerance or
   ///         @p scale_length are negative.
   LaneGeometry(const LineString3d& left, const LineString3d& right, double linear_tolerance, double scale_length);
+
+  /// Constructs a LaneGeometry
+  /// @param center Center line of the lane.
+  /// @param left Left boundary of the lane.
+  /// @param right Right boundary of the lane.
+  /// @param linear_tolerance It is expected to be the same as
+  ///        maliput::api::RoadGeometry::linear_tolerance(). It must be non
+  ///        negative.
+  /// @param scale_length It is expected to be the same as
+  ///        maliput::api::RoadGeometry::scale_length(). It must be non
+  ///        negative.
+  /// @throws maliput::common::assertion_error When @p linear_tolerance or
+  ///         @p scale_length are negative.
+  LaneGeometry(const LineString3d& center, const LineString3d& left, const LineString3d& right, double linear_tolerance,
+               double scale_length);
+
   ~LaneGeometry() = default;
 
   double p0() const { return 0.; }

@@ -42,6 +42,25 @@ namespace {
 using maliput::math::Vector2;
 using maliput::math::Vector3;
 
+class LaneGeometryBasicTest : public testing::Test {
+ public:
+  const LineString3d centerline{{0., 0., 0.}, {50., 0., 0.}, {100., 0., 0.}};
+  const LineString3d left{{0., 2., 0.}, {100., 2., 0.}};
+  const LineString3d right{{0., -2., 0.}, {100., -2., 0.}};
+  const double kTolerance{1e-12};
+  const double kScaleLength{1.};
+};
+
+TEST_F(LaneGeometryBasicTest, ConstructorWithCenter) {
+  const LaneGeometry lane(centerline, left, right, kTolerance, kScaleLength);
+  EXPECT_EQ(lane.centerline(), centerline);
+}
+
+TEST_F(LaneGeometryBasicTest, ConstructorWithoutCenter) {
+  const LaneGeometry lane(left, right, kTolerance, kScaleLength);
+  EXPECT_EQ(lane.centerline(), centerline);
+}
+
 struct OrientationTestCase {
   LineString3d left{};
   LineString3d right{};
