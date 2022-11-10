@@ -230,7 +230,7 @@ std::vector<WAndWInverseCase> WAndWInverseCases() {
 
 class WAndWInverseTest : public ::testing::TestWithParam<WAndWInverseCase> {
  public:
-  static constexpr double kTolerance{1e-12};
+  static constexpr double kTolerance{1e-11};
   WAndWInverseCase case_ = GetParam();
 };
 
@@ -389,6 +389,7 @@ class RBoundsCaseTest : public ::testing::TestWithParam<RBoundsCase> {
  public:
   static constexpr double kLinearTolerance{1e-3};
   static constexpr double kScaleLength{1.};
+  static constexpr double kEpsilon{1e-11};
   RBoundsCase case_ = GetParam();
 };
 
@@ -403,11 +404,11 @@ TEST_P(RBoundsCaseTest, Test) {
     const double p_left = lane_geometry.FromCenterPToLateralP(LaneGeometry::LineStringType::kLeftBoundary, case_.p[i]);
     const double p_right =
         lane_geometry.FromCenterPToLateralP(LaneGeometry::LineStringType::kRightBoundary, case_.p[i]);
-    EXPECT_DOUBLE_EQ(case_.expected_left_p[i], p_left);
-    EXPECT_DOUBLE_EQ(case_.expected_right_p[i], p_right);
+    EXPECT_NEAR(case_.expected_left_p[i], p_left, kEpsilon);
+    EXPECT_NEAR(case_.expected_right_p[i], p_right, kEpsilon);
     const maliput::api::RBounds r_bounds = lane_geometry.RBounds(case_.p[i]);
-    EXPECT_DOUBLE_EQ(case_.expected_r_bounds[i].min(), r_bounds.min());
-    EXPECT_DOUBLE_EQ(case_.expected_r_bounds[i].max(), r_bounds.max());
+    EXPECT_NEAR(case_.expected_r_bounds[i].min(), r_bounds.min(), kEpsilon);
+    EXPECT_NEAR(case_.expected_r_bounds[i].max(), r_bounds.max(), kEpsilon);
   }
 }
 
