@@ -33,6 +33,7 @@
 
 #include <maliput/api/lane_data.h>
 #include <maliput/common/maliput_copyable.h>
+#include <maliput/common/range_validator.h>
 #include <maliput/math/roll_pitch_yaw.h>
 #include <maliput/math/vector.h>
 
@@ -157,11 +158,13 @@ class LaneGeometry {
   maliput::math::Vector3 ToLateralPos(const LineStringType& line_string_type, double p) const;
 
  private:
+  static constexpr double kEpsilon{1e-12};
   const LineString3d left_;
   const LineString3d right_;
   const double linear_tolerance_{};
   const double scale_length_{};
-  LineString3d centerline_;
+  const LineString3d centerline_;
+  const maliput::common::RangeValidator range_validator_;
 };
 
 }  // namespace geometry
