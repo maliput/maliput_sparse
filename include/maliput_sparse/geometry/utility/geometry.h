@@ -114,7 +114,7 @@ ClosestPointResult GetClosestPoint(const std::pair<maliput::math::Vector3, malip
                                    const maliput::math::Vector3& xyz);
 
 /// Gets the closest point in the @p line_string to the given @p xyz point.
-/// @param segment Segment to be computed the closest point from.
+/// @param line_string LineString3d to be computed the closest point from.
 /// @param xyz Point to be computed the closest point to.
 /// @return A ClosestPointResult struct containing the closest point, the distance between the closest point and @p xyz
 /// and the p coordinate in the LineString3d matching the closest point.
