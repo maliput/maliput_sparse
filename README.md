@@ -6,7 +6,7 @@
 
 `maliput_sparse` is a convenient package that provides several helpers for creating a maliput backend that is expected to be built on top of waypoints without any analytical model of the surface.
 
-By using the [builder API](https://maliput.readthedocs.io/en/latest/html/deps/maliput_sparse/html/builder_8h.html), the mathematical model is resolved under the hood so as the user don't have to dive into complex geometry calculations.
+By using the [builder API](https://maliput.readthedocs.io/en/latest/html/deps/maliput_sparse/html/builder_8h.html), the mathematical model is solved under the hood so the user doesn't have to dive into complex geometric calculations.
 
 **Note**: For full information about Maliput please visit [Maliput Documentation](https://maliput.readthedocs.io/en/latest/index.html).
 
@@ -24,7 +24,7 @@ Refer to [Maliput sparse's Online API Documentation](https://maliput.readthedocs
 
 ### Supported platforms
 
-Ubuntu Focal Fossa 20.04 LTS.
+Ubuntu Focal Fossa 20.04 LTS, ROS2 Foxy.
 
 ### Binary Installation on Ubuntu
 
