@@ -2,8 +2,8 @@
 Changelog for package maliput_sparse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.0 (2022-11-28)
+------------------
 * Improves documentation. (`#43 <https://github.com/maliput/maliput_sparse/issues/43>`_)
 * Uses RangeValidator within LaneGeometry. (`#42 <https://github.com/maliput/maliput_sparse/issues/42>`_)
 * Supports superelevation. (`#38 <https://github.com/maliput/maliput_sparse/issues/38>`_)
