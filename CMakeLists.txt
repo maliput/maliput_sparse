@@ -36,7 +36,7 @@ ament_environment_hooks(
 if(BUILD_DOCS)
   message(STATUS "Doxygen generation - Enabled")
   find_package(ament_cmake_doxygen REQUIRED)
-    ament_doxygen_generate(doxygen_maliput
+    ament_doxygen_generate(doxygen_maliput_sparse
       CONFIG_OVERLAY doc/Doxyfile.overlay.in
       TEST_ON_WARNS
     )

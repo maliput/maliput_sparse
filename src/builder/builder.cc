@@ -51,12 +51,23 @@ LaneGeometryBuilder& LaneGeometryBuilder::RightLineString(
   return *this;
 }
 
+LaneGeometryBuilder& LaneGeometryBuilder::CenterLineString(
+    const maliput_sparse::geometry::LineString3d& center_line_string) {
+  center_line_string_.emplace(center_line_string);
+  return *this;
+}
+
 LaneBuilder& LaneGeometryBuilder::EndLaneGeometry() {
   MALIPUT_THROW_UNLESS(left_line_string_.has_value() && right_line_string_.has_value());
   const double linear_tolerance = Parent()->Parent()->Parent()->Parent()->linear_tolerance({});
   const double scale_length = Parent()->Parent()->Parent()->Parent()->scale_length({});
-  auto lane_geometry = std::make_unique<maliput_sparse::geometry::LaneGeometry>(
-      left_line_string_.value(), right_line_string_.value(), linear_tolerance, scale_length);
+  std::unique_ptr<maliput_sparse::geometry::LaneGeometry> lane_geometry =
+      center_line_string_.has_value()
+          ? std::make_unique<maliput_sparse::geometry::LaneGeometry>(
+                center_line_string_.value(), left_line_string_.value(), right_line_string_.value(), linear_tolerance,
+                scale_length)
+          : std::make_unique<maliput_sparse::geometry::LaneGeometry>(
+                left_line_string_.value(), right_line_string_.value(), linear_tolerance, scale_length);
   Parent()->SetLaneGeometry({}, std::move(lane_geometry));
   return End();
 }

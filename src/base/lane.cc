@@ -66,8 +66,6 @@ double Lane::ComputeDistanceToSegmentBoundary(bool to_left, double s) const {
 maliput::api::HBounds Lane::do_elevation_bounds(double, double) const { return elevation_bounds_; }
 
 maliput::math::Vector3 Lane::DoToBackendPosition(const maliput::api::LanePosition& lane_pos) const {
-  MALIPUT_THROW_UNLESS(lane_pos.s() >= lane_geometry_->p0());
-  MALIPUT_THROW_UNLESS(lane_pos.s() <= lane_geometry_->p1());
   return lane_geometry_->W(lane_pos.srh());
 }
 
@@ -124,8 +122,6 @@ void Lane::DoToSegmentPositionBackend(const maliput::math::Vector3& backend_pos,
 }
 
 maliput::api::Rotation Lane::DoGetOrientation(const maliput::api::LanePosition& lane_pos) const {
-  MALIPUT_THROW_UNLESS(lane_pos.s() >= lane_geometry_->p0());
-  MALIPUT_THROW_UNLESS(lane_pos.s() <= lane_geometry_->p1());
   const auto rpy = lane_geometry_->Orientation(lane_pos.srh());
   return maliput::api::Rotation::FromRpy(rpy.roll_angle(), rpy.pitch_angle(), rpy.yaw_angle());
 }

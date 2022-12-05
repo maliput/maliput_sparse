@@ -29,7 +29,8 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-/// @file Builder API to construct a maliput::api::RoadGeometry.
+/// @file
+/// Builder API to construct a maliput::api::RoadGeometry.
 ///
 /// @details It allows simple construction of nested nodes in the maliput::api::RoadGeometry graph. The
 /// geometry details are expected to be computed / loaded outside this method to allow parallelization
@@ -162,6 +163,11 @@ class LaneGeometryBuilder final : public details::NestedBuilder<LaneBuilder> {
   /// @return A reference to this LaneGeometryBuilder.
   LaneGeometryBuilder& RightLineString(const maliput_sparse::geometry::LineString3d& right_line_string);
 
+  /// @brief Set the center maliput_sparse::geometry::LineString of the LaneGeometry.
+  /// @param center_line_string The center maliput_sparse::geometry::LineString to set in the LaneGeometry.
+  /// @return A reference to this LaneGeometryBuilder.
+  LaneGeometryBuilder& CenterLineString(const maliput_sparse::geometry::LineString3d& center_line_string);
+
   /// @brief Finalizes the construction of the LaneGeometry and sets it to the parent LaneBuilder.
   /// @pre Left and right LineStrings must be set before calling this method.
   /// @throws maliput::common::assertion_error When the left and right LineStrings were not set.
@@ -169,6 +175,7 @@ class LaneGeometryBuilder final : public details::NestedBuilder<LaneBuilder> {
   LaneBuilder& EndLaneGeometry();
 
  private:
+  std::optional<maliput_sparse::geometry::LineString3d> center_line_string_{};
   std::optional<maliput_sparse::geometry::LineString3d> left_line_string_{};
   std::optional<maliput_sparse::geometry::LineString3d> right_line_string_{};
 };
@@ -384,7 +391,7 @@ class RoadGeometryBuilder final {
   RoadGeometryBuilder& AngularTolerance(double angular_tolerance);
 
   /// @brief Sets the scale length of the maliput::api::RoadGeometry.
-  /// @param scale_tolerance The scale length of the maliput::api::RoadGeometry. It must be positive.
+  /// @param scale_length The scale length of the maliput::api::RoadGeometry. It must be positive.
   /// @return A reference to this RoadGeometryBuilder.
   RoadGeometryBuilder& ScaleLength(double scale_length);
 

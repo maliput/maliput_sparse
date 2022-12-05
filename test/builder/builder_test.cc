@@ -46,6 +46,7 @@
 
 #include "maliput_sparse/geometry/lane_geometry.h"
 #include "maliput_sparse/geometry/line_string.h"
+#include "maliput_sparse/geometry/utility/geometry.h"
 
 namespace maliput_sparse {
 namespace builder {
@@ -142,13 +143,13 @@ class RoadGeometryBuilderTest : public ::testing::Test {
   const maliput::api::LaneId kLaneCId{"lane_c"};
   const maliput::api::LaneId kLaneDId{"unset_id"};
   const LineString3d kLeftLineStringA{Vector3{0., 0., 0.}, Vector3{10., 0., 0.}};
-  const LineString3d kRigthLineStringA{Vector3{0., 5., 0.}, Vector3{10., 5., 0.}};
+  const LineString3d kRightLineStringA{Vector3{0., 5., 0.}, Vector3{10., 5., 0.}};
   const LineString3d kLeftLineStringB{Vector3{0., 5., 0.}, Vector3{10., 5., 0.}};
-  const LineString3d kRigthLineStringB{Vector3{0., 10., 0.}, Vector3{10., 10., 0.}};
+  const LineString3d kRightLineStringB{Vector3{0., 10., 0.}, Vector3{10., 10., 0.}};
   const LineString3d kLeftLineStringC{Vector3{0., 0., 0.}, Vector3{0., 10., 0.}};
-  const LineString3d kRigthLineStringC{Vector3{5., 0., 0.}, Vector3{5., 10., 0.}};
+  const LineString3d kRightLineStringC{Vector3{5., 0., 0.}, Vector3{5., 10., 0.}};
   const LineString3d kLeftLineStringD{Vector3{20., 0., 0.}, Vector3{30., 5., 0.}};
-  const LineString3d kRigthLineStringD{Vector3{20., 0., 0.}, Vector3{30., 5., 0.}};
+  const LineString3d kRightLineStringD{Vector3{20., 0., 0.}, Vector3{30., 5., 0.}};
   const maliput::api::HBounds kHBoundsA{0., 1.};
   const maliput::api::HBounds kHBoundsB{-1., 2.};
   const maliput::api::HBounds kHBoundsC{-2., 3.};
@@ -266,13 +267,59 @@ TEST_F(RoadGeometryBuilderTest, LaneGeometryBuilderWithMissingLineStrings) {
                   .StartLane()
                       .Id(kLaneAId)
                       .StartLaneGeometry()
-                          .RightLineString(kRigthLineStringA)
+                          .RightLineString(kRightLineStringA)
                       .EndLaneGeometry()
                   .EndLane()
               .EndSegment()
       // clang-format on
       ,
       maliput::common::assertion_error);
+}
+
+// No throws as LaneGeometryBuilder is properly used.
+// Centerline isn't passed to the builder.
+TEST_F(RoadGeometryBuilderTest, LaneGeometryBuilderWithoutCenter) {
+  EXPECT_NO_THROW(
+      // clang-format off
+      RoadGeometryBuilder()
+          .StartJunction()
+              .Id(kJunctionAId)
+              .StartSegment()
+                  .Id(kSegmentAId)
+                  .StartLane()
+                      .Id(kLaneAId)
+                      .StartLaneGeometry()
+                          .LeftLineString(kLeftLineStringA)
+                          .RightLineString(kRightLineStringA)
+                      .EndLaneGeometry()
+                  .EndLane()
+              .EndSegment()
+      // clang-format on
+  );
+}
+
+// No throws as LaneGeometryBuilder is properly used.
+// Centerline is submitted to the builder.
+TEST_F(RoadGeometryBuilderTest, LaneGeometryBuilderWithCenter) {
+  const auto kCenterline{geometry::utility::ComputeCenterline3d(kLeftLineStringA, kRightLineStringA)};
+  EXPECT_NO_THROW(
+      // clang-format off
+      RoadGeometryBuilder()
+          .StartJunction()
+              .Id(kJunctionAId)
+              .StartSegment()
+                  .Id(kSegmentAId)
+                  .StartLane()
+                      .Id(kLaneAId)
+                      .StartLaneGeometry()
+                          .CenterLineString(kCenterline)
+                          .LeftLineString(kLeftLineStringA)
+                          .RightLineString(kRightLineStringA)
+                      .EndLaneGeometry()
+                  .EndLane()
+              .EndSegment()
+      // clang-format on
+  );
 }
 
 // Evaluates a case where all calls are executed at once and none of them fail their invariants.
@@ -293,7 +340,7 @@ TEST_F(RoadGeometryBuilderTest, CompleteCase) {
                       .HeightBounds(kHBoundsA)
                       .StartLaneGeometry()
                           .LeftLineString(kLeftLineStringA)  
-                          .RightLineString(kRigthLineStringA)
+                          .RightLineString(kRightLineStringA)
                       .EndLaneGeometry()
                   .EndLane()
                   .StartLane()
@@ -301,7 +348,7 @@ TEST_F(RoadGeometryBuilderTest, CompleteCase) {
                       .HeightBounds(kHBoundsB)
                       .StartLaneGeometry()
                           .LeftLineString(kLeftLineStringB)  
-                          .RightLineString(kRigthLineStringB)
+                          .RightLineString(kRightLineStringB)
                       .EndLaneGeometry()
                   .EndLane()
               .EndSegment()
@@ -312,7 +359,7 @@ TEST_F(RoadGeometryBuilderTest, CompleteCase) {
                       .HeightBounds(kHBoundsC)
                       .StartLaneGeometry()
                           .LeftLineString(kLeftLineStringC)  
-                          .RightLineString(kRigthLineStringC)
+                          .RightLineString(kRightLineStringC)
                       .EndLaneGeometry()
                   .EndLane()
               .EndSegment()
@@ -322,7 +369,7 @@ TEST_F(RoadGeometryBuilderTest, CompleteCase) {
                   .StartLane()
                       .StartLaneGeometry()
                           .LeftLineString(kLeftLineStringD)  
-                          .RightLineString(kRigthLineStringD)
+                          .RightLineString(kRightLineStringD)
                       .EndLaneGeometry()
                   .EndLane()
               .EndSegment()
@@ -433,13 +480,13 @@ TEST_F(RoadGeometryBuilderTest, CompleteCase) {
 **/
 TEST_F(RoadGeometryBuilderTest, OutgoingBranches) {
   const LineString3d kLeftLineStringA{Vector3{0., 0., 0.}, Vector3{100., 0., 0.}};
-  const LineString3d kRigthLineStringA{Vector3{0., 5., 0.}, Vector3{100., 5., 0.}};
+  const LineString3d kRightLineStringA{Vector3{0., 5., 0.}, Vector3{100., 5., 0.}};
   const LineString3d kLeftLineStringB{Vector3{100., 0., 0.}, Vector3{200., 55., 0.}};
-  const LineString3d kRigthLineStringB{Vector3{100., 5., 0.}, Vector3{200., 50., 0.}};
+  const LineString3d kRightLineStringB{Vector3{100., 5., 0.}, Vector3{200., 50., 0.}};
   const LineString3d kLeftLineStringC{Vector3{100., 0., 0.}, Vector3{200., 0., 0.}};
-  const LineString3d kRigthLineStringC{Vector3{100., 5., 0.}, Vector3{200., 5., 0.}};
+  const LineString3d kRightLineStringC{Vector3{100., 5., 0.}, Vector3{200., 5., 0.}};
   const LineString3d kLeftLineStringD{Vector3{100., 0., 0.}, Vector3{200., -55., 0.}};
-  const LineString3d kRigthLineStringD{Vector3{100., 5., 0.}, Vector3{200., -50., 0.}};
+  const LineString3d kRightLineStringD{Vector3{100., 5., 0.}, Vector3{200., -50., 0.}};
   const auto start = maliput::api::LaneEnd::Which::kStart;
   const auto finish = maliput::api::LaneEnd::Which::kFinish;
   const maliput::api::SegmentId kSegmentCId{"segment_c"};
@@ -460,7 +507,7 @@ TEST_F(RoadGeometryBuilderTest, OutgoingBranches) {
                       .Id(kLaneAId)
                       .StartLaneGeometry()
                           .LeftLineString(kLeftLineStringA)  
-                          .RightLineString(kRigthLineStringA)
+                          .RightLineString(kRightLineStringA)
                       .EndLaneGeometry()
                   .EndLane()
               .EndSegment()
@@ -470,7 +517,7 @@ TEST_F(RoadGeometryBuilderTest, OutgoingBranches) {
                       .Id(kLaneBId)
                       .StartLaneGeometry()
                           .LeftLineString(kLeftLineStringB)  
-                          .RightLineString(kRigthLineStringB)
+                          .RightLineString(kRightLineStringB)
                       .EndLaneGeometry()
                   .EndLane()
               .EndSegment()
@@ -480,7 +527,7 @@ TEST_F(RoadGeometryBuilderTest, OutgoingBranches) {
                       .Id(kLaneCId)
                       .StartLaneGeometry()
                           .LeftLineString(kLeftLineStringC)  
-                          .RightLineString(kRigthLineStringC)
+                          .RightLineString(kRightLineStringC)
                       .EndLaneGeometry()
                   .EndLane()
               .EndSegment()
@@ -490,7 +537,7 @@ TEST_F(RoadGeometryBuilderTest, OutgoingBranches) {
                       .Id(kLaneDId)
                       .StartLaneGeometry()
                           .LeftLineString(kLeftLineStringD)  
-                          .RightLineString(kRigthLineStringD)
+                          .RightLineString(kRightLineStringD)
                       .EndLaneGeometry()
                   .EndLane()
               .EndSegment()

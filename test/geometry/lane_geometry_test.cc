@@ -42,9 +42,29 @@ namespace {
 using maliput::math::Vector2;
 using maliput::math::Vector3;
 
+class LaneGeometryBasicTest : public testing::Test {
+ public:
+  const LineString3d centerline{{0., 0., 0.}, {50., 0., 0.}, {100., 0., 0.}};
+  const LineString3d left{{0., 2., 0.}, {100., 2., 0.}};
+  const LineString3d right{{0., -2., 0.}, {100., -2., 0.}};
+  const double kTolerance{1e-12};
+  const double kScaleLength{1.};
+};
+
+TEST_F(LaneGeometryBasicTest, ConstructorWithCenter) {
+  const LaneGeometry lane(centerline, left, right, kTolerance, kScaleLength);
+  EXPECT_EQ(lane.centerline(), centerline);
+}
+
+TEST_F(LaneGeometryBasicTest, ConstructorWithoutCenter) {
+  const LaneGeometry lane(left, right, kTolerance, kScaleLength);
+  EXPECT_EQ(lane.centerline(), centerline);
+}
+
 struct OrientationTestCase {
   LineString3d left{};
   LineString3d right{};
+  std::optional<LineString3d> center{};
   std::vector<double> p{};
   std::vector<maliput::math::RollPitchYaw> expected_rpy{};
 };
@@ -55,6 +75,7 @@ std::vector<OrientationTestCase> OrientationTestCases() {
           // No elevation along x
           LineString3d{{0., 2., 0.}, {100., 2., 0.}} /* left*/,
           LineString3d{{0., -2., 0.}, {100., -2., 0.}} /* right*/,
+          std::nullopt /* center*/,
           {0., 50., 100.} /* p */,
           {{0., 0., 0.}, {0., 0., 0.}, {0., 0., 0.}} /* expected_rpy */
       },
@@ -62,6 +83,7 @@ std::vector<OrientationTestCase> OrientationTestCases() {
           // No elevation along -x
           LineString3d{{0., 2., 0.}, {-100., 2., 0.}} /* line string*/,
           LineString3d{{0., -2., 0.}, {-100., -2., 0.}} /* line string*/,
+          std::nullopt /* center*/,
           {0., 50., 100.} /* p */,
           {{0., 0., M_PI}, {0., 0., M_PI}, {0., 0., M_PI}} /* expected_rpy */
       },
@@ -69,6 +91,7 @@ std::vector<OrientationTestCase> OrientationTestCases() {
           // Linear Elevation
           LineString3d{{0., 2., 0.}, {100., 2., 100.}} /* left*/,
           LineString3d{{0., -2., 0.}, {100., -2., 100.}} /* right*/,
+          std::nullopt /* center*/,
           {0.} /* p */,
           {{0., -M_PI_4, 0.}} /* expected_rpy */
       },
@@ -76,6 +99,7 @@ std::vector<OrientationTestCase> OrientationTestCases() {
           // Linear Elevation with negative yaw.
           LineString3d{{1., 1., 0.}, {1. + 70.71067811865476, 1. - 70.71067811865476, 100.}} /* left*/,
           LineString3d{{-1., -1., 0.}, {-1. + 70.71067811865476, -1. - 70.71067811865476, 100.}} /* right*/,
+          std::nullopt /* center*/,
           {
               0.,
               141.4213562373095,
@@ -86,8 +110,33 @@ std::vector<OrientationTestCase> OrientationTestCases() {
           // Increase elevation + plateau + decrease elevation.
           LineString3d{{0., 2., 0.}, {10., 2., 10.}, {20., 2., 10.}, {30., 2., 0.}} /* left*/,
           LineString3d{{0., -2., 0.}, {10., -2., 10.}, {20., -2., 10.}, {30., -2., 0.}} /* right*/,
+          std::nullopt /* center*/,
           {0., 1 + std::sqrt(2.) * 10., 1 + std::sqrt(2.) * 10. + 10.} /* p */,
           {{0., -M_PI_4, 0.}, {0., 0., 0.}, {0., M_PI_4, 0.}} /* expected_rpy */
+      },
+      {
+          // Constant superelevation to the left.
+          LineString3d{{0., 2., 0.}, {100., 2., 0.}} /* left*/,
+          LineString3d{{0., -2., 4.}, {100., -2., 4.}} /* right*/,
+          std::nullopt /* center*/,
+          {0., 100.} /* p */,
+          {{-M_PI_4, 0., 0.}, {-M_PI_4, 0., 0.}} /* expected_rpy */
+      },
+      {
+          // Constant superelevation to the right.
+          LineString3d{{0., 2., 4.}, {100., 2., 4.}} /* left*/,
+          LineString3d{{0., -2., 0.}, {100., -2., 0.}} /* right*/,
+          std::nullopt /* center*/,
+          {0., 100.} /* p */,
+          {{M_PI_4, 0., 0.}, {M_PI_4, 0., 0.}} /* expected_rpy */
+      },
+      {
+          // Increasing superelevation
+          LineString3d{{0., 2., 0.}, {100., 1., -1.}} /* left*/,
+          LineString3d{{0., -2., 0.}, {100., 1., 1.}} /* right*/,
+          LineString3d{{0., 0., 0.}, {100., 0., 0.}} /* center*/,
+          {0., 100.} /* p */,
+          {{0., 0., 0.}, {-M_PI_2, 0., 0.}} /* expected_rpy */
       },
   };
 }
@@ -100,11 +149,12 @@ class OrientationTest : public ::testing::TestWithParam<OrientationTestCase> {
 
 TEST_P(OrientationTest, Test) {
   ASSERT_EQ(case_.p.size(), case_.expected_rpy.size()) << ">>>>> Test case is ill-formed.";
-  const LaneGeometry lane_geometry{case_.left, case_.right, 1e-3, 1.};
+  const LaneGeometry lane_geometry = case_.center.has_value()
+                                         ? LaneGeometry{case_.center.value(), case_.left, case_.right, 1e-3, 1.}
+                                         : LaneGeometry{case_.left, case_.right, 1e-3, 1.};
   for (std::size_t i = 0; i < case_.p.size(); ++i) {
     const auto rpy = lane_geometry.Orientation(case_.p[i]);
-    EXPECT_EQ(case_.expected_rpy[i].vector(), rpy.vector())
-        << "Expected RPY: " << case_.expected_rpy[i].vector() << " vs RPY: " << rpy.vector();
+    EXPECT_TRUE(maliput::math::test::CompareVectors(case_.expected_rpy[i].vector(), rpy.vector(), kTolerance));
   }
 }
 
@@ -180,7 +230,7 @@ std::vector<WAndWInverseCase> WAndWInverseCases() {
 
 class WAndWInverseTest : public ::testing::TestWithParam<WAndWInverseCase> {
  public:
-  static constexpr double kTolerance{1e-12};
+  static constexpr double kTolerance{1e-11};
   WAndWInverseCase case_ = GetParam();
 };
 
@@ -339,6 +389,7 @@ class RBoundsCaseTest : public ::testing::TestWithParam<RBoundsCase> {
  public:
   static constexpr double kLinearTolerance{1e-3};
   static constexpr double kScaleLength{1.};
+  static constexpr double kEpsilon{1e-11};
   RBoundsCase case_ = GetParam();
 };
 
@@ -353,11 +404,11 @@ TEST_P(RBoundsCaseTest, Test) {
     const double p_left = lane_geometry.FromCenterPToLateralP(LaneGeometry::LineStringType::kLeftBoundary, case_.p[i]);
     const double p_right =
         lane_geometry.FromCenterPToLateralP(LaneGeometry::LineStringType::kRightBoundary, case_.p[i]);
-    EXPECT_DOUBLE_EQ(case_.expected_left_p[i], p_left);
-    EXPECT_DOUBLE_EQ(case_.expected_right_p[i], p_right);
+    EXPECT_NEAR(case_.expected_left_p[i], p_left, kEpsilon);
+    EXPECT_NEAR(case_.expected_right_p[i], p_right, kEpsilon);
     const maliput::api::RBounds r_bounds = lane_geometry.RBounds(case_.p[i]);
-    EXPECT_DOUBLE_EQ(case_.expected_r_bounds[i].min(), r_bounds.min());
-    EXPECT_DOUBLE_EQ(case_.expected_r_bounds[i].max(), r_bounds.max());
+    EXPECT_NEAR(case_.expected_r_bounds[i].min(), r_bounds.min(), kEpsilon);
+    EXPECT_NEAR(case_.expected_r_bounds[i].max(), r_bounds.max(), kEpsilon);
   }
 }
 

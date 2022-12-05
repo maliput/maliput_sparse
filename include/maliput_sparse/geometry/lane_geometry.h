@@ -33,6 +33,7 @@
 
 #include <maliput/api/lane_data.h>
 #include <maliput/common/maliput_copyable.h>
+#include <maliput/common/range_validator.h>
 #include <maliput/math/roll_pitch_yaw.h>
 #include <maliput/math/vector.h>
 
@@ -64,6 +65,22 @@ class LaneGeometry {
   /// @throws maliput::common::assertion_error When @p linear_tolerance or
   ///         @p scale_length are negative.
   LaneGeometry(const LineString3d& left, const LineString3d& right, double linear_tolerance, double scale_length);
+
+  /// Constructs a LaneGeometry
+  /// @param center Center line of the lane.
+  /// @param left Left boundary of the lane.
+  /// @param right Right boundary of the lane.
+  /// @param linear_tolerance It is expected to be the same as
+  ///        maliput::api::RoadGeometry::linear_tolerance(). It must be non
+  ///        negative.
+  /// @param scale_length It is expected to be the same as
+  ///        maliput::api::RoadGeometry::scale_length(). It must be non
+  ///        negative.
+  /// @throws maliput::common::assertion_error When @p linear_tolerance or
+  ///         @p scale_length are negative.
+  LaneGeometry(const LineString3d& center, const LineString3d& left, const LineString3d& right, double linear_tolerance,
+               double scale_length);
+
   ~LaneGeometry() = default;
 
   double p0() const { return 0.; }
@@ -131,14 +148,23 @@ class LaneGeometry {
   /// Converts from p coordinate in the centerline to an equivalent p coordinate in a boundary.
   /// @param line_string_type The type of LineString to convert p coordinate to.
   /// @param p P parameter of the centerline.
+  /// @throws maliput::common::assertion_error When @p line_string_type is LineStringType::kCenterline.
   double FromCenterPToLateralP(const LineStringType& line_string_type, double p) const;
 
+  /// Computes the inertial position in a lateral boundary for a given @p p .
+  /// @param line_string_type The type of LineString to convert p coordinate to.
+  /// @param p P parameter of the centerline.
+  /// @throws maliput::common::assertion_error When @p line_string_type is LineStringType::kCenterline.
+  maliput::math::Vector3 ToLateralPos(const LineStringType& line_string_type, double p) const;
+
  private:
+  static constexpr double kEpsilon{1e-12};
   const LineString3d left_;
   const LineString3d right_;
   const double linear_tolerance_{};
   const double scale_length_{};
-  LineString3d centerline_;
+  const LineString3d centerline_;
+  const maliput::common::RangeValidator range_validator_;
 };
 
 }  // namespace geometry
