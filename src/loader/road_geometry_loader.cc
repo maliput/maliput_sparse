@@ -33,15 +33,30 @@
 
 namespace maliput_sparse {
 namespace loader {
+namespace {
+
+maliput::api::LaneEnd::Which ToMaliputLaneEndWhich(const parser::LaneEnd::Which end) {
+  switch (end) {
+    case parser::LaneEnd::Which::kStart:
+      return maliput::api::LaneEnd::Which::kStart;
+    case parser::LaneEnd::Which::kFinish:
+      return maliput::api::LaneEnd::Which::kFinish;
+    default:
+      MALIPUT_THROW_MESSAGE("Unknown parser::LaneEnd::Which value: " + static_cast<int>(end));
+  }
+}
+
+}  // namespace
 
 RoadGeometryLoader::RoadGeometryLoader(std::unique_ptr<parser::Parser> parser,
-                                         const BuilderConfiguration& builder_configuration)
+                                       const BuilderConfiguration& builder_configuration)
     : parser_(std::move(parser)), builder_configuration_(builder_configuration) {
   MALIPUT_THROW_UNLESS(parser_ != nullptr);
 }
 
 std::unique_ptr<const maliput::api::RoadGeometry> RoadGeometryLoader::operator()() {
-  const std::unordered_map<parser::Segment::Id, parser::Segment>& segments = parser_->GetSegments();
+  const std::unordered_map<parser::Junction::Id, parser::Junction>& junctions = parser_->GetJunctions();
+  const std::vector<parser::Connection>& connections = parser_->GetConnections();
 
   maliput_sparse::builder::RoadGeometryBuilder rg_builder{};
   rg_builder.Id(builder_configuration_.road_geometry_id)
@@ -50,25 +65,36 @@ std::unique_ptr<const maliput::api::RoadGeometry> RoadGeometryLoader::operator()
       .ScaleLength(builder_configuration_.scale_length)
       .InertialToBackendFrameTranslation(builder_configuration_.inertial_to_backend_frame_translation);
 
-  for (const auto& segment : segments) {
-    builder::JunctionBuilder junction_builder = rg_builder.StartJunction();
-    junction_builder.Id(maliput::api::JunctionId{segment.first});
-    builder::SegmentBuilder segment_builder = junction_builder.StartSegment();
-    segment_builder.Id(maliput::api::SegmentId{segment.first});
+  for (const auto& junction : junctions) {
+    maliput_sparse::builder::JunctionBuilder junction_builder = rg_builder.StartJunction();
+    junction_builder.Id(maliput::api::JunctionId{junction.first});
+    for (const auto& segment : junction.second.segments) {
+      maliput_sparse::builder::SegmentBuilder segment_builder = junction_builder.StartSegment();
+      segment_builder.Id(maliput::api::SegmentId{segment.first});
 
-    for (const parser::Lane& lane : segment.second.lanes) {
-      segment_builder.StartLane()
-          .Id(maliput::api::LaneId{lane.id})
-          .HeightBounds(maliput::api::HBounds{0., 5.})
-          .StartLaneGeometry()
-          .LeftLineString(lane.left)
-          .RightLineString(lane.right)
-          .EndLaneGeometry()
-          .EndLane();
+      for (const parser::Lane& lane : segment.second.lanes) {
+        const maliput::api::LaneId lane_id{lane.id};
+        segment_builder.StartLane()
+            .Id(lane_id)
+            .HeightBounds(maliput::api::HBounds{0., 5.})
+            .StartLaneGeometry()
+            .LeftLineString(lane.left)
+            .RightLineString(lane.right)
+            .EndLaneGeometry()
+            .EndLane();
+      }
+      segment_builder.EndSegment();
     }
-    segment_builder.EndSegment().EndJunction();
+    junction_builder.EndJunction();
   }
-  return rg_builder.StartBranchPoints().EndBranchPoints().Build();
+  maliput_sparse::builder::BranchPointBuilder bp_builder = rg_builder.StartBranchPoints();
+  for (const auto& connection : connections) {
+    bp_builder.Connect(maliput::api::LaneId{connection.from.lane_id}, ToMaliputLaneEndWhich(connection.from.end),
+                       maliput::api::LaneId{connection.to.lane_id}, ToMaliputLaneEndWhich(connection.to.end));
+  }
+  bp_builder.EndBranchPoints();
+
+  return rg_builder.Build();
 }
 
 }  // namespace loader

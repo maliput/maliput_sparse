@@ -5,6 +5,7 @@
 set(LOADER_SOURCES
   builder_configuration.cc
   road_geometry_loader.cc
+  road_network_loader.cc
 )
 
 add_library(loader ${LOADER_SOURCES})
@@ -25,6 +26,7 @@ target_include_directories(loader
 target_link_libraries(loader
   PUBLIC
   maliput::api
+  maliput::base
   maliput::common
   maliput_sparse::builder
 )

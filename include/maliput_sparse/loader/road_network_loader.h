@@ -31,26 +31,27 @@
 
 #include <memory>
 
-#include <maliput/api/road_geometry.h>
+#include <maliput/api/road_network.h>
 
 #include "maliput_sparse/loader/builder_configuration.h"
+#include "maliput_sparse/loader/road_geometry_loader.h"
 #include "maliput_sparse/parser/parser.h"
 
 namespace maliput_sparse {
 namespace loader {
 
-class RoadGeometryLoader {
+class RoadNetworkLoader {
  public:
-  /// Constructs a RoadGeometryLoader.
-  /// @param parser The parser to use for building the RoadGeometry.
+  /// Constructs a RoadNetworkLoader.
+  /// @param parser The parser to use for building the RoadNetworkLoader.
   /// @param builder_configuration The configuration of the builder.
-  RoadGeometryLoader(std::unique_ptr<parser::Parser> parser, const BuilderConfiguration& builder_configuration);
+  RoadNetworkLoader(std::unique_ptr<parser::Parser> parser, const BuilderConfiguration& builder_configuration);
 
-  /// Builds a RoadGeometry.
-  std::unique_ptr<const maliput::api::RoadGeometry> operator()();
+  /// Builds a RoadNetworkLoader.
+  std::unique_ptr<maliput::api::RoadNetwork> operator()();
 
  private:
-  const std::unique_ptr<parser::Parser> parser_;
+  const std::unique_ptr<RoadGeometryLoader> road_geometry_loader_;
   const BuilderConfiguration builder_configuration_;
 };
 

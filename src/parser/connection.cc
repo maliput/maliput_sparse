@@ -27,32 +27,14 @@
 // CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#pragma once
-
-#include <memory>
-
-#include <maliput/api/road_geometry.h>
-
-#include "maliput_sparse/loader/builder_configuration.h"
-#include "maliput_sparse/parser/parser.h"
+#include "maliput_sparse/parser/connection.h"
 
 namespace maliput_sparse {
-namespace loader {
+namespace parser {
 
-class RoadGeometryLoader {
- public:
-  /// Constructs a RoadGeometryLoader.
-  /// @param parser The parser to use for building the RoadGeometry.
-  /// @param builder_configuration The configuration of the builder.
-  RoadGeometryLoader(std::unique_ptr<parser::Parser> parser, const BuilderConfiguration& builder_configuration);
+bool Connection::operator==(const Connection& other) const {
+  return ((from == other.from && to == other.to) || (from == other.to && to == other.from));
+}
 
-  /// Builds a RoadGeometry.
-  std::unique_ptr<const maliput::api::RoadGeometry> operator()();
-
- private:
-  const std::unique_ptr<parser::Parser> parser_;
-  const BuilderConfiguration builder_configuration_;
-};
-
-}  // namespace loader
+}  // namespace parser
 }  // namespace maliput_sparse

@@ -27,32 +27,55 @@
 // CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#pragma once
+#include "maliput_sparse/parser/lane.h"
 
-#include <memory>
+#include <optional>
+#include <string>
+#include <unordered_set>
 
-#include <maliput/api/road_geometry.h>
+#include <gtest/gtest.h>
 
-#include "maliput_sparse/loader/builder_configuration.h"
-#include "maliput_sparse/parser/parser.h"
+#include "maliput_sparse/geometry/line_string.h"
 
 namespace maliput_sparse {
-namespace loader {
+namespace parser {
+namespace test {
+namespace {
 
-class RoadGeometryLoader {
- public:
-  /// Constructs a RoadGeometryLoader.
-  /// @param parser The parser to use for building the RoadGeometry.
-  /// @param builder_configuration The configuration of the builder.
-  RoadGeometryLoader(std::unique_ptr<parser::Parser> parser, const BuilderConfiguration& builder_configuration);
+using maliput_sparse::geometry::LineString3d;
 
-  /// Builds a RoadGeometry.
-  std::unique_ptr<const maliput::api::RoadGeometry> operator()();
-
- private:
-  const std::unique_ptr<parser::Parser> parser_;
-  const BuilderConfiguration builder_configuration_;
+class LaneTest : public ::testing::Test {
+ protected:
+  const Lane::Id id{"lane_id"};
+  const LineString3d left{{1., 1., 1.}, {10., 1., 1.}};
+  const LineString3d right{{1., -1., 1.}, {10., -1., 1.}};
+  const std::optional<Lane::Id> left_lane_id{"left_lane_id"};
+  const std::optional<Lane::Id> right_lane_id{"right_lane_id"};
+  const std::unordered_map<Lane::Id, LaneEnd> successors{
+      {Lane::Id{"successor_1"}, {Lane::Id{"successor_1"}, LaneEnd::Which::kStart}},
+      {Lane::Id{"successor_2"}, {Lane::Id{"successor_2"}, LaneEnd::Which::kFinish}}};
+  const std::unordered_map<Lane::Id, LaneEnd> predecessors{
+      {Lane::Id{"predecessor_1"}, {Lane::Id{"predecessor_1"}, LaneEnd::Which::kStart}},
+      {Lane::Id{"predecessor_2"}, {Lane::Id{"predecessor_2"}, LaneEnd::Which::kFinish}}};
+  const Lane dut{id, left, right, left_lane_id, right_lane_id, successors, predecessors};
 };
 
-}  // namespace loader
+TEST_F(LaneTest, Members) {
+  EXPECT_EQ(id, dut.id);
+  EXPECT_EQ(left, dut.left);
+  EXPECT_EQ(right, dut.right);
+  EXPECT_EQ(left_lane_id, dut.left_lane_id);
+  EXPECT_EQ(right_lane_id, dut.right_lane_id);
+  EXPECT_EQ(successors, dut.successors);
+  EXPECT_EQ(predecessors, dut.predecessors);
+}
+
+TEST_F(LaneTest, EqualityOperator) {
+  const Lane dut2 = dut;
+  EXPECT_EQ(dut, dut2);
+}
+
+}  // namespace
+}  // namespace test
+}  // namespace parser
 }  // namespace maliput_sparse

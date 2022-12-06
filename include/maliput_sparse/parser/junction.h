@@ -29,30 +29,27 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <memory>
+#include <string>
+#include <unordered_map>
 
-#include <maliput/api/road_geometry.h>
-
-#include "maliput_sparse/loader/builder_configuration.h"
-#include "maliput_sparse/parser/parser.h"
+#include "maliput_sparse/parser/segment.h"
 
 namespace maliput_sparse {
-namespace loader {
+namespace parser {
 
-class RoadGeometryLoader {
- public:
-  /// Constructs a RoadGeometryLoader.
-  /// @param parser The parser to use for building the RoadGeometry.
-  /// @param builder_configuration The configuration of the builder.
-  RoadGeometryLoader(std::unique_ptr<parser::Parser> parser, const BuilderConfiguration& builder_configuration);
+/// Convenient abstraction for grouping segments.
+struct Junction {
+  using Id = std::string;
 
-  /// Builds a RoadGeometry.
-  std::unique_ptr<const maliput::api::RoadGeometry> operator()();
+  /// Equality operator.
+  /// @param other The other object to compare against.
+  bool operator==(const Junction& other) const { return id == other.id && segments == other.segments; }
 
- private:
-  const std::unique_ptr<parser::Parser> parser_;
-  const BuilderConfiguration builder_configuration_;
+  /// Id of the Junction.
+  Id id;
+  /// Collection of segments that compose the Junction.
+  std::unordered_map<Segment::Id, Segment> segments{};
 };
 
-}  // namespace loader
+}  // namespace parser
 }  // namespace maliput_sparse

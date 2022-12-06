@@ -29,30 +29,23 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <memory>
-
-#include <maliput/api/road_geometry.h>
-
-#include "maliput_sparse/loader/builder_configuration.h"
-#include "maliput_sparse/parser/parser.h"
+#include "maliput_sparse/parser/lane.h"
 
 namespace maliput_sparse {
-namespace loader {
+namespace parser {
 
-class RoadGeometryLoader {
- public:
-  /// Constructs a RoadGeometryLoader.
-  /// @param parser The parser to use for building the RoadGeometry.
-  /// @param builder_configuration The configuration of the builder.
-  RoadGeometryLoader(std::unique_ptr<parser::Parser> parser, const BuilderConfiguration& builder_configuration);
+/// Defines a connection between two lanes.
+/// The lanes can be connected from either end.
+/// Two connections are considered equal if they connect the same lanes using same ends without regard to the order.
+struct Connection {
+  /// The LaneEnd that is connected from.
+  LaneEnd from;
+  /// The LaneEnd that is connected to.
+  LaneEnd to;
 
-  /// Builds a RoadGeometry.
-  std::unique_ptr<const maliput::api::RoadGeometry> operator()();
-
- private:
-  const std::unique_ptr<parser::Parser> parser_;
-  const BuilderConfiguration builder_configuration_;
+  /// Equality operator.
+  bool operator==(const Connection& other) const;
 };
 
-}  // namespace loader
+}  // namespace parser
 }  // namespace maliput_sparse

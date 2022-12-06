@@ -30,10 +30,12 @@
 #pragma once
 
 #include <unordered_map>
+#include <vector>
 
 #include <maliput/common/maliput_copyable.h>
 
-#include "maliput_sparse/parser/segment.h"
+#include "maliput_sparse/parser/connection.h"
+#include "maliput_sparse/parser/junction.h"
 
 namespace maliput_sparse {
 namespace parser {
@@ -42,9 +44,13 @@ namespace parser {
 /// @code {.cpp}
 /// class MyParser : public Parser {
 ///  public:
-///   MyParser(const std::string& my_file) : Parser() { // Parse underlying file and fill up segments.}
-///   const std::unordered_map<Segment::Id, Segment>& DoGetSegments() const override {
-///     return segments_;
+///   MyParser(const std::string& my_file) : Parser() { // Parse underlying file and fill up junctions and connections.}
+///  private:
+///   const std::unordered_map<Junction::Id, Junction>& DoGetJunctions() const override {
+///     return junctions_;
+///   }
+///   const std::vector<Connection>& DoGetConnections() const override {
+///     return connections_;
 ///   }
 /// @endcode
 class Parser {
@@ -54,9 +60,13 @@ class Parser {
   virtual ~Parser() = default;
 
   /// Gets the segments parsed from the input description.
-  const std::unordered_map<Segment::Id, Segment>& GetSegments() const {return DoGetSegments();}
+  const std::unordered_map<Junction::Id, Junction>& GetJunctions() const { return DoGetJunctions(); }
+  /// Gets connections between the map's lanes.
+  const std::vector<Connection>& GetConnections() const { return DoGetConnections(); }
+
  private:
-  virtual const std::unordered_map<Segment::Id, Segment>& DoGetSegments() const = 0;
+  virtual const std::unordered_map<Junction::Id, Junction>& DoGetJunctions() const = 0;
+  virtual const std::vector<Connection>& DoGetConnections() const = 0;
 };
 
 }  // namespace parser
