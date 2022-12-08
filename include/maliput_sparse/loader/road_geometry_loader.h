@@ -39,6 +39,9 @@
 namespace maliput_sparse {
 namespace loader {
 
+/// Loads a RoadGeometry based on a maliput_sparse::parser::Parser implementation.
+/// This functor is expected to be used by the maliput backends that rely on
+/// maliput_sparse to load the RoadGeometry.
 class RoadGeometryLoader {
  public:
   /// Constructs a RoadGeometryLoader.

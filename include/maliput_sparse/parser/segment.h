@@ -48,7 +48,7 @@ struct Segment {
   bool operator==(const Segment& other) const { return id == other.id && lanes == other.lanes; }
 
   /// Id of the segment.
-  Id id;
+  Id id{};
   /// Collection of lanes that compose the segment.
   std::vector<Lane> lanes;
 };

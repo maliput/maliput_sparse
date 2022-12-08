@@ -47,9 +47,9 @@ struct LaneEnd {
   bool operator==(const LaneEnd& other) const;
 
   // The lanelet id.
-  std::string lane_id;
+  std::string lane_id{};
   // The endpoint of the lanelet.
-  Which end;
+  Which end{Which::kStart};
 };
 
 /// Contains the characteristics of a lane.

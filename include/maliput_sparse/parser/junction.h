@@ -46,7 +46,7 @@ struct Junction {
   bool operator==(const Junction& other) const { return id == other.id && segments == other.segments; }
 
   /// Id of the Junction.
-  Id id;
+  Id id{};
   /// Collection of segments that compose the Junction.
   std::unordered_map<Segment::Id, Segment> segments{};
 };
