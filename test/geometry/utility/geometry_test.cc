@@ -504,6 +504,47 @@ TEST_P(GetClosestPointLineStringTest, Test) {
 INSTANTIATE_TEST_CASE_P(GetClosestPointLineStringTestGroup, GetClosestPointLineStringTest,
                         ::testing::ValuesIn(GetClosestPointLineStringTestCases()));
 
+struct ComputeDistanceTestCase {
+  LineString3d lhs;
+  LineString3d rhs;
+  double expected_distance{0.};
+};
+
+std::vector<ComputeDistanceTestCase> ComputeDistanceTestCases() {
+  return {
+      {
+          LineString3d{{0., 0., 0.}, {10., 0., 0.}} /* lhs */, LineString3d{{0., 0., 0.}, {10., 0., 0.}} /* rhs */,
+          0. /* expected_distance */
+      },
+      {
+          LineString3d{{0., 5., 0.}, {10., 5., 0.}} /* lhs */, LineString3d{{0., 0., 0.}, {10., 0., 0.}} /* rhs */,
+          5. /* expected_distance */
+      },
+      {
+          LineString3d{{0., 5., 0.}, {10., 5., 0.}} /* lhs */,
+          LineString3d{{0., 0., 0.}, {2., 0., 0.}, {4., 0., 0.}, {6., 0., 0.}, {8., 0., 0.}, {10., 0., 0.}} /* rhs */,
+          5. /* expected_distance */
+      },
+      {
+          LineString3d{{0., 0., 0.}, {2., 0., 0.}, {4., 0., 0.}, {6., 0., 0.}, {8., 0., 0.}, {10., 0., 0.}} /* lhs */,
+          LineString3d{{0., 5., 0.}, {10., 5., 0.}} /* rhs */, 5. /* expected_distance */
+      },
+  };
+}
+
+class ComputeDistanceTest : public ::testing::TestWithParam<ComputeDistanceTestCase> {
+ public:
+  static constexpr double kTolerance{1e-12};
+  ComputeDistanceTestCase case_ = GetParam();
+};
+
+TEST_P(ComputeDistanceTest, Test) {
+  const auto dut = ComputeDistance(case_.lhs, case_.rhs);
+  EXPECT_NEAR(case_.expected_distance, dut, kTolerance);
+}
+
+INSTANTIATE_TEST_CASE_P(ComputeDistanceTestGroup, ComputeDistanceTest, ::testing::ValuesIn(ComputeDistanceTestCases()));
+
 }  // namespace
 }  // namespace test
 }  // namespace utility
