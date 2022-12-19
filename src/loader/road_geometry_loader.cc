@@ -59,15 +59,18 @@ RoadGeometryLoader::RoadGeometryLoader(std::unique_ptr<parser::Parser> parser,
 
 std::unique_ptr<const maliput::api::RoadGeometry> RoadGeometryLoader::operator()() {
   // Validates the parsed data before building the RoadGeometry.
-  const parser::Validator validator(parser_.get(), parser::ValidatorOptions{true},
-                                    parser::ValidatorConfig{builder_configuration_.linear_tolerance});
-  const auto errors = validator.GetErrors();
+  const auto errors = parser::Validator(parser_.get(), parser::ValidatorOptions{true},
+                                        parser::ValidatorConfig{builder_configuration_.linear_tolerance})();
   for (const auto& error : errors) {
-    if (error.severity == parser::Validator::Error::Severity::kError) {
-      maliput::log()->error("{}", error.message);
-    }
-    if (error.severity == parser::Validator::Error::Severity::kWarning) {
-      maliput::log()->warn("{}", error.message);
+    switch (error.severity) {
+      case parser::Validator::Error::Severity::kError:
+        maliput::log()->error("{}", error.message);
+        break;
+      case parser::Validator::Error::Severity::kWarning:
+        maliput::log()->warn("{}", error.message);
+        break;
+      default:
+        MALIPUT_THROW_MESSAGE("Unknown parser::Validator::Error::Severity value: " + static_cast<int>(error.severity));
     }
   }
 

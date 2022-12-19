@@ -60,6 +60,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <numeric>
 
 namespace maliput_sparse {
 namespace geometry {
@@ -377,12 +378,12 @@ ClosestPointResult GetClosestPoint(const LineString3d& line_string, const malipu
 double ComputeDistance(const LineString3d& lhs, const LineString3d& rhs) {
   const LineString3d& base_ls = rhs.size() > lhs.size() ? rhs : lhs;
   const LineString3d& other_ls = rhs.size() > lhs.size() ? lhs : rhs;
-  double sum_distances{};
-  for (const auto& base_point : base_ls) {
-    const auto closest_point_res = GetClosestPoint(other_ls, base_point);
-    sum_distances += closest_point_res.distance;
-  }
-  return sum_distances / base_ls.size();
+  const double sum_distances =
+      std::accumulate(base_ls.begin(), base_ls.end(), 0.0, [&other_ls](double sum, const auto& base_point) {
+        const auto closest_point_res = GetClosestPoint(other_ls, base_point);
+        return sum + closest_point_res.distance;
+      });
+  return sum_distances / static_cast<double>(base_ls.size());
 }
 
 }  // namespace utility

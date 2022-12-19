@@ -60,7 +60,8 @@ class Validator {
   struct Error {
     /// The type of error.
     enum class Type {
-      kLaneAdjacency,
+      kLogicalLaneAdjacency,
+      kGeometricalLaneAdjacency,
     };
     /// The severity of the error.
     enum class Severity {
@@ -87,29 +88,25 @@ class Validator {
   /// @param parser The maliput_sparse::parser::Parser instance to validate.
   /// @param options The maliput_sparse::parser::ValidatorOptions to use.
   /// @param config The maliput_sparse::parser::ValidatorConfig to use.
-  Validator(const Parser* parser, const ValidatorOptions& options, const ValidatorConfig config);
+  Validator(const Parser* parser, const ValidatorOptions& options, const ValidatorConfig& config);
 
   /// Returns the errors found during validation.
-  const std::vector<Error>& GetErrors() const;
+  std::vector<Error> operator()() const;
 
  private:
-  // Helper functions for reporting errors.
-  // @param message The error message.
-  // @Param type The type of error.
-  // @Param severity The severity of the error.
-  void Report(const std::string& message, const Error::Type& type, const Error::Severity& severity);
-
-  // Method to validate lane adjacency.
-  // @param parser The maliput_sparse::parser::Parser instance to validate.
-  // @param config The maliput_sparse::parser::ValidatorConfig to use.
-  void ValidateLaneAdjacency(const Parser* parser, const ValidatorConfig config);
-
-  // Helper function to geometrically check lane adjacency.
-  void CheckAdjacency(const Lane& lane, const Lane& adjacent_lane, bool left, double tolerance);
-
-  // Holds the errors found during validation.
-  std::vector<Error> errors_;
+  // The maliput_sparse::parser::Parser instance to validate.
+  const Parser* parser_{nullptr};
+  // The maliput_sparse::parser::ValidatorOptions to use.
+  const ValidatorOptions options_;
+  // The maliput_sparse::parser::ValidatorConfig to use.
+  const ValidatorConfig config_;
 };
+
+/// Validates lane adjacency.
+/// @param parser The maliput_sparse::parser::Parser instance to validate.
+/// @param config The maliput_sparse::parser::ValidatorConfig to use.
+/// @returns A vector of maliput_sparse::parser::Validator::Error.
+std::vector<Validator::Error> ValidateLaneAdjacency(const Parser* parser, const ValidatorConfig config);
 
 }  // namespace parser
 }  // namespace maliput_sparse
