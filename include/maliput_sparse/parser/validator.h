@@ -102,11 +102,5 @@ class Validator {
   const ValidatorConfig config_;
 };
 
-/// Validates lane adjacency.
-/// @param parser The maliput_sparse::parser::Parser instance to validate.
-/// @param config The maliput_sparse::parser::ValidatorConfig to use.
-/// @returns A vector of maliput_sparse::parser::Validator::Error.
-std::vector<Validator::Error> ValidateLaneAdjacency(const Parser* parser, const ValidatorConfig config);
-
 }  // namespace parser
 }  // namespace maliput_sparse

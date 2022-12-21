@@ -33,6 +33,7 @@
 #include "maliput_sparse/parser/junction.h"
 #include "maliput_sparse/parser/lane.h"
 #include "maliput_sparse/parser/segment.h"
+#include "parser/validation_methods.h"
 
 namespace maliput_sparse {
 namespace parser {
@@ -101,27 +102,20 @@ std::vector<Validator::Error> ValidateLaneAdjacency(const Parser* parser, const 
           const auto adj_lane_it = std::find_if(lanes.begin(), lanes.end(), [&lane](const Lane& lane_it) {
             return lane.right_lane_id.value() == lane_it.id;
           });
-          if (adj_lane_it == lanes.end()) {
-            // Error.
-            evaluate(true,
-                     {"Adjacent lane isn't part of the segment: Lane " + lane.id + " has a right lane id (" +
-                      lane.right_lane_id.value() + ") that is not part of the segment " + segment.first + "."},
-                     Validator::Error::Type::kLogicalLaneAdjacency);
-          } else {
+          if (!evaluate(adj_lane_it == lanes.end(),
+                        {"Adjacent lane isn't part of the segment: Lane " + lane.id + " has a right lane id (" +
+                         lane.right_lane_id.value() + ") that is not part of the segment " + segment.first + "."},
+                        Validator::Error::Type::kLogicalLaneAdjacency)) {
             // Check if right lane id has the lane id as left lane id.
-            if (adj_lane_it->left_lane_id) {
-              evaluate(adj_lane_it->left_lane_id.value() != lane.id,
-                       {"Wrong ordering of lanes: Lane " + lane.id + " has a right lane id (" +
-                        lane.right_lane_id.value() + ") that has a left lane id (" + adj_lane_it->left_lane_id.value() +
-                        ") that is not the lane " + lane.id + "."},
-                       Validator::Error::Type::kLogicalLaneAdjacency);
-
-            } else {
-              evaluate(true,
-                       {"Wrong ordering of lanes: Lane " + lane.id + " has a right lane id (" +
-                        lane.right_lane_id.value() + ") that has no left lane id."},
-                       Validator::Error::Type::kLogicalLaneAdjacency);
-            }
+            !evaluate(!adj_lane_it->left_lane_id.has_value(),
+                      {"Wrong ordering of lanes: Lane " + lane.id + " has a right lane id (" +
+                       lane.right_lane_id.value() + ") that has no left lane id."},
+                      Validator::Error::Type::kLogicalLaneAdjacency) &&
+                evaluate(adj_lane_it->left_lane_id.value() != lane.id,
+                         {"Wrong ordering of lanes: Lane " + lane.id + " has a right lane id (" +
+                          lane.right_lane_id.value() + ") that has a left lane id (" +
+                          adj_lane_it->left_lane_id.value() + ") that is not the lane " + lane.id + "."},
+                         Validator::Error::Type::kLogicalLaneAdjacency);
 
             // Check geometrical adjacency.
             evaluate(!AreAdjacent(lane, *adj_lane_it, kRight, config.linear_tolerance),
@@ -156,26 +150,20 @@ std::vector<Validator::Error> ValidateLaneAdjacency(const Parser* parser, const 
           const auto adj_lane_it = std::find_if(lanes.begin(), lanes.end(), [&lane](const Lane& lane_it) {
             return lane.left_lane_id.value() == lane_it.id;
           });
-          if (adj_lane_it == lanes.end()) {
-            evaluate(true,
-                     {"Adjacent lane isn't part of the segment: Lane " + lane.id + " has a left lane id (" +
-                      lane.left_lane_id.value() + ") that is not part of the segment " + segment.first + "."},
-                     Validator::Error::Type::kLogicalLaneAdjacency);
-          } else {
+          if (!evaluate(adj_lane_it == lanes.end(),
+                        {"Adjacent lane isn't part of the segment: Lane " + lane.id + " has a left lane id (" +
+                         lane.left_lane_id.value() + ") that is not part of the segment " + segment.first + "."},
+                        Validator::Error::Type::kLogicalLaneAdjacency)) {
             // Check if left lane id has the lane id as right lane id.
-            if (adj_lane_it->right_lane_id) {
-              evaluate(adj_lane_it->right_lane_id.value() != lane.id,
-                       {"Wrong ordering of lanes: Lane " + lane.id + " has a left lane id (" +
-                        lane.left_lane_id.value() + ") that has a right lane id (" +
-                        adj_lane_it->right_lane_id.value() + ") that is not the lane " + lane.id + "."},
-                       Validator::Error::Type::kLogicalLaneAdjacency);
-            } else {
-              // Error.
-              evaluate(true,
-                       {"Wrong ordering of lanes: Lane " + lane.id + " has a left lane id (" +
-                        lane.left_lane_id.value() + ") that has no right lane id."},
-                       Validator::Error::Type::kLogicalLaneAdjacency);
-            }
+            !evaluate(!adj_lane_it->right_lane_id.has_value(),
+                      {"Wrong ordering of lanes: Lane " + lane.id + " has a left lane id (" +
+                       lane.left_lane_id.value() + ") that has no right lane id."},
+                      Validator::Error::Type::kLogicalLaneAdjacency) &&
+                evaluate(adj_lane_it->right_lane_id.value() != lane.id,
+                         {"Wrong ordering of lanes: Lane " + lane.id + " has a left lane id (" +
+                          lane.left_lane_id.value() + ") that has a right lane id (" +
+                          adj_lane_it->right_lane_id.value() + ") that is not the lane " + lane.id + "."},
+                         Validator::Error::Type::kLogicalLaneAdjacency);
 
             // Check geometrical adjacency.
             evaluate(!AreAdjacent(lane, *adj_lane_it, kLeft, config.linear_tolerance),
