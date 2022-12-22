@@ -29,6 +29,8 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maliput_sparse/parser/validator.h"
 
+#include <maliput/common/logger.h>
+
 #include "maliput_sparse/geometry/utility/geometry.h"
 #include "maliput_sparse/parser/junction.h"
 #include "maliput_sparse/parser/lane.h"
@@ -57,23 +59,47 @@ bool AreAdjacent(const Lane& lane, const Lane& adjacent_lane, bool left, double 
 
 }  // namespace
 
-Validator::Validator(const Parser* parser, const ValidatorOptions& options, const ValidatorConfig& config)
-    : parser_{parser}, options_{options}, config_{config} {
+const std::unordered_map<Validator::Type, std::unordered_set<Validator::Type>> Validator::kDependentTypes{
+    {Validator::Type::kLogicalLaneAdjacency, {}},
+    {Validator::Type::kGeometricalLaneAdjacency, {Validator::Type::kLogicalLaneAdjacency}},
+};
+
+Validator::Validator(const Parser* parser, const Types& types, const ValidatorConfig& config)
+    : parser_{parser}, config_{config}, types_{types} {
   MALIPUT_THROW_UNLESS(parser_);
+
+  // Evaluate dependencies of the validation types.
+  for (const auto& type : types_) {
+    const auto& dependencies = kDependentTypes.at(type);
+    for (const auto& dependency : dependencies) {
+      if (std::find(types_.begin(), types_.end(), dependency) == types_.end()) {
+        maliput::log()->debug("Validator: {} depends on {}, adding it to the validation types.", type, dependency);
+        types_.insert(dependency);
+      }
+    }
+  }
 }
 
 std::vector<Validator::Error> Validator::operator()() const {
   std::vector<Validator::Error> errors;
-  if (options_.lane_adjacency) {
-    const auto lane_adjacency_errors = ValidateLaneAdjacency(parser_, config_);
+
+  // Lane adjacency validation.
+  const bool logical_lane_adjacency_enabled =
+      std::find(types_.begin(), types_.end(), Validator::Type::kLogicalLaneAdjacency) != types_.end();
+  const bool geometrical_lane_adjacency_enabled =
+      std::find(types_.begin(), types_.end(), Validator::Type::kGeometricalLaneAdjacency) != types_.end();
+  if (logical_lane_adjacency_enabled || geometrical_lane_adjacency_enabled) {
+    const auto lane_adjacency_errors = ValidateLaneAdjacency(parser_, geometrical_lane_adjacency_enabled, config_);
     errors.insert(errors.end(), lane_adjacency_errors.begin(), lane_adjacency_errors.end());
   }
+
   return errors;
 }
 
-std::vector<Validator::Error> ValidateLaneAdjacency(const Parser* parser, const ValidatorConfig config) {
+std::vector<Validator::Error> ValidateLaneAdjacency(const Parser* parser, const bool& validate_geometric_adjacency,
+                                                    const ValidatorConfig config) {
   std::vector<Validator::Error> errors;
-  auto evaluate = [&errors](bool condition, const std::string& message, const Validator::Error::Type& error_type) {
+  auto evaluate = [&errors](bool condition, const std::string& message, const Validator::Type& error_type) {
     if (condition) {
       errors.push_back({message, error_type, Validator::Error::Severity::kError});
     }
@@ -97,7 +123,7 @@ std::vector<Validator::Error> ValidateLaneAdjacency(const Parser* parser, const 
           evaluate(idx == 0,
                    {"Wrong ordering of lanes: Lane " + lane.id + " has a right lane id (" + lane.right_lane_id.value() +
                     ") but is the first lane in the segment " + segment.first + "."},
-                   Validator::Error::Type::kLogicalLaneAdjacency);
+                   Validator::Type::kLogicalLaneAdjacency);
           // Check if right lane id is in the same segment
           const auto adj_lane_it = std::find_if(lanes.begin(), lanes.end(), [&lane](const Lane& lane_it) {
             return lane.right_lane_id.value() == lane_it.id;
@@ -105,37 +131,39 @@ std::vector<Validator::Error> ValidateLaneAdjacency(const Parser* parser, const 
           if (!evaluate(adj_lane_it == lanes.end(),
                         {"Adjacent lane isn't part of the segment: Lane " + lane.id + " has a right lane id (" +
                          lane.right_lane_id.value() + ") that is not part of the segment " + segment.first + "."},
-                        Validator::Error::Type::kLogicalLaneAdjacency)) {
+                        Validator::Type::kLogicalLaneAdjacency)) {
             // Check if right lane id has the lane id as left lane id.
             !evaluate(!adj_lane_it->left_lane_id.has_value(),
                       {"Wrong ordering of lanes: Lane " + lane.id + " has a right lane id (" +
                        lane.right_lane_id.value() + ") that has no left lane id."},
-                      Validator::Error::Type::kLogicalLaneAdjacency) &&
+                      Validator::Type::kLogicalLaneAdjacency) &&
                 evaluate(adj_lane_it->left_lane_id.value() != lane.id,
                          {"Wrong ordering of lanes: Lane " + lane.id + " has a right lane id (" +
                           lane.right_lane_id.value() + ") that has a left lane id (" +
                           adj_lane_it->left_lane_id.value() + ") that is not the lane " + lane.id + "."},
-                         Validator::Error::Type::kLogicalLaneAdjacency);
+                         Validator::Type::kLogicalLaneAdjacency);
 
             // Check geometrical adjacency.
-            evaluate(!AreAdjacent(lane, *adj_lane_it, kRight, config.linear_tolerance),
-                     {"Lane " + lane.id + " and lane " + adj_lane_it->id + " are not adjacent under the tolerance " +
-                      std::to_string(config.linear_tolerance) + "."},
-                     Validator::Error::Type::kGeometricalLaneAdjacency);
+            if (validate_geometric_adjacency) {
+              evaluate(!AreAdjacent(lane, *adj_lane_it, kRight, config.linear_tolerance),
+                       {"Lane " + lane.id + " and lane " + adj_lane_it->id + " are not adjacent under the tolerance " +
+                        std::to_string(config.linear_tolerance) + "."},
+                       Validator::Type::kGeometricalLaneAdjacency);
+            }
           }
 
           // Check if idx - 1 lane is the right lane id.
           evaluate((idx - 1 >= 0) && (lanes[idx - 1].id != lane.right_lane_id.value()),
                    {"Wrong ordering of lanes: Lane " + lane.id + " has a right lane id (" + lane.right_lane_id.value() +
                     ") that is not the previous lane in the segment " + segment.first + "."},
-                   Validator::Error::Type::kLogicalLaneAdjacency);
+                   Validator::Type::kLogicalLaneAdjacency);
 
         } else {
           // Check if idx is the first lane in the segment.
           evaluate(idx != 0,
                    {"Wrong ordering of lanes: Lane " + lane.id +
                     " has no right lane id but it isn't the first lane in the segment " + segment.first + "."},
-                   Validator::Error::Type::kLogicalLaneAdjacency);
+                   Validator::Type::kLogicalLaneAdjacency);
         }
 
         // Check left adjacency <--------------------------------------------------
@@ -144,7 +172,7 @@ std::vector<Validator::Error> ValidateLaneAdjacency(const Parser* parser, const 
           evaluate(idx == static_cast<int>(lanes.size()) - 1,
                    {"Wrong ordering of lanes: Lane " + lane.id + " has a left lane id (" + lane.left_lane_id.value() +
                     ") but is the last lane in the segment " + segment.first + "."},
-                   Validator::Error::Type::kLogicalLaneAdjacency);
+                   Validator::Type::kLogicalLaneAdjacency);
 
           // Check if left lane id is in the same segment
           const auto adj_lane_it = std::find_if(lanes.begin(), lanes.end(), [&lane](const Lane& lane_it) {
@@ -153,23 +181,25 @@ std::vector<Validator::Error> ValidateLaneAdjacency(const Parser* parser, const 
           if (!evaluate(adj_lane_it == lanes.end(),
                         {"Adjacent lane isn't part of the segment: Lane " + lane.id + " has a left lane id (" +
                          lane.left_lane_id.value() + ") that is not part of the segment " + segment.first + "."},
-                        Validator::Error::Type::kLogicalLaneAdjacency)) {
+                        Validator::Type::kLogicalLaneAdjacency)) {
             // Check if left lane id has the lane id as right lane id.
             !evaluate(!adj_lane_it->right_lane_id.has_value(),
                       {"Wrong ordering of lanes: Lane " + lane.id + " has a left lane id (" +
                        lane.left_lane_id.value() + ") that has no right lane id."},
-                      Validator::Error::Type::kLogicalLaneAdjacency) &&
+                      Validator::Type::kLogicalLaneAdjacency) &&
                 evaluate(adj_lane_it->right_lane_id.value() != lane.id,
                          {"Wrong ordering of lanes: Lane " + lane.id + " has a left lane id (" +
                           lane.left_lane_id.value() + ") that has a right lane id (" +
                           adj_lane_it->right_lane_id.value() + ") that is not the lane " + lane.id + "."},
-                         Validator::Error::Type::kLogicalLaneAdjacency);
+                         Validator::Type::kLogicalLaneAdjacency);
 
             // Check geometrical adjacency.
-            evaluate(!AreAdjacent(lane, *adj_lane_it, kLeft, config.linear_tolerance),
-                     {"Lane " + lane.id + " and lane " + adj_lane_it->id + " are not adjacent under the tolerance " +
-                      std::to_string(config.linear_tolerance) + "."},
-                     Validator::Error::Type::kGeometricalLaneAdjacency);
+            if (validate_geometric_adjacency) {
+              evaluate(!AreAdjacent(lane, *adj_lane_it, kLeft, config.linear_tolerance),
+                       {"Lane " + lane.id + " and lane " + adj_lane_it->id + " are not adjacent under the tolerance " +
+                        std::to_string(config.linear_tolerance) + "."},
+                       Validator::Type::kGeometricalLaneAdjacency);
+            }
           }
 
           // Check if idx + 1 lane is the left lane id.
@@ -178,7 +208,7 @@ std::vector<Validator::Error> ValidateLaneAdjacency(const Parser* parser, const 
             evaluate(true,
                      {"Wrong ordering of lanes: Lane " + lane.id + " has a left lane id (" + lane.left_lane_id.value() +
                       ") that is not the next lane in the segment " + segment.first + "."},
-                     Validator::Error::Type::kLogicalLaneAdjacency);
+                     Validator::Type::kLogicalLaneAdjacency);
           }
 
         } else {
@@ -186,7 +216,7 @@ std::vector<Validator::Error> ValidateLaneAdjacency(const Parser* parser, const 
           evaluate(idx != static_cast<int>(lanes.size()) - 1,
                    {"Wrong ordering of lanes: Lane " + lane.id +
                     " has no left lane id but it isn't the last lane in the segment " + segment.first + "."},
-                   Validator::Error::Type::kLogicalLaneAdjacency);
+                   Validator::Type::kLogicalLaneAdjacency);
         }
       }
     }
@@ -199,6 +229,18 @@ bool Validator::Error::operator==(const Error& other) const {
 }
 
 bool Validator::Error::operator!=(const Error& other) const { return !(*this == other); }
+
+std::ostream& operator<<(std::ostream& os, const Validator::Type& type) {
+  switch (type) {
+    case Validator::Type::kLogicalLaneAdjacency:
+      os << "Logical Lane Adjacency";
+      break;
+    case Validator::Type::kGeometricalLaneAdjacency:
+      os << "Geometrical Lane Adjacency";
+      break;
+  }
+  return os;
+}
 
 }  // namespace parser
 }  // namespace maliput_sparse

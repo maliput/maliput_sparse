@@ -74,6 +74,11 @@ class ValidatorTest : public ::testing::Test {
  protected:
   const Lane wrong_adj_lane{CreateLane("0", LineString3d{{1., 1., 1.}, {10., 1., 1.}},
                                        LineString3d{{1., -1., 1.}, {10., -1., 1.}}, {"23123"}, std::nullopt, {}, {})};
+  const Lane lane_0{CreateLane("0", LineString3d{{1., 1., 1.}, {10., 1., 1.}},
+                               LineString3d{{1., -1., 1.}, {10., -1., 1.}}, {"1"}, std::nullopt, {}, {})};
+  const Lane not_geometrical_adj_lane_to_lane_0{CreateLane("1", LineString3d{{1., 3., 1.}, {10., 3., 1.}},
+                                                           LineString3d{{1., 2., 1.}, {10., 2., 1.}}, std::nullopt,
+                                                           {"0"}, {}, {})};
 };
 
 TEST_F(ValidatorTest, InvalidParser) {
@@ -81,21 +86,51 @@ TEST_F(ValidatorTest, InvalidParser) {
 }
 
 TEST_F(ValidatorTest, AllOptionsDisabled) {
-  ValidatorOptions options;
-  options.lane_adjacency = false;
+  const Validator::Types types{/* No validation selected */};
   const MockParser parser = CreateMockParser({wrong_adj_lane});
-  const auto errors = Validator(&parser, options, ValidatorConfig{1e-3})();
+  const auto errors = Validator(&parser, types, ValidatorConfig{1e-3})();
   ASSERT_EQ(0., errors.size());
 }
 
-TEST_F(ValidatorTest, LaneAdjacencyOption) {
-  ValidatorOptions options;
-  options.lane_adjacency = true;
+// Wrong adjacent lane id. Only logical errors will be found.
+TEST_F(ValidatorTest, LogicalLaneAdjacencyOptionCaseA) {
+  const Validator::Types types{Validator::Type::kLogicalLaneAdjacency};
   const MockParser parser = CreateMockParser({wrong_adj_lane});
-  const auto errors = Validator(&parser, options, ValidatorConfig{1e-3})();
+  const auto errors = Validator(&parser, types, ValidatorConfig{1e-3})();
   ASSERT_NE(0., errors.size());
   for (const auto& error : errors) {
-    EXPECT_TRUE(error.type == Validator::Error::Type::kLogicalLaneAdjacency);
+    EXPECT_TRUE(error.type == Validator::Type::kLogicalLaneAdjacency);
+  }
+}
+
+// As GeometryLaneAdjacency depends on LogicalLaneAdjacency, and there is only one lane then a logical error will be
+// found.
+TEST_F(ValidatorTest, GeometricalLaneAdjacencyOptionCaseA) {
+  const Validator::Types types{Validator::Type::kGeometricalLaneAdjacency};
+  const MockParser parser = CreateMockParser({wrong_adj_lane});
+  const auto errors = Validator(&parser, types, ValidatorConfig{1e-3})();
+  ASSERT_NE(0., errors.size());
+  for (const auto& error : errors) {
+    EXPECT_TRUE(error.type == Validator::Type::kLogicalLaneAdjacency);
+  }
+}
+
+// Wrong geometric adjacency. No errors will be found
+TEST_F(ValidatorTest, LogicalLaneAdjacencyOptionCaseB) {
+  const Validator::Types types{Validator::Type::kLogicalLaneAdjacency};
+  const MockParser parser = CreateMockParser({lane_0, not_geometrical_adj_lane_to_lane_0});
+  const auto errors = Validator(&parser, types, ValidatorConfig{1e-3})();
+  ASSERT_EQ(0., errors.size());
+}
+
+// Wrong geometric adjacency. Only geometrical errors will be found.
+TEST_F(ValidatorTest, GeometricalLaneAdjacencyOptionCaseB) {
+  const Validator::Types types{Validator::Type::kGeometricalLaneAdjacency};
+  const MockParser parser = CreateMockParser({lane_0, not_geometrical_adj_lane_to_lane_0});
+  const auto errors = Validator(&parser, types, ValidatorConfig{1e-3})();
+  ASSERT_NE(0., errors.size());
+  for (const auto& error : errors) {
+    EXPECT_TRUE(error.type == Validator::Type::kGeometricalLaneAdjacency);
   }
 }
 
@@ -109,13 +144,15 @@ class ValidateLaneAdjacencyTest : public ValidatorTest {
                                  LineString3d{{1., 3., 1.}, {10., 3., 1.}}, {"3"}, {"1"}, {}, {});
   const Lane lane_3 = CreateLane("3", LineString3d{{1., 7., 1.}, {10., 7., 1.}},
                                  LineString3d{{1., 5., 1.}, {10., 5., 1.}}, std::nullopt, {"2"}, {}, {});
+  const bool kEnableGeometricalValidation = true;
+  const bool kDisableGeometricalValidation = !kEnableGeometricalValidation;
 };
 
 TEST_F(ValidateLaneAdjacencyTest, NoErrors) {
   const Segment segment{"segment", {lane_0, lane_1, lane_2, lane_3}};
   const Junction junction{"junction", {{segment.id, segment}}};
   const MockParser parser({{junction.id, junction}}, {});
-  const auto errors = ValidateLaneAdjacency(&parser, ValidatorConfig{1e-3});
+  const auto errors = ValidateLaneAdjacency(&parser, kEnableGeometricalValidation, ValidatorConfig{1e-3});
   EXPECT_EQ(0., errors.size());
 }
 
@@ -123,20 +160,20 @@ TEST_F(ValidateLaneAdjacencyTest, NoValidRightLaneInTheSegment) {
   const std::vector<Validator::Error> expected_errors{
       {"Wrong ordering of lanes: Lane 1 has a left lane id (2) that has a right lane id (41856) that is not the lane "
        "1.",
-       Validator::Error::Type::kLogicalLaneAdjacency, Validator::Error::Severity::kError},
+       Validator::Type::kLogicalLaneAdjacency, Validator::Error::Severity::kError},
       {"Adjacent lane isn't part of the segment: Lane 2 has a right lane id (41856) that is not part of the segment "
        "segment.",
-       Validator::Error::Type::kLogicalLaneAdjacency, Validator::Error::Severity::kError},
+       Validator::Type::kLogicalLaneAdjacency, Validator::Error::Severity::kError},
       {"Wrong ordering of lanes: Lane 2 has a right lane id (41856) that is not the previous lane in the segment "
        "segment.",
-       Validator::Error::Type::kLogicalLaneAdjacency, Validator::Error::Severity::kError},
+       Validator::Type::kLogicalLaneAdjacency, Validator::Error::Severity::kError},
   };
   Lane lane_2_no_valid_right_id{lane_2};
   lane_2_no_valid_right_id.right_lane_id = "41856";
   const Segment segment{"segment", {lane_0, lane_1, lane_2_no_valid_right_id, lane_3}};
   const Junction junction{"junction", {{segment.id, segment}}};
   const MockParser parser({{junction.id, junction}}, {});
-  const auto errors = ValidateLaneAdjacency(&parser, ValidatorConfig{1e-3});
+  const auto errors = ValidateLaneAdjacency(&parser, kEnableGeometricalValidation, ValidatorConfig{1e-3});
   ASSERT_EQ(expected_errors.size(), errors.size());
   EXPECT_EQ(expected_errors, errors);
 }
@@ -145,18 +182,18 @@ TEST_F(ValidateLaneAdjacencyTest, NoValidLeftLaneInTheSegment) {
   const std::vector<Validator::Error> expected_errors{
       {"Adjacent lane isn't part of the segment: Lane 2 has a left lane id (41856) that is not part of the segment "
        "segment.",
-       Validator::Error::Type::kLogicalLaneAdjacency, Validator::Error::Severity::kError},
+       Validator::Type::kLogicalLaneAdjacency, Validator::Error::Severity::kError},
       {"Wrong ordering of lanes: Lane 2 has a left lane id (41856) that is not the next lane in the segment "
        "segment.",
-       Validator::Error::Type::kLogicalLaneAdjacency, Validator::Error::Severity::kError},
+       Validator::Type::kLogicalLaneAdjacency, Validator::Error::Severity::kError},
       {"Wrong ordering of lanes: Lane 3 has a right lane id (2) that has a left lane id (41856) that is not the lane "
        "3.",
-       Validator::Error::Type::kLogicalLaneAdjacency, Validator::Error::Severity::kError},
+       Validator::Type::kLogicalLaneAdjacency, Validator::Error::Severity::kError},
   };
   Lane lane_2_no_valid_left_id{lane_2};
   lane_2_no_valid_left_id.left_lane_id = "41856";
   const MockParser parser{CreateMockParser({lane_0, lane_1, lane_2_no_valid_left_id, lane_3})};
-  const auto errors = ValidateLaneAdjacency(&parser, ValidatorConfig{1e-3});
+  const auto errors = ValidateLaneAdjacency(&parser, kEnableGeometricalValidation, ValidatorConfig{1e-3});
   ASSERT_EQ(expected_errors.size(), errors.size());
   EXPECT_EQ(expected_errors, errors);
 }
@@ -165,17 +202,17 @@ TEST_F(ValidateLaneAdjacencyTest, NoCorrespondenceForRightLane) {
   const std::vector<Validator::Error> expected_errors{
       {"Adjacent lane isn't part of the segment: Lane 0 has a left lane id (54656465) that is not part of the segment "
        "segment.",
-       Validator::Error::Type::kLogicalLaneAdjacency, Validator::Error::Severity::kError},
+       Validator::Type::kLogicalLaneAdjacency, Validator::Error::Severity::kError},
       {"Wrong ordering of lanes: Lane 0 has a left lane id (54656465) that is not the next lane in the segment "
        "segment.",
-       Validator::Error::Type::kLogicalLaneAdjacency, Validator::Error::Severity::kError},
+       Validator::Type::kLogicalLaneAdjacency, Validator::Error::Severity::kError},
       {"Wrong ordering of lanes: Lane 1 has a right lane id (0) that has a left lane id (54656465) that is not the "
        "lane 1.",
-       Validator::Error::Type::kLogicalLaneAdjacency, Validator::Error::Severity::kError},
+       Validator::Type::kLogicalLaneAdjacency, Validator::Error::Severity::kError},
       {"Wrong ordering of lanes: Lane 1 has no left lane id but it isn't the last lane in the segment segment.",
-       Validator::Error::Type::kLogicalLaneAdjacency, Validator::Error::Severity::kError},
+       Validator::Type::kLogicalLaneAdjacency, Validator::Error::Severity::kError},
       {"Wrong ordering of lanes: Lane 2 has a right lane id (1) that has no left lane id.",
-       Validator::Error::Type::kLogicalLaneAdjacency, Validator::Error::Severity::kError},
+       Validator::Type::kLogicalLaneAdjacency, Validator::Error::Severity::kError},
   };
   Lane lane_0_with_other_left_lane_id{lane_0};
   lane_0_with_other_left_lane_id.left_lane_id = "54656465";
@@ -183,7 +220,7 @@ TEST_F(ValidateLaneAdjacencyTest, NoCorrespondenceForRightLane) {
   lane_1_without_left_lane_id.left_lane_id = std::nullopt;
   const MockParser parser{
       CreateMockParser({lane_0_with_other_left_lane_id, lane_1_without_left_lane_id, lane_2, lane_3})};
-  const auto errors = ValidateLaneAdjacency(&parser, ValidatorConfig{1e-3});
+  const auto errors = ValidateLaneAdjacency(&parser, kEnableGeometricalValidation, ValidatorConfig{1e-3});
   ASSERT_EQ(expected_errors.size(), errors.size());
   EXPECT_EQ(expected_errors, errors);
 }
@@ -191,18 +228,18 @@ TEST_F(ValidateLaneAdjacencyTest, NoCorrespondenceForRightLane) {
 TEST_F(ValidateLaneAdjacencyTest, NoCorrespondenceForLeftLane) {
   const std::vector<Validator::Error> expected_errors{
       {"Wrong ordering of lanes: Lane 1 has a left lane id (2) that has no right lane id.",
-       Validator::Error::Type::kLogicalLaneAdjacency, Validator::Error::Severity::kError},
+       Validator::Type::kLogicalLaneAdjacency, Validator::Error::Severity::kError},
       {"Wrong ordering of lanes: Lane 2 has no right lane id but it isn't the first lane in the segment segment.",
-       Validator::Error::Type::kLogicalLaneAdjacency, Validator::Error::Severity::kError},
+       Validator::Type::kLogicalLaneAdjacency, Validator::Error::Severity::kError},
       {"Wrong ordering of lanes: Lane 2 has a left lane id (3) that has a right lane id (54656465) that is not the "
        "lane 2.",
-       Validator::Error::Type::kLogicalLaneAdjacency, Validator::Error::Severity::kError},
+       Validator::Type::kLogicalLaneAdjacency, Validator::Error::Severity::kError},
       {"Adjacent lane isn't part of the segment: Lane 3 has a right lane id (54656465) that is not part of the segment "
        "segment.",
-       Validator::Error::Type::kLogicalLaneAdjacency, Validator::Error::Severity::kError},
+       Validator::Type::kLogicalLaneAdjacency, Validator::Error::Severity::kError},
       {"Wrong ordering of lanes: Lane 3 has a right lane id (54656465) that is not the previous lane in the segment "
        "segment.",
-       Validator::Error::Type::kLogicalLaneAdjacency, Validator::Error::Severity::kError},
+       Validator::Type::kLogicalLaneAdjacency, Validator::Error::Severity::kError},
   };
   Lane lane_2_without_right_lane_id{lane_2};
   lane_2_without_right_lane_id.right_lane_id = std::nullopt;
@@ -210,7 +247,7 @@ TEST_F(ValidateLaneAdjacencyTest, NoCorrespondenceForLeftLane) {
   lane_3_with_other_right_lane_id.right_lane_id = "54656465";
   const MockParser parser{
       CreateMockParser({lane_0, lane_1, lane_2_without_right_lane_id, lane_3_with_other_right_lane_id})};
-  const auto errors = ValidateLaneAdjacency(&parser, ValidatorConfig{1e-3});
+  const auto errors = ValidateLaneAdjacency(&parser, kEnableGeometricalValidation, ValidatorConfig{1e-3});
   ASSERT_EQ(expected_errors.size(), errors.size());
   EXPECT_EQ(expected_errors, errors);
 }
@@ -218,14 +255,14 @@ TEST_F(ValidateLaneAdjacencyTest, NoCorrespondenceForLeftLane) {
 TEST_F(ValidateLaneAdjacencyTest, NoRightLaneIdForANonFirstLane) {
   const std::vector<Validator::Error> expected_errors{
       {"Wrong ordering of lanes: Lane 0 has a left lane id (1) that has no right lane id.",
-       Validator::Error::Type::kLogicalLaneAdjacency, Validator::Error::Severity::kError},
+       Validator::Type::kLogicalLaneAdjacency, Validator::Error::Severity::kError},
       {"Wrong ordering of lanes: Lane 1 has no right lane id but it isn't the first lane in the segment segment.",
-       Validator::Error::Type::kLogicalLaneAdjacency, Validator::Error::Severity::kError},
+       Validator::Type::kLogicalLaneAdjacency, Validator::Error::Severity::kError},
   };
   Lane lane_1_without_right_lane_id{lane_1};
   lane_1_without_right_lane_id.right_lane_id = std::nullopt;
   const MockParser parser{CreateMockParser({lane_0, lane_1_without_right_lane_id, lane_2, lane_3})};
-  const auto errors = ValidateLaneAdjacency(&parser, ValidatorConfig{1e-3});
+  const auto errors = ValidateLaneAdjacency(&parser, kEnableGeometricalValidation, ValidatorConfig{1e-3});
   ASSERT_EQ(expected_errors.size(), errors.size());
   EXPECT_EQ(expected_errors, errors);
 }
@@ -233,14 +270,14 @@ TEST_F(ValidateLaneAdjacencyTest, NoRightLaneIdForANonFirstLane) {
 TEST_F(ValidateLaneAdjacencyTest, NoLeftLaneIdForANonLastLane) {
   const std::vector<Validator::Error> expected_errors{
       {"Wrong ordering of lanes: Lane 1 has no left lane id but it isn't the last lane in the segment segment.",
-       Validator::Error::Type::kLogicalLaneAdjacency, Validator::Error::Severity::kError},
+       Validator::Type::kLogicalLaneAdjacency, Validator::Error::Severity::kError},
       {"Wrong ordering of lanes: Lane 2 has a right lane id (1) that has no left lane id.",
-       Validator::Error::Type::kLogicalLaneAdjacency, Validator::Error::Severity::kError},
+       Validator::Type::kLogicalLaneAdjacency, Validator::Error::Severity::kError},
   };
   Lane lane_1_without_left_lane_id{lane_1};
   lane_1_without_left_lane_id.left_lane_id = std::nullopt;
   const MockParser parser{CreateMockParser({lane_0, lane_1_without_left_lane_id, lane_2, lane_3})};
-  const auto errors = ValidateLaneAdjacency(&parser, ValidatorConfig{1e-3});
+  const auto errors = ValidateLaneAdjacency(&parser, kEnableGeometricalValidation, ValidatorConfig{1e-3});
   ASSERT_EQ(expected_errors.size(), errors.size());
   EXPECT_EQ(expected_errors, errors);
 }
@@ -248,13 +285,13 @@ TEST_F(ValidateLaneAdjacencyTest, NoLeftLaneIdForANonLastLane) {
 TEST_F(ValidateLaneAdjacencyTest, NoRightLanes) {
   const std::vector<Validator::Error> expected_errors{
       {"Wrong ordering of lanes: Lane 3 has a right lane id (2) but is the first lane in the segment segment.",
-       Validator::Error::Type::kLogicalLaneAdjacency, Validator::Error::Severity::kError},
+       Validator::Type::kLogicalLaneAdjacency, Validator::Error::Severity::kError},
       {"Adjacent lane isn't part of the segment: Lane 3 has a right lane id (2) that is not part of the segment "
        "segment.",
-       Validator::Error::Type::kLogicalLaneAdjacency, Validator::Error::Severity::kError},
+       Validator::Type::kLogicalLaneAdjacency, Validator::Error::Severity::kError},
   };
   const MockParser parser{CreateMockParser({lane_3})};
-  const auto errors = ValidateLaneAdjacency(&parser, ValidatorConfig{1e-3});
+  const auto errors = ValidateLaneAdjacency(&parser, kEnableGeometricalValidation, ValidatorConfig{1e-3});
   ASSERT_EQ(expected_errors.size(), errors.size());
   EXPECT_EQ(expected_errors, errors);
 }
@@ -262,13 +299,13 @@ TEST_F(ValidateLaneAdjacencyTest, NoRightLanes) {
 TEST_F(ValidateLaneAdjacencyTest, NoLeftLanes) {
   const std::vector<Validator::Error> expected_errors{
       {"Wrong ordering of lanes: Lane 0 has a left lane id (1) but is the last lane in the segment segment.",
-       Validator::Error::Type::kLogicalLaneAdjacency, Validator::Error::Severity::kError},
+       Validator::Type::kLogicalLaneAdjacency, Validator::Error::Severity::kError},
       {"Adjacent lane isn't part of the segment: Lane 0 has a left lane id (1) that is not part of the segment "
        "segment.",
-       Validator::Error::Type::kLogicalLaneAdjacency, Validator::Error::Severity::kError},
+       Validator::Type::kLogicalLaneAdjacency, Validator::Error::Severity::kError},
   };
   const MockParser parser{CreateMockParser({lane_0})};
-  const auto errors = ValidateLaneAdjacency(&parser, ValidatorConfig{1e-3});
+  const auto errors = ValidateLaneAdjacency(&parser, kEnableGeometricalValidation, ValidatorConfig{1e-3});
   ASSERT_EQ(expected_errors.size(), errors.size());
   EXPECT_EQ(expected_errors, errors);
 }
@@ -277,15 +314,24 @@ TEST_F(ValidateLaneAdjacencyTest, NoGeometricallyAdjacentLanes) {
   Lane lane_0_no_geometrically_adj{lane_0};
   lane_0_no_geometrically_adj.left = LineString3d{{1., 7., 1.}, {10., 7., 1.}};
   const std::vector<Validator::Error> expected_errors{
-      {"Lane 0 and lane 1 are not adjacent under the tolerance 0.001000.",
-       Validator::Error::Type::kGeometricalLaneAdjacency, Validator::Error::Severity::kError},
-      {"Lane 1 and lane 0 are not adjacent under the tolerance 0.001000.",
-       Validator::Error::Type::kGeometricalLaneAdjacency, Validator::Error::Severity::kError},
+      {"Lane 0 and lane 1 are not adjacent under the tolerance 0.001000.", Validator::Type::kGeometricalLaneAdjacency,
+       Validator::Error::Severity::kError},
+      {"Lane 1 and lane 0 are not adjacent under the tolerance 0.001000.", Validator::Type::kGeometricalLaneAdjacency,
+       Validator::Error::Severity::kError},
   };
   const MockParser parser{CreateMockParser({lane_0_no_geometrically_adj, lane_1, lane_2, lane_3})};
-  const auto errors = ValidateLaneAdjacency(&parser, ValidatorConfig{1e-3});
+  const auto errors = ValidateLaneAdjacency(&parser, kEnableGeometricalValidation, ValidatorConfig{1e-3});
   ASSERT_EQ(expected_errors.size(), errors.size());
   EXPECT_EQ(expected_errors, errors);
+}
+
+TEST_F(ValidateLaneAdjacencyTest, NoGeometricallyAdjacentLanesButNoGeometricalValidation) {
+  Lane lane_0_no_geometrically_adj{lane_0};
+  lane_0_no_geometrically_adj.left = LineString3d{{1., 7., 1.}, {10., 7., 1.}};
+  const std::vector<Validator::Error> expected_errors{/* empty */};
+  const MockParser parser{CreateMockParser({lane_0_no_geometrically_adj, lane_1, lane_2, lane_3})};
+  const auto errors = ValidateLaneAdjacency(&parser, kDisableGeometricalValidation, ValidatorConfig{1e-3});
+  ASSERT_EQ(expected_errors.size(), errors.size());
 }
 
 }  // namespace

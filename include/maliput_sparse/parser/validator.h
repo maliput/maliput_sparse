@@ -29,19 +29,16 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <ostream>
 #include <string>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include "maliput_sparse/parser/parser.h"
 
 namespace maliput_sparse {
 namespace parser {
-
-/// ValidatorOptions struct that contains the options for the Validator.
-struct ValidatorOptions {
-  /// Verifies adjacency for lanes in a segment.
-  bool lane_adjacency{true};
-};
 
 /// ValidatorConfig struct that contains the configuration for the Validator.
 struct ValidatorConfig {
@@ -56,13 +53,14 @@ struct ValidatorConfig {
 /// severity. It's on the user to decide how to handle the errors.
 class Validator {
  public:
+  /// The type of validation.
+  enum class Type {
+    kLogicalLaneAdjacency,
+    kGeometricalLaneAdjacency,
+  };
+
   /// Error struct that contains the error message, type, and severity.
   struct Error {
-    /// The type of error.
-    enum class Type {
-      kLogicalLaneAdjacency,
-      kGeometricalLaneAdjacency,
-    };
     /// The severity of the error.
     enum class Severity {
       kWarning,
@@ -77,30 +75,38 @@ class Validator {
     /// Message describing the error.
     std::string message;
     /// The type of error.
-    Type type;
+    Validator::Type type;
     /// The severity of the error.
     Severity severity;
   };
+
+  using Types = std::unordered_set<Validator::Type>;
 
   /// Constructor for Validator.
   /// During construction, the Validator will perform the validation checks.
   ////
   /// @param parser The maliput_sparse::parser::Parser instance to validate.
-  /// @param options The maliput_sparse::parser::ValidatorOptions to use.
+  /// @param types The types of validation to perform.
   /// @param config The maliput_sparse::parser::ValidatorConfig to use.
-  Validator(const Parser* parser, const ValidatorOptions& options, const ValidatorConfig& config);
+  Validator(const Parser* parser, const Types& types, const ValidatorConfig& config);
 
   /// Returns the errors found during validation.
   std::vector<Error> operator()() const;
 
  private:
+  // Returns the types of validation that are dependent on the given type.
+  static const std::unordered_map<Type, std::unordered_set<Type>> kDependentTypes;
+
   // The maliput_sparse::parser::Parser instance to validate.
   const Parser* parser_{nullptr};
-  // The maliput_sparse::parser::ValidatorOptions to use.
-  const ValidatorOptions options_;
   // The maliput_sparse::parser::ValidatorConfig to use.
   const ValidatorConfig config_;
+  // The types of validation to perform.
+  Types types_;
 };
+
+/// Serialize Validator::Type to ostream.
+std::ostream& operator<<(std::ostream& os, const Validator::Type& type);
 
 }  // namespace parser
 }  // namespace maliput_sparse
