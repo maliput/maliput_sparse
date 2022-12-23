@@ -120,6 +120,23 @@ ClosestPointResult GetClosestPoint(const std::pair<maliput::math::Vector3, malip
 /// and the p coordinate in the LineString3d matching the closest point.
 ClosestPointResult GetClosestPoint(const LineString3d& line_string, const maliput::math::Vector3& xyz);
 
+/// Computes the distance between two LineString3d.
+/// The distance is calculated as the sum of distances between corresponding points between both line strings divided by
+/// the number of points. Some notes: 1 - The evaluation points to be used are the ones from the line string with more
+/// points. 2 - If the line strings have the same number of points, the evaluation points are the ones from the first
+/// line string. 3 - The closest point is calculated for each point in the line string with less points using #ref
+/// GetClosestPoint method.
+///
+/// This algorithm is not the most precise one, but it is the most intuitive one and for the expected use cases it is
+/// good enough.
+///
+/// TODO(#CreateIssue): Use Frechet distance algorithm instead.
+///
+/// @param lhs A LineString3d.
+/// @param rhs A LineString3d.
+/// @return The distance between the two line strings defined as above.
+double ComputeDistance(const LineString3d& lhs, const LineString3d& rhs);
+
 }  // namespace utility
 }  // namespace geometry
 }  // namespace maliput_sparse
