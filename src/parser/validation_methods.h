@@ -42,8 +42,8 @@ namespace parser {
 /// @param validate_geometric_adjacency Whether to validate geometric adjacency.
 /// @param config The maliput_sparse::parser::ValidatorConfig to use.
 /// @returns A vector of maliput_sparse::parser::Validator::Error.
-std::vector<Validator::Error> ValidateLaneAdjacency(const Parser* parser, const bool& validate_geometric_adjacency,
-                                                    const ValidatorConfig config);
+std::vector<Validator::Error> ValidateLaneAdjacency(const Parser* parser, bool validate_geometric_adjacency,
+                                                    const ValidatorConfig& config);
 
 }  // namespace parser
 }  // namespace maliput_sparse

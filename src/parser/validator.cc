@@ -96,8 +96,8 @@ std::vector<Validator::Error> Validator::operator()() const {
   return errors;
 }
 
-std::vector<Validator::Error> ValidateLaneAdjacency(const Parser* parser, const bool& validate_geometric_adjacency,
-                                                    const ValidatorConfig config) {
+std::vector<Validator::Error> ValidateLaneAdjacency(const Parser* parser, bool validate_geometric_adjacency,
+                                                    const ValidatorConfig& config) {
   std::vector<Validator::Error> errors;
   auto evaluate = [&errors](bool condition, const std::string& message, const Validator::Type& error_type) {
     if (condition) {
