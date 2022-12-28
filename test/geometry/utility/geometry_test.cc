@@ -30,11 +30,13 @@
 #include "maliput_sparse/geometry/utility/geometry.h"
 
 #include <array>
+#include <chrono>
 #include <cmath>
 #include <vector>
 
 #include <gtest/gtest.h>
 #include <maliput/common/assertion_error.h>
+#include <maliput/math/kd_tree.h>
 #include <maliput/math/vector.h>
 #include <maliput/test_utilities/maliput_math_compare.h>
 
@@ -269,6 +271,44 @@ TEST_F(GetBoundPointsAtPTest, Test) {
     EXPECT_EQ(expected_result.first, dut.first);
     EXPECT_EQ(expected_result.second, dut.second);
     EXPECT_EQ(expected_result.length, dut.length);
+  }
+}
+
+class GetBoundPointsAtXYZTest : public ::testing::Test {
+ public:
+  const LineString3d line_string{{0., 0., 0.}, {6., 3., 2.}, {10., 6., 2.}, {16., 9., 4.}, {20., 10., 2.}};
+};
+
+TEST_F(GetBoundPointsAtXYZTest, Test) {
+  {
+    const maliput::math::Vector3 xyz{0., 0., 0.};
+    const BoundPointsResult expected_result{line_string.begin(), line_string.begin() + 1, 0.};
+    const BoundPointsResult dut = GetBoundPointsAtXYZ(line_string, xyz);
+    EXPECT_EQ(expected_result.first, dut.first);
+    EXPECT_EQ(expected_result.second, dut.second);
+    EXPECT_EQ(expected_result.length, dut.length);
+  }
+  {
+    const maliput::math::Vector3 xyz{3., 1.5, 1.};
+    const BoundPointsResult expected_result{line_string.begin(), line_string.begin() + 1, 0.};
+    const BoundPointsResult dut = GetBoundPointsAtXYZ(line_string, xyz);
+    EXPECT_EQ(expected_result.first, dut.first);
+    EXPECT_EQ(expected_result.second, dut.second);
+    EXPECT_EQ(expected_result.length, dut.length);
+  }
+  {
+    const maliput::math::Vector3 xyz{8., 4.5, 2.};
+    const BoundPointsResult expected_result{line_string.begin() + 1, line_string.begin() + 2,
+                                            (*line_string.begin() - *(line_string.begin() + 1)).norm()};
+    const BoundPointsResult dut = GetBoundPointsAtXYZ(line_string, xyz);
+    EXPECT_EQ(expected_result.first, dut.first);
+    EXPECT_EQ(expected_result.second, dut.second);
+    EXPECT_EQ(expected_result.length, dut.length);
+    // std::cout << "dut.first: " << *dut.first << ", expected_result.first: " << *expected_result.first << std::endl;
+
+    // std::cout << "dut.second: " << *dut.second << ", expected_result.second: " << *expected_result.second <<
+    // std::endl; std::cout << "dut.length: " << dut.length << ", expected_result.length: " << expected_result.length <<
+    // std::endl;
   }
 }
 
@@ -544,6 +584,50 @@ TEST_P(ComputeDistanceTest, Test) {
 }
 
 INSTANTIATE_TEST_CASE_P(ComputeDistanceTestGroup, ComputeDistanceTest, ::testing::ValuesIn(ComputeDistanceTestCases()));
+
+TEST(GetClosestPointTime, Test) {
+  std::vector<maliput::math::Vector3> coordinates;
+  const int kMaxPoints = 1000000;
+  for (int i{}; i < kMaxPoints; ++i) {
+    coordinates.emplace_back(i, 0., 0.);
+  }
+  const LineString3d long_line_string{coordinates};
+  const maliput::math::Vector3 eval_point{kMaxPoints / 2., 0., 0.};
+  // Time now:
+  {
+    const auto start = std::chrono::high_resolution_clock::now();
+    const auto dut = GetClosestPoint(long_line_string, eval_point);
+    const auto end = std::chrono::high_resolution_clock::now();
+    EXPECT_EQ(dut.p, kMaxPoints / 2.);
+    const auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+    std::cout << "Time taken by function: " << duration.count() << " microseconds" << std::endl;
+  }
+}
+
+TEST(GetClosestPointKDTreeTime, Test) {
+  std::vector<maliput::math::Vector3> coordinates;
+  const int kMaxPoints = 1000000;
+  for (int i{}; i < kMaxPoints; ++i) {
+    coordinates.emplace_back(i, 0., 0.);
+  }
+  const LineString3d long_line_string{coordinates};
+  const maliput::math::Vector3 eval_point{kMaxPoints / 2., 0., 0.};
+  const auto start = std::chrono::high_resolution_clock::now();
+  maliput::math::KDTree3D<maliput::math::Vector3> kd_tree{long_line_string.begin(), long_line_string.end()};
+  const auto end = std::chrono::high_resolution_clock::now();
+  const auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+  std::cout << "Time taken to construct tree: " << duration.count() << " microseconds" << std::endl;
+  // Time now:
+  {
+    const auto start = std::chrono::high_resolution_clock::now();
+    const auto nearest = kd_tree.Nearest(eval_point);
+    // const auto dut = GetClosestPoint(long_line_string, eval_point);
+    const auto end = std::chrono::high_resolution_clock::now();
+    EXPECT_EQ(eval_point, nearest);
+    const auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+    std::cout << "Time taken by function: " << duration.count() << " microseconds" << std::endl;
+  }
+}
 
 }  // namespace
 }  // namespace test

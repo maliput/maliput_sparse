@@ -86,6 +86,11 @@ double GetSlopeAtP(const LineString3d& line_string, double p);
 /// @throws maliput::common::assertion_error When `p ∉ [0., line_string.length()]`.
 BoundPointsResult GetBoundPointsAtP(const LineString3d& line_string, double p);
 
+/// Obtains the points that confines @p xyz in the @p line_string .
+/// @param line_string LineString.
+/// @param xyz Point.
+BoundPointsResult GetBoundPointsAtXYZ(const LineString3d& line_string, maliput::math::Vector3 xyz);
+
 /// Returns the heading of a @p line_string for a given @p p .
 /// @param line_string LineString to be computed the heading from.
 /// @param p P parameter at which compute the heading.

@@ -32,9 +32,11 @@
 #include <cmath>
 #include <initializer_list>
 #include <iterator>
+#include <memory>
 #include <vector>
 
 #include <maliput/common/maliput_throw.h>
+#include <maliput/math/kd_tree.h>
 #include <maliput/math/vector.h>
 
 namespace maliput_sparse {
@@ -74,6 +76,23 @@ class LineString final {
   using iterator = typename std::vector<CoordinateT>::iterator;
   using const_iterator = typename std::vector<CoordinateT>::const_iterator;
 
+  class Point : public CoordinateT {
+   public:
+    Point() = default;
+    Point(const CoordinateT& coordinate, const_iterator iterator, double p)
+        : CoordinateT(coordinate), iterator_(iterator), p_(p) {}
+    explicit Point(const CoordinateT& coordinate) : CoordinateT(coordinate) {}
+
+    ~Point() = default;
+
+    std::optional<const_iterator> iterator() const { return iterator_; }
+    std::optional<double> p() const { return p_; }
+
+   private:
+    std::optional<const_iterator> iterator_;
+    std::optional<double> p_;
+  };
+
   /// Constructs a LineString from a std::vector.
   ///
   /// This function calls LineString(coordinates.begin, coordinates.end)
@@ -103,7 +122,18 @@ class LineString final {
   LineString(Iterator begin, Iterator end) : coordinates_(begin, end) {
     MALIPUT_THROW_UNLESS(coordinates_.size() > 1);
     length_ = ComputeLength();
+    std::vector<Point> points;
+    double length{};
+    for (auto it = coordinates_.begin(); it != coordinates_.end(); ++it) {
+      if (it != coordinates_.begin()) {
+        length += (*it - *(it - 1)).norm();
+      }
+      points.push_back(Point(*it, it, length));
+    }
+    kdtree_ = std::make_unique<KDTreeData>(points.begin(), points.end());
   }
+
+  using KDTreeData = maliput::math::KDTree<Point, CoordinateT::kDimension>;
 
   /// @return The first point in the LineString.
   const CoordinateT& first() const { return coordinates_.front(); }
@@ -138,6 +168,9 @@ class LineString final {
     return coordinates_ == other.coordinates_;
   }
 
+  /// Get KD Tree of the LineString.
+  const KDTreeData* Data() const { return kdtree_.get(); }
+
  private:
   // @return The accumulated Length of this LineString.
   const double ComputeLength() const {
@@ -150,6 +183,8 @@ class LineString final {
 
   std::vector<CoordinateT> coordinates_{};
   double length_{};
+  // Point point_;
+  std::shared_ptr<KDTreeData> kdtree_;
 };
 
 // Convenient aliases.

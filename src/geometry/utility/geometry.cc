@@ -359,19 +359,47 @@ ClosestPointResult GetClosestPoint(const Segment3d& segment, const maliput::math
   return {p, point, distance};
 }
 
-ClosestPointResult GetClosestPoint(const LineString3d& line_string, const maliput::math::Vector3& xyz) {
-  ClosestPointResult result;
-  result.distance = std::numeric_limits<double>::max();
-  double length{};
-  for (auto first = line_string.begin(), second = std::next(line_string.begin()); second != line_string.end();
-       ++first, ++second) {
-    const auto closest_point_res = GetClosestPoint(Segment3d{*first, *second}, xyz);
-    if (closest_point_res.distance < result.distance) {
-      result = closest_point_res;
-      result.p += length;
-    }
-    length += (*second - *first).norm();  //> Adds segment length
+BoundPointsResult GetBoundPointsAtXYZ(const LineString3d& line_string, maliput::math::Vector3 xyz) {
+  BoundPointsResult result;
+
+  const LineString3d::KDTreeData* kd_tree_data = line_string.Data();
+  MALIPUT_THROW_UNLESS(kd_tree_data != nullptr);
+  const LineString3d::Point nearest_point = kd_tree_data->Nearest(LineString3d::Point{xyz});
+
+  maliput_sparse::geometry::LineString3d::const_iterator previous_point{line_string.end()};
+  if (nearest_point.iterator().value() != line_string.begin()) {
+    previous_point = std::prev(nearest_point.iterator().value());
   }
+
+  maliput_sparse::geometry::LineString3d::const_iterator following_point = std::next(nearest_point.iterator().value());
+
+  MALIPUT_THROW_UNLESS(previous_point != line_string.end() || following_point != line_string.end());
+  if (following_point == line_string.end()) {
+    result = {previous_point, nearest_point.iterator().value()};
+    result.length = nearest_point.p().value() - (nearest_point - *previous_point).norm();
+  } else if (previous_point == line_string.end()) {
+    result = {nearest_point.iterator().value(), following_point};
+    result.length = nearest_point.p().value();
+  } else {
+    std::cout << "previous point: " << *previous_point << std::endl;
+    std::cout << "nearest_point:" << nearest_point << std::endl;
+    std::cout << "following point: " << *following_point << std::endl;
+    if ((*previous_point - xyz).norm() < (*following_point - xyz).norm()) {
+      result = {previous_point, nearest_point.iterator().value()};
+      result.length = nearest_point.p().value() - (nearest_point - *previous_point).norm();
+    } else {
+      result = {nearest_point.iterator().value(), following_point};
+      result.length = nearest_point.p().value();
+    }
+  }
+
+  return result;
+}
+
+ClosestPointResult GetClosestPoint(const LineString3d& line_string, const maliput::math::Vector3& xyz) {
+  const auto bound_points = GetBoundPointsAtXYZ(line_string, xyz);
+  ClosestPointResult result = GetClosestPoint(Segment3d{*bound_points.first, *bound_points.second}, xyz);
+  result.p += bound_points.length;
   return result;
 }
 
