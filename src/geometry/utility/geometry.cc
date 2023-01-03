@@ -312,6 +312,8 @@ double GetSlopeAtP(const LineString3d& line_string, double p) {
 
 template <typename T>
 BoundPointsResult<T> GetBoundPointsAtP(const LineString<T>& line_string, double p) {
+  MALIPUT_THROW_UNLESS(p >= 0);
+  MALIPUT_THROW_UNLESS(p <= line_string.length());
   BoundPointsResult<T> result;
   double current_cumulative_length = 0.0;
   for (auto first = line_string.begin(), second = std::next(line_string.begin()); second != line_string.end();
