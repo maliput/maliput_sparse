@@ -242,32 +242,32 @@ class GetBoundPointsAtPTest : public ::testing::Test {
 TEST_F(GetBoundPointsAtPTest, Test) {
   {
     const double p{0.};
-    const BoundPointsResult expected_result{line_string.begin(), line_string.begin() + 1, 0.};
-    const BoundPointsResult dut = GetBoundPointsAtP(line_string, p, kTolerance);
+    const BoundPointsResult3d expected_result{line_string.begin(), line_string.begin() + 1, 0.};
+    const BoundPointsResult3d dut = GetBoundPointsAtP(line_string, p, kTolerance);
     EXPECT_EQ(expected_result.first, dut.first);
     EXPECT_EQ(expected_result.second, dut.second);
     EXPECT_EQ(expected_result.length, dut.length);
   }
   {
     const double p{7.5};
-    const BoundPointsResult expected_result{line_string.begin() + 1, line_string.begin() + 2, 7.};
-    const BoundPointsResult dut = GetBoundPointsAtP(line_string, p, kTolerance);
+    const BoundPointsResult3d expected_result{line_string.begin() + 1, line_string.begin() + 2, 7.};
+    const BoundPointsResult3d dut = GetBoundPointsAtP(line_string, p, kTolerance);
     EXPECT_EQ(expected_result.first, dut.first);
     EXPECT_EQ(expected_result.second, dut.second);
     EXPECT_EQ(expected_result.length, dut.length);
   }
   {
     const double p{12.5};
-    const BoundPointsResult expected_result{line_string.begin() + 2, line_string.begin() + 3, 12.};
-    const BoundPointsResult dut = GetBoundPointsAtP(line_string, p, kTolerance);
+    const BoundPointsResult3d expected_result{line_string.begin() + 2, line_string.begin() + 3, 12.};
+    const BoundPointsResult3d dut = GetBoundPointsAtP(line_string, p, kTolerance);
     EXPECT_EQ(expected_result.first, dut.first);
     EXPECT_EQ(expected_result.second, dut.second);
     EXPECT_EQ(expected_result.length, dut.length);
   }
   {
     const double p{19.5};
-    const BoundPointsResult expected_result{line_string.begin() + 3, line_string.begin() + 4, 19.};
-    const BoundPointsResult dut = GetBoundPointsAtP(line_string, p, kTolerance);
+    const BoundPointsResult3d expected_result{line_string.begin() + 3, line_string.begin() + 4, 19.};
+    const BoundPointsResult3d dut = GetBoundPointsAtP(line_string, p, kTolerance);
     EXPECT_EQ(expected_result.first, dut.first);
     EXPECT_EQ(expected_result.second, dut.second);
     EXPECT_EQ(expected_result.length, dut.length);
@@ -393,13 +393,13 @@ TEST_P(Get2DHeadingAtPTest, Test) {
 
 INSTANTIATE_TEST_CASE_P(Get2DHeadingAtPTestGroup, Get2DHeadingAtPTest, ::testing::ValuesIn(HeadingTestCases()));
 
-struct GetClosestPointTestCase {
+struct GetClosestPointToSegmentTestCase {
   std::pair<maliput::math::Vector3, maliput::math::Vector3> segment;
   std::vector<maliput::math::Vector3> eval_points;
-  std::vector<ClosestPointResult> expected_closest{};
+  std::vector<ClosestPointResult3d> expected_closest{};
 };
 
-std::vector<GetClosestPointTestCase> GetClosestPointTestCases() {
+std::vector<GetClosestPointToSegmentTestCase> GetClosestPointToSegmentTestCases() {
   return {
       {{{0., 0., 0.}, {10., 0., 0.}} /* segment */,
        {{5., 5., 0.}, {-5., 5., 0.}, {10., 5., 0.}, {15., 5., 0.}} /* eval points */,
@@ -435,28 +435,29 @@ std::vector<GetClosestPointTestCase> GetClosestPointTestCases() {
   };
 }
 
-class GetClosestPointTest : public ::testing::TestWithParam<GetClosestPointTestCase> {
+class GetClosestPointToSegmentTest : public ::testing::TestWithParam<GetClosestPointToSegmentTestCase> {
  public:
   static constexpr double kTolerance{1e-12};
-  GetClosestPointTestCase case_ = GetParam();
+  GetClosestPointToSegmentTestCase case_ = GetParam();
 };
 
-TEST_P(GetClosestPointTest, Test) {
+TEST_P(GetClosestPointToSegmentTest, Test) {
   ASSERT_EQ(case_.eval_points.size(), case_.expected_closest.size()) << ">>>>> Test case is ill-formed.";
   for (std::size_t i = 0; i < case_.eval_points.size(); ++i) {
-    const auto dut = GetClosestPoint(case_.segment, case_.eval_points[i], kTolerance);
+    const auto dut = GetClosestPointToSegment(case_.segment, case_.eval_points[i], kTolerance);
     EXPECT_NEAR(case_.expected_closest[i].p, dut.p, kTolerance);
     EXPECT_TRUE(maliput::math::test::CompareVectors(case_.expected_closest[i].point, dut.point, kTolerance));
     EXPECT_NEAR(case_.expected_closest[i].distance, dut.distance, kTolerance);
   }
 }
 
-INSTANTIATE_TEST_CASE_P(GetClosestPointTestGroup, GetClosestPointTest, ::testing::ValuesIn(GetClosestPointTestCases()));
+INSTANTIATE_TEST_CASE_P(GetClosestPointToSegmentTestGroup, GetClosestPointToSegmentTest,
+                        ::testing::ValuesIn(GetClosestPointToSegmentTestCases()));
 
 struct GetClosestPointLineStringTestCase {
   LineString3d line_string;
   std::vector<maliput::math::Vector3> eval_points;
-  std::vector<ClosestPointResult> expected_closest{};
+  std::vector<ClosestPointResult3d> expected_closest{};
 };
 
 std::vector<GetClosestPointLineStringTestCase> GetClosestPointLineStringTestCases() {
@@ -508,6 +509,49 @@ TEST_P(GetClosestPointLineStringTest, Test) {
 
 INSTANTIATE_TEST_CASE_P(GetClosestPointLineStringTestGroup, GetClosestPointLineStringTest,
                         ::testing::ValuesIn(GetClosestPointLineStringTestCases()));
+
+std::vector<GetClosestPointLineStringTestCase> GetClosestPointIn2dLineStringTestCases() {
+  return {
+      // Increasing in elevation line string and eval points are below(in Z) the line string.
+      //
+      // ^ z
+      // |         *{10., 0., 10.}
+      // |       /
+      // |     /
+      // |   /
+      // | /
+      // |-----*-------> x
+      //       {5., 0., 0.} (eval point)
+      // Because of the 2d projection the closest point is the one in the half of the line segment. Which is the desired
+      // value.
+      //
+      {LineString3d{{0., 0., 0.}, {10., 0., 10.}} /* line_string */,
+       {{5., 0., 0.}, {5., -2., 0.}} /* eval points */,
+       {
+           {10 * std::sqrt(2.) / 2., {5., 0., 5.}, 5.},                /* expected: p, point, distance */
+           {10 * std::sqrt(2.) / 2., {5., 0., 5.}, 5.385164807134504}, /* expected: p, point, distance */
+       }},
+  };
+}
+
+class GetClosestPointIn2dLineStringTest : public ::testing::TestWithParam<GetClosestPointLineStringTestCase> {
+ public:
+  static constexpr double kTolerance{1e-12};
+  GetClosestPointLineStringTestCase case_ = GetParam();
+};
+
+TEST_P(GetClosestPointIn2dLineStringTest, Test) {
+  ASSERT_EQ(case_.eval_points.size(), case_.expected_closest.size()) << ">>>>> Test case is ill-formed.";
+  for (std::size_t i = 0; i < case_.eval_points.size(); ++i) {
+    const auto dut = GetClosestPointUsing2dProjection(case_.line_string, case_.eval_points[i]);
+    EXPECT_NEAR(case_.expected_closest[i].p, dut.p, kTolerance);
+    EXPECT_TRUE(maliput::math::test::CompareVectors(case_.expected_closest[i].point, dut.point, kTolerance));
+    EXPECT_NEAR(case_.expected_closest[i].distance, dut.distance, kTolerance);
+  }
+}
+
+INSTANTIATE_TEST_CASE_P(GetClosestPointIn2dLineStringTestGroup, GetClosestPointIn2dLineStringTest,
+                        ::testing::ValuesIn(GetClosestPointIn2dLineStringTestCases()));
 
 struct ComputeDistanceTestCase {
   LineString3d lhs;
