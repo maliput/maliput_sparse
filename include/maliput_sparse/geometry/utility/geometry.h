@@ -68,57 +68,66 @@ LineString3d ComputeCenterline3d(const LineString3d& left, const LineString3d& r
 /// first point.
 /// @param line_string the line_string to iterate.
 /// @param p distance along line_string.
+/// @param tolerance tolerance.
 /// @return The interpolated point (a new point if not perfectly matching).
-maliput::math::Vector3 InterpolatedPointAtP(const LineString3d& line_string, double p);
+maliput::math::Vector3 InterpolatedPointAtP(const LineString3d& line_string, double p, double tolerance);
 
 /// Returns the slope of a @p line_string for a given @p p .
 /// The slope is calculated as the variation in `z` divided by the variation in the `xy` plane.
 /// The result is expected to be contained within (-inf., inf.).
 /// @param line_string LineString to be computed the slope from.
 /// @param p P parameter at which compute the slope.
+/// @param tolerance tolerance.
 /// @throws maliput::common::assertion_error When `p ∉ [0., line_string.length()]`.
 /// @throws maliput::common::assertion_error When the points that confine @p p are equal.
-double GetSlopeAtP(const LineString3d& line_string, double p);
+double GetSlopeAtP(const LineString3d& line_string, double p, double tolerance);
 
 /// Obtains the points that confines @p p in the @p line_string .
 /// @param line_string LineString.
 /// @param p P parameter.
+/// @param tolerance tolerance.
 /// @throws maliput::common::assertion_error When `p ∉ [0., line_string.length()]`.
-BoundPointsResult GetBoundPointsAtP(const LineString3d& line_string, double p);
+BoundPointsResult GetBoundPointsAtP(const LineString3d& line_string, double p, double tolerance);
 
 /// Returns the heading of a @p line_string for a given @p p .
 /// @param line_string LineString to be computed the heading from.
 /// @param p P parameter at which compute the heading.
+/// @param tolerance tolerance.
 /// @throws maliput::common::assertion_error When `p ∉ [0., line_string.length()]`.
-double Get2DHeadingAtP(const LineString3d& line_string, double p);
+double Get2DHeadingAtP(const LineString3d& line_string, double p, double tolerance);
 
 /// Returns the 2d-tangent of a @p line_string for a given @p p .
 /// The tangent is calculated from the @p line_string projected on the xy plane.
 /// @param line_string LineString to be computed the 2d-tangent from.
 /// @param p P parameter at which compute the 2d-tangent.
+/// @param tolerance tolerance.
 /// @throws maliput::common::assertion_error When `p ∉ [0., line_string.length()]`.
-maliput::math::Vector2 Get2DTangentAtP(const LineString3d& line_string, double p);
+maliput::math::Vector2 Get2DTangentAtP(const LineString3d& line_string, double p, double tolerance);
 
 /// Returns the 3d-tangent of a @p line_string for a given @p p .
 /// @param line_string LineString to be computed the 3d-tangent from.
 /// @param p P parameter at which compute the 3d-tangent.
+/// @param tolerance tolerance.
 /// @throws maliput::common::assertion_error When `p ∉ [0., line_string.length()]`.
-maliput::math::Vector3 GetTangentAtP(const LineString3d& line_string, double p);
+maliput::math::Vector3 GetTangentAtP(const LineString3d& line_string, double p, double tolerance);
 
 /// Gets the closest point in the @p segment to the given @p xyz point.
 /// @param segment Segment to be computed the closest point from.
 /// @param xyz Point to be computed the closest point to.
+/// @param tolerance tolerance.
 /// @return A ClosestPointResult struct containing the closest point, the distance between the closest point and @p xyz
 /// and the p coordinate in the segment matching the closest point.
 ClosestPointResult GetClosestPoint(const std::pair<maliput::math::Vector3, maliput::math::Vector3>& segment,
-                                   const maliput::math::Vector3& xyz);
+                                   const maliput::math::Vector3& xyz, double tolerance);
 
 /// Gets the closest point in the @p line_string to the given @p xyz point.
 /// @param line_string LineString3d to be computed the closest point from.
 /// @param xyz Point to be computed the closest point to.
+/// @param tolerance tolerance.
 /// @return A ClosestPointResult struct containing the closest point, the distance between the closest point and @p xyz
 /// and the p coordinate in the LineString3d matching the closest point.
-ClosestPointResult GetClosestPoint(const LineString3d& line_string, const maliput::math::Vector3& xyz);
+ClosestPointResult GetClosestPoint(const LineString3d& line_string, const maliput::math::Vector3& xyz,
+                                   double tolerance);
 
 /// Computes the distance between two LineString3d.
 /// The distance is calculated as the sum of distances between corresponding points between both line strings divided by
@@ -134,8 +143,9 @@ ClosestPointResult GetClosestPoint(const LineString3d& line_string, const malipu
 ///
 /// @param lhs A LineString3d.
 /// @param rhs A LineString3d.
+/// @param tolerance tolerance.
 /// @return The distance between the two line strings defined as above.
-double ComputeDistance(const LineString3d& lhs, const LineString3d& rhs);
+double ComputeDistance(const LineString3d& lhs, const LineString3d& rhs, double tolerance);
 
 }  // namespace utility
 }  // namespace geometry

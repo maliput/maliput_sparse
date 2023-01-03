@@ -213,19 +213,20 @@ class InterpolatedPointAtPTest : public ::testing::TestWithParam<LineStringPoint
 };
 
 TEST_P(InterpolatedPointAtPTest, Test) {
-  const auto dut = InterpolatedPointAtP(line_string_point_at_p_case_.line_string, line_string_point_at_p_case_.p);
+  const auto dut =
+      InterpolatedPointAtP(line_string_point_at_p_case_.line_string, line_string_point_at_p_case_.p, kTolerance);
   EXPECT_TRUE(maliput::math::test::CompareVectors(line_string_point_at_p_case_.expected_point, dut, kTolerance));
 }
 
 TEST_P(InterpolatedPointAtPTest, NegativeP) {
   const double negative_p{-1.};
-  const auto dut = InterpolatedPointAtP(line_string_point_at_p_case_.line_string, negative_p);
+  const auto dut = InterpolatedPointAtP(line_string_point_at_p_case_.line_string, negative_p, kTolerance);
   EXPECT_EQ(line_string_point_at_p_case_.line_string.first(), dut);
 }
 
 TEST_P(InterpolatedPointAtPTest, ExceededP) {
   const double exceeded_p{line_string_point_at_p_case_.line_string.length() + 1};
-  const auto dut = InterpolatedPointAtP(line_string_point_at_p_case_.line_string, exceeded_p);
+  const auto dut = InterpolatedPointAtP(line_string_point_at_p_case_.line_string, exceeded_p, kTolerance);
   EXPECT_EQ(line_string_point_at_p_case_.line_string.last(), dut);
 }
 
@@ -234,6 +235,7 @@ INSTANTIATE_TEST_CASE_P(InterpolatedPointAtPTestGroup, InterpolatedPointAtPTest,
 
 class GetBoundPointsAtPTest : public ::testing::Test {
  public:
+  static constexpr double kTolerance{1e-12};
   const LineString3d line_string{{0., 0., 0.}, {6., 3., 2.}, {10., 6., 2.}, {16., 9., 4.}, {10., 6., 2.}};
 };
 
@@ -241,7 +243,7 @@ TEST_F(GetBoundPointsAtPTest, Test) {
   {
     const double p{0.};
     const BoundPointsResult expected_result{line_string.begin(), line_string.begin() + 1, 0.};
-    const BoundPointsResult dut = GetBoundPointsAtP(line_string, p);
+    const BoundPointsResult dut = GetBoundPointsAtP(line_string, p, kTolerance);
     EXPECT_EQ(expected_result.first, dut.first);
     EXPECT_EQ(expected_result.second, dut.second);
     EXPECT_EQ(expected_result.length, dut.length);
@@ -249,7 +251,7 @@ TEST_F(GetBoundPointsAtPTest, Test) {
   {
     const double p{7.5};
     const BoundPointsResult expected_result{line_string.begin() + 1, line_string.begin() + 2, 7.};
-    const BoundPointsResult dut = GetBoundPointsAtP(line_string, p);
+    const BoundPointsResult dut = GetBoundPointsAtP(line_string, p, kTolerance);
     EXPECT_EQ(expected_result.first, dut.first);
     EXPECT_EQ(expected_result.second, dut.second);
     EXPECT_EQ(expected_result.length, dut.length);
@@ -257,7 +259,7 @@ TEST_F(GetBoundPointsAtPTest, Test) {
   {
     const double p{12.5};
     const BoundPointsResult expected_result{line_string.begin() + 2, line_string.begin() + 3, 12.};
-    const BoundPointsResult dut = GetBoundPointsAtP(line_string, p);
+    const BoundPointsResult dut = GetBoundPointsAtP(line_string, p, kTolerance);
     EXPECT_EQ(expected_result.first, dut.first);
     EXPECT_EQ(expected_result.second, dut.second);
     EXPECT_EQ(expected_result.length, dut.length);
@@ -265,7 +267,7 @@ TEST_F(GetBoundPointsAtPTest, Test) {
   {
     const double p{19.5};
     const BoundPointsResult expected_result{line_string.begin() + 3, line_string.begin() + 4, 19.};
-    const BoundPointsResult dut = GetBoundPointsAtP(line_string, p);
+    const BoundPointsResult dut = GetBoundPointsAtP(line_string, p, kTolerance);
     EXPECT_EQ(expected_result.first, dut.first);
     EXPECT_EQ(expected_result.second, dut.second);
     EXPECT_EQ(expected_result.length, dut.length);
@@ -316,25 +318,28 @@ class GetSlopeAtPTest : public ::testing::TestWithParam<SlopeTestCase> {
 TEST_P(GetSlopeAtPTest, Test) {
   ASSERT_EQ(case_.p.size(), case_.expected_slopes.size()) << ">>>>> Test case is ill-formed.";
   for (std::size_t i = 0; i < case_.p.size(); ++i) {
-    const double dut = GetSlopeAtP(case_.line_string, case_.p[i]);
+    const double dut = GetSlopeAtP(case_.line_string, case_.p[i], kTolerance);
     EXPECT_DOUBLE_EQ(case_.expected_slopes[i], dut);
   }
 }
 
 INSTANTIATE_TEST_CASE_P(GetSlopeAtPTestGroup, GetSlopeAtPTest, ::testing::ValuesIn(SlopeTestCases()));
 
-class GetSlopeAtPSpecialCasesTest : public testing::Test {};
+class GetSlopeAtPSpecialCasesTest : public testing::Test {
+ public:
+  static constexpr double kTolerance{1e-12};
+};
 
 TEST_F(GetSlopeAtPSpecialCasesTest, Throw) {
   const LineString3d kNoLength{{0., 0., 0.}, {0., 0., 0.}};
-  EXPECT_THROW(GetSlopeAtP(kNoLength, 0.), maliput::common::assertion_error);
+  EXPECT_THROW(GetSlopeAtP(kNoLength, 0., kTolerance), maliput::common::assertion_error);
 }
 
 TEST_F(GetSlopeAtPSpecialCasesTest, InfinitySlope) {
   const double inf{std::numeric_limits<double>::infinity()};
   const LineString3d kOnlyZ{{0., 0., 0.}, {0., 0., 100.}, {0., 0., 0.}};
-  EXPECT_EQ(inf, GetSlopeAtP(kOnlyZ, 50.));
-  EXPECT_EQ(-inf, GetSlopeAtP(kOnlyZ, 150.));
+  EXPECT_EQ(inf, GetSlopeAtP(kOnlyZ, 50., kTolerance));
+  EXPECT_EQ(-inf, GetSlopeAtP(kOnlyZ, 150., kTolerance));
 }
 
 struct HeadingTestCase {
@@ -381,7 +386,7 @@ class Get2DHeadingAtPTest : public ::testing::TestWithParam<HeadingTestCase> {
 TEST_P(Get2DHeadingAtPTest, Test) {
   ASSERT_EQ(case_.p.size(), case_.expected_headings.size()) << ">>>>> Test case is ill-formed.";
   for (std::size_t i = 0; i < case_.p.size(); ++i) {
-    const double dut = Get2DHeadingAtP(case_.line_string, case_.p[i]);
+    const double dut = Get2DHeadingAtP(case_.line_string, case_.p[i], kTolerance);
     EXPECT_DOUBLE_EQ(case_.expected_headings[i], dut);
   }
 }
@@ -439,7 +444,7 @@ class GetClosestPointTest : public ::testing::TestWithParam<GetClosestPointTestC
 TEST_P(GetClosestPointTest, Test) {
   ASSERT_EQ(case_.eval_points.size(), case_.expected_closest.size()) << ">>>>> Test case is ill-formed.";
   for (std::size_t i = 0; i < case_.eval_points.size(); ++i) {
-    const auto dut = GetClosestPoint(case_.segment, case_.eval_points[i]);
+    const auto dut = GetClosestPoint(case_.segment, case_.eval_points[i], kTolerance);
     EXPECT_NEAR(case_.expected_closest[i].p, dut.p, kTolerance);
     EXPECT_TRUE(maliput::math::test::CompareVectors(case_.expected_closest[i].point, dut.point, kTolerance));
     EXPECT_NEAR(case_.expected_closest[i].distance, dut.distance, kTolerance);
@@ -494,7 +499,7 @@ class GetClosestPointLineStringTest : public ::testing::TestWithParam<GetClosest
 TEST_P(GetClosestPointLineStringTest, Test) {
   ASSERT_EQ(case_.eval_points.size(), case_.expected_closest.size()) << ">>>>> Test case is ill-formed.";
   for (std::size_t i = 0; i < case_.eval_points.size(); ++i) {
-    const auto dut = GetClosestPoint(case_.line_string, case_.eval_points[i]);
+    const auto dut = GetClosestPoint(case_.line_string, case_.eval_points[i], kTolerance);
     EXPECT_NEAR(case_.expected_closest[i].p, dut.p, kTolerance);
     EXPECT_TRUE(maliput::math::test::CompareVectors(case_.expected_closest[i].point, dut.point, kTolerance));
     EXPECT_NEAR(case_.expected_closest[i].distance, dut.distance, kTolerance);
@@ -539,7 +544,7 @@ class ComputeDistanceTest : public ::testing::TestWithParam<ComputeDistanceTestC
 };
 
 TEST_P(ComputeDistanceTest, Test) {
-  const auto dut = ComputeDistance(case_.lhs, case_.rhs);
+  const auto dut = ComputeDistance(case_.lhs, case_.rhs, kTolerance);
   EXPECT_NEAR(case_.expected_distance, dut, kTolerance);
 }
 

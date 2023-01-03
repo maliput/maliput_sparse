@@ -53,7 +53,7 @@ static constexpr bool kRight{!kLeft};
 bool AreAdjacent(const Lane& lane, const Lane& adjacent_lane, bool left, double tolerance) {
   const auto line_string_a = left ? lane.left : lane.right;
   const auto line_string_b = left ? adjacent_lane.right : adjacent_lane.left;
-  const double distance = geometry::utility::ComputeDistance(line_string_a, line_string_b);
+  const double distance = geometry::utility::ComputeDistance(line_string_a, line_string_b, tolerance);
   return distance <= tolerance;
 }
 
