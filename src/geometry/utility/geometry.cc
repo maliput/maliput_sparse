@@ -284,8 +284,8 @@ LineString3d ComputeCenterline3d(const LineString3d& left, const LineString3d& r
   return LineString3d{centerline};
 }
 
-template <typename T>
-T InterpolatedPointAtP(const LineString<T>& line_string, double p) {
+template <typename CoordinateT>
+CoordinateT InterpolatedPointAtP(const LineString<CoordinateT>& line_string, double p) {
   // Implementation inspired on:
   // https://github.com/fzi-forschungszentrum-informatik/Lanelet2/blob/master/lanelet2_core/include/lanelet2_core/geometry/impl/LineString.h#L618
   static constexpr double kEpsilon{1e-12};
@@ -310,11 +310,11 @@ double GetSlopeAtP(const LineString3d& line_string, double p) {
   return delta_z / dist;
 }
 
-template <typename T>
-BoundPointsResult<T> GetBoundPointsAtP(const LineString<T>& line_string, double p) {
+template <typename CoordinateT>
+BoundPointsResult<CoordinateT> GetBoundPointsAtP(const LineString<CoordinateT>& line_string, double p) {
   MALIPUT_THROW_UNLESS(p >= 0);
   MALIPUT_THROW_UNLESS(p <= line_string.length());
-  BoundPointsResult<T> result;
+  BoundPointsResult<CoordinateT> result;
   double current_cumulative_length = 0.0;
   for (auto first = line_string.begin(), second = std::next(line_string.begin()); second != line_string.end();
        ++first, ++second) {
@@ -349,14 +349,15 @@ Vector3 GetTangentAtP(const LineString3d& line_string, double p) {
   return (d_xyz / (line_string.length())).normalized();
 }
 
-template <typename T>
-ClosestPointResult<T> GetClosestPointToSegment(const std::pair<T, T>& segment, const T& coordinate) {
-  const T d_segment{segment.second - segment.first};
-  const T d_coordinate_to_first{coordinate - segment.first};
+template <typename CoordinateT>
+ClosestPointResult<CoordinateT> GetClosestPointToSegment(const std::pair<CoordinateT, CoordinateT>& segment,
+                                                         const CoordinateT& coordinate) {
+  const CoordinateT d_segment{segment.second - segment.first};
+  const CoordinateT d_coordinate_to_first{coordinate - segment.first};
 
   const double unsaturated_p = d_coordinate_to_first.dot(d_segment.normalized());
   const double p = std::clamp(unsaturated_p, 0., d_segment.norm());
-  const T point = InterpolatedPointAtP(LineString<T>{segment.first, segment.second}, p);
+  const CoordinateT point = InterpolatedPointAtP(LineString<CoordinateT>{segment.first, segment.second}, p);
   const double distance = (coordinate - point).norm();
   return {p, point, distance};
 }

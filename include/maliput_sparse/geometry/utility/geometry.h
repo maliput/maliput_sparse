@@ -38,11 +38,11 @@ namespace geometry {
 namespace utility {
 
 /// Holds the result of #GetBoundPointsAtP method.
-/// @tparam T The coordinate type.
-template <typename T>
+/// @tparam CoordinateT The coordinate type.
+template <typename CoordinateT>
 struct BoundPointsResult {
-  typename LineString<T>::const_iterator first;
-  typename LineString<T>::const_iterator second;
+  typename LineString<CoordinateT>::const_iterator first;
+  typename LineString<CoordinateT>::const_iterator second;
   // Length up to first.
   double length;
 };
@@ -51,13 +51,13 @@ using BoundPointsResult3d = BoundPointsResult<maliput::math::Vector3>;
 using BoundPointsResult2d = BoundPointsResult<maliput::math::Vector2>;
 
 /// Holds the result of #GetClosestPoint method.
-/// @tparam T The coordinate type.
-template <typename T>
+/// @tparam CoordinateT The coordinate type.
+template <typename CoordinateT>
 struct ClosestPointResult {
   /// P coordinate in the line string matching the closest point.
   double p;
   /// Closest point.
-  T point;
+  CoordinateT point;
   /// Distance between the closest point and the given point.
   double distance;
 };
@@ -76,12 +76,12 @@ LineString3d ComputeCenterline3d(const LineString3d& left, const LineString3d& r
 
 /// Returns the piecewise linearly interpolated point at the given distance and the distance from the beginning to the
 /// first point.
-/// @tparam T The coordinate type of the @p line_string .
+/// @tparam CoordinateT The coordinate type of the @p line_string .
 /// @param line_string the line_string to iterate.
 /// @param p distance along line_string.
 /// @return The interpolated point (a new point if not perfectly matching).
-template <typename T = maliput::math::Vector3>
-T InterpolatedPointAtP(const LineString<T>& line_string, double p);
+template <typename CoordinateT = maliput::math::Vector3>
+CoordinateT InterpolatedPointAtP(const LineString<CoordinateT>& line_string, double p);
 
 /// Returns the slope of a @p line_string for a given @p p .
 /// The slope is calculated as the variation in `z` divided by the variation in the `xy` plane.
@@ -93,11 +93,12 @@ T InterpolatedPointAtP(const LineString<T>& line_string, double p);
 double GetSlopeAtP(const LineString3d& line_string, double p);
 
 /// Obtains the points that confines @p p in the @p line_string .
+/// @tparam CoordinateT The coordinate type of the @p line_string .
 /// @param line_string LineString.
 /// @param p P parameter.
 /// @throws maliput::common::assertion_error When `p ∉ [0., line_string.length()]`.
-template <typename T = maliput::math::Vector3>
-BoundPointsResult<T> GetBoundPointsAtP(const LineString<T>& line_string, double p);
+template <typename CoordinateT = maliput::math::Vector3>
+BoundPointsResult<CoordinateT> GetBoundPointsAtP(const LineString<CoordinateT>& line_string, double p);
 
 /// Returns the heading of a @p line_string for a given @p p .
 /// @param line_string LineString to be computed the heading from.
@@ -119,12 +120,14 @@ maliput::math::Vector2 Get2DTangentAtP(const LineString3d& line_string, double p
 maliput::math::Vector3 GetTangentAtP(const LineString3d& line_string, double p);
 
 /// Gets the closest point in the @p segment to the given @p xyz point.
+/// @tparam CoordinateT The coordinate type of the @p segment .
 /// @param segment Segment to be computed the closest point from.
 /// @param coordinate Point to be computed the closest point to.
 /// @return A ClosestPointResult struct containing the closest point, the distance between the closest point and @p xyz
 /// and the p coordinate in the segment matching the closest point.
-template <typename T = maliput::math::Vector3>
-ClosestPointResult<T> GetClosestPointToSegment(const std::pair<T, T>& segment, const T& coordinate);
+template <typename CoordinateT = maliput::math::Vector3>
+ClosestPointResult<CoordinateT> GetClosestPointToSegment(const std::pair<CoordinateT, CoordinateT>& segment,
+                                                         const CoordinateT& coordinate);
 
 /// Gets the closest point in the @p line_string to the given @p xyz point.
 /// @param line_string LineString3d to be computed the closest point from.

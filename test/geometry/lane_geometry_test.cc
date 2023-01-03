@@ -135,6 +135,8 @@ std::vector<OrientationTestCase> OrientationTestCases() {
 
 class OrientationTest : public ::testing::TestWithParam<OrientationTestCase> {
  public:
+  static constexpr double kLinearTolerance{1e-3};
+  static constexpr double kScaleLength{1e-3};
   OrientationTestCase case_ = GetParam();
 
   virtual double GetTolerance() const {
@@ -144,9 +146,10 @@ class OrientationTest : public ::testing::TestWithParam<OrientationTestCase> {
 
   void ExecuteOrientationTest() {
     ASSERT_EQ(case_.p.size(), case_.expected_rpy.size()) << ">>>>> Test case is ill-formed.";
-    const LaneGeometry lane_geometry = case_.center.has_value()
-                                           ? LaneGeometry{case_.center.value(), case_.left, case_.right, 1e-3, 1.}
-                                           : LaneGeometry{case_.left, case_.right, 1e-3, 1.};
+    const LaneGeometry lane_geometry =
+        case_.center.has_value()
+            ? LaneGeometry{case_.center.value(), case_.left, case_.right, kLinearTolerance, kScaleLength}
+            : LaneGeometry{case_.left, case_.right, kLinearTolerance, kScaleLength};
     for (std::size_t i = 0; i < case_.p.size(); ++i) {
       const auto rpy = lane_geometry.Orientation(case_.p[i]);
       EXPECT_TRUE(maliput::math::test::CompareVectors(case_.expected_rpy[i].vector(), rpy.vector(), GetTolerance()));
