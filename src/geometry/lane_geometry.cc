@@ -146,11 +146,11 @@ maliput::api::RBounds LaneGeometry::RBounds(double p) const {
 double LaneGeometry::FromCenterPToLateralP(const LineStringType& line_string_type, double p) const {
   p = range_validator_(p);
   MALIPUT_THROW_UNLESS(line_string_type != LineStringType::kCenterLine);
-  // Given p in centerline, let's compute p_at_a_border as: p_at_a_border = p / length * length_at_a_border.
-  // See https://github.com/maliput/maliput_sparse/issues/15 for more details.
-  const double lateral_length = line_string_type == LineStringType::kLeftBoundary ? left_.length() : right_.length();
-  const double p_equivalent = p * lateral_length / centerline_.length();
-  return std::clamp(p_equivalent, 0., lateral_length);
+  const maliput::math::Vector3 point_at_p = utility::InterpolatedPointAtP(centerline_, p);
+  // The lateral p is the one that matches closest point in the lateral to the centerline at p.
+  const utility::ClosestPointResult closest_to_point = utility::GetClosestPointUsing2dProjection(
+      line_string_type == LineStringType::kLeftBoundary ? left_ : right_, point_at_p);
+  return closest_to_point.p;
 }
 
 maliput::math::Vector3 LaneGeometry::ToLateralPos(const LineStringType& line_string_type, double p) const {
