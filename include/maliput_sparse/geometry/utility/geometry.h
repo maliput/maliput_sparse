@@ -101,7 +101,8 @@ double GetSlopeAtP(const LineString3d& line_string, double p, double tolerance);
 /// @param tolerance tolerance.
 /// @throws maliput::common::assertion_error When `p ∉ [0., line_string.length()]`.
 template <typename CoordinateT = maliput::math::Vector3>
-BoundPointsResult<CoordinateT> GetBoundPointsAtP(const LineString<CoordinateT>& line_string, double p, , double tolerance);
+BoundPointsResult<CoordinateT> GetBoundPointsAtP(const LineString<CoordinateT>& line_string, double p,
+                                                 double tolerance);
 
 /// Returns the heading of a @p line_string for a given @p p .
 /// @param line_string LineString to be computed the heading from.
@@ -128,7 +129,6 @@ maliput::math::Vector3 GetTangentAtP(const LineString3d& line_string, double p, 
 /// Gets the closest point in the @p segment to the given @p xyz point.
 /// @tparam CoordinateT The coordinate type of the @p segment .
 /// @param segment Segment to be computed the closest point from.
-/// @param xyz Point to be computed the closest point to.
 /// @param coordinate Point to be computed the closest point to.
 /// @param tolerance tolerance.
 /// @return A ClosestPointResult struct containing the closest point, the distance between the closest point and @p xyz
@@ -143,7 +143,8 @@ ClosestPointResult<CoordinateT> GetClosestPointToSegment(const std::pair<Coordin
 /// @param tolerance tolerance.
 /// @return A ClosestPointResult struct containing the closest point, the distance between the closest point and @p xyz
 /// and the p coordinate in the LineString3d matching the closest point.
-ClosestPointResult3d GetClosestPoint(const LineString3d& line_string, const maliput::math::Vector3& xyz, double tolerance);
+ClosestPointResult3d GetClosestPoint(const LineString3d& line_string, const maliput::math::Vector3& xyz,
+                                     double tolerance);
 
 /// Gets the closest point in the @p line_string to the given @p xyz point.
 /// @details This method is similar to #ref GetClosestPoint, but it first projects the @p line_string and the @p xyz on
@@ -151,9 +152,10 @@ ClosestPointResult3d GetClosestPoint(const LineString3d& line_string, const mali
 /// recovered from the @p line_string and the rest of the ClosestPointResult3d struct is filled.
 /// @param line_string LineString3d to be computed the closest point from.
 /// @param xyz Point to be computed the closest point to.
+/// @param tolerance Tolerance.
 /// @return A ClosestPointResult struct containing the closest point, the distance between the closest point and @p xyz
 ClosestPointResult3d GetClosestPointUsing2dProjection(const LineString3d& line_string,
-                                                      const maliput::math::Vector3& xyz);
+                                                      const maliput::math::Vector3& xyz, double tolerance);
 
 /// Computes the distance between two LineString3d.
 /// The distance is calculated as the sum of distances between corresponding points between both line strings divided by
