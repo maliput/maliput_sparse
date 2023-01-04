@@ -2,8 +2,8 @@
 Changelog for package maliput_sparse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.2.1 (2023-01-04)
+------------------
 * Implements range validator for the geometry::utils methods. (`#48 <https://github.com/maliput/maliput_sparse/issues/48>`_)
 * Uses the closest point to calculate the equivalent p in a boundary. (`#46 <https://github.com/maliput/maliput_sparse/issues/46>`_)
 * Adds a adjacency checker for the builder. (`#45 <https://github.com/maliput/maliput_sparse/issues/45>`_)
