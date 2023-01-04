@@ -62,6 +62,8 @@
 #include <cmath>
 #include <numeric>
 
+#include <maliput/common/range_validator.h>
+
 namespace maliput_sparse {
 namespace geometry {
 namespace utility {
@@ -74,6 +76,7 @@ using Segment2d = std::pair<Vector2, Vector2>;
 
 static constexpr bool kLeft{true};
 static constexpr bool kRight{false};
+static constexpr double kEpsilon{1e-12};
 
 namespace {
 
@@ -285,14 +288,12 @@ LineString3d ComputeCenterline3d(const LineString3d& left, const LineString3d& r
 }
 
 template <typename CoordinateT>
-CoordinateT InterpolatedPointAtP(const LineString<CoordinateT>& line_string, double p) {
+CoordinateT InterpolatedPointAtP(const LineString<CoordinateT>& line_string, double p, double tolerance) {
   // Implementation inspired on:
   // https://github.com/fzi-forschungszentrum-informatik/Lanelet2/blob/master/lanelet2_core/include/lanelet2_core/geometry/impl/LineString.h#L618
-  static constexpr double kEpsilon{1e-12};
   if (p < 0) return line_string.first();
   if (p >= line_string.length()) return line_string.last();
-
-  const auto line_string_points_length = GetBoundPointsAtP(line_string, p);
+  const auto line_string_points_length = GetBoundPointsAtP(line_string, p, tolerance);
   const double partial_length{(*line_string_points_length.first - *line_string_points_length.second).norm()};
   const double remaining_distance = p - line_string_points_length.length;
   if (remaining_distance < kEpsilon) {
@@ -302,8 +303,8 @@ CoordinateT InterpolatedPointAtP(const LineString<CoordinateT>& line_string, dou
          remaining_distance / partial_length * (*line_string_points_length.second - *line_string_points_length.first);
 }
 
-double GetSlopeAtP(const LineString3d& line_string, double p) {
-  const BoundPointsResult bound_points = GetBoundPointsAtP(line_string, p);
+double GetSlopeAtP(const LineString3d& line_string, double p, double tolerance) {
+  const BoundPointsResult bound_points = GetBoundPointsAtP(line_string, p, tolerance);
   const double dist{(To2D(*bound_points.second) - To2D(*bound_points.first)).norm()};
   const double delta_z{bound_points.second->z() - bound_points.first->z()};
   MALIPUT_THROW_UNLESS(*bound_points.second != *bound_points.first);
@@ -311,9 +312,9 @@ double GetSlopeAtP(const LineString3d& line_string, double p) {
 }
 
 template <typename CoordinateT>
-BoundPointsResult<CoordinateT> GetBoundPointsAtP(const LineString<CoordinateT>& line_string, double p) {
-  MALIPUT_THROW_UNLESS(p >= 0);
-  MALIPUT_THROW_UNLESS(p <= line_string.length());
+BoundPointsResult<CoordinateT> GetBoundPointsAtP(const LineString<CoordinateT>& line_string, double p,
+                                                 double tolerance) {
+  maliput::common::RangeValidator::GetAbsoluteEpsilonValidator(0., line_string.length(), tolerance, kEpsilon)(p);
   BoundPointsResult<CoordinateT> result;
   double current_cumulative_length = 0.0;
   for (auto first = line_string.begin(), second = std::next(line_string.begin()); second != line_string.end();
@@ -329,46 +330,49 @@ BoundPointsResult<CoordinateT> GetBoundPointsAtP(const LineString<CoordinateT>& 
   return {line_string.end() - 1, line_string.end() - 2, line_string.length()};
 }
 
-double Get2DHeadingAtP(const LineString3d& line_string, double p) {
-  const auto line_string_points_length = GetBoundPointsAtP(line_string, p);
+double Get2DHeadingAtP(const LineString3d& line_string, double p, double tolerance) {
+  const auto line_string_points_length = GetBoundPointsAtP(line_string, p, tolerance);
   const Vector3 heading_vector{*line_string_points_length.second - *line_string_points_length.first};
   return std::atan2(heading_vector.y(), heading_vector.x());
 }
 
-Vector2 Get2DTangentAtP(const LineString3d& line_string, double p) {
+Vector2 Get2DTangentAtP(const LineString3d& line_string, double p, double tolerance) {
   // const double heading = Get2DHeadingAtP(line_string, p);
   // return {std::cos(heading), std::sin(heading)};
-  const auto line_string_points_length = GetBoundPointsAtP(line_string, p);
+  const auto line_string_points_length = GetBoundPointsAtP(line_string, p, tolerance);
   const Vector2 d_xy{To2D(*line_string_points_length.second) - To2D(*line_string_points_length.first)};
   return (d_xy / (To2D(line_string).length())).normalized();
 }
 
-Vector3 GetTangentAtP(const LineString3d& line_string, double p) {
-  const auto line_string_points_length = GetBoundPointsAtP(line_string, p);
+Vector3 GetTangentAtP(const LineString3d& line_string, double p, double tolerance) {
+  const auto line_string_points_length = GetBoundPointsAtP(line_string, p, tolerance);
   const Vector3 d_xyz{*line_string_points_length.second - *line_string_points_length.first};
   return (d_xyz / (line_string.length())).normalized();
 }
 
 template <typename CoordinateT>
 ClosestPointResult<CoordinateT> GetClosestPointToSegment(const std::pair<CoordinateT, CoordinateT>& segment,
-                                                         const CoordinateT& coordinate) {
+                                                         const CoordinateT& coordinate, double tolerance) {
   const CoordinateT d_segment{segment.second - segment.first};
   const CoordinateT d_coordinate_to_first{coordinate - segment.first};
 
   const double unsaturated_p = d_coordinate_to_first.dot(d_segment.normalized());
   const double p = std::clamp(unsaturated_p, 0., d_segment.norm());
-  const CoordinateT point = InterpolatedPointAtP(LineString<CoordinateT>{segment.first, segment.second}, p);
+  const CoordinateT point = InterpolatedPointAtP(LineString<CoordinateT>{segment.first, segment.second}, p, tolerance);
   const double distance = (coordinate - point).norm();
   return {p, point, distance};
 }
 
-ClosestPointResult3d GetClosestPoint(const LineString3d& line_string, const maliput::math::Vector3& xyz) {
+ClosestPointResult3d GetClosestPoint(const LineString3d& line_string, const maliput::math::Vector3& xyz,
+                                     double tolerance) {
   ClosestPointResult3d result;
   result.distance = std::numeric_limits<double>::max();
   double length{};
   for (auto first = line_string.begin(), second = std::next(line_string.begin()); second != line_string.end();
        ++first, ++second) {
-    const auto closest_point_res = GetClosestPointToSegment(Segment3d{*first, *second}, xyz);
+    // If points are under numeric tolerance, skip segment.
+    if ((*first - *second).norm() < kEpsilon) continue;
+    const auto closest_point_res = GetClosestPointToSegment(Segment3d{*first, *second}, xyz, tolerance);
     if (closest_point_res.distance < result.distance) {
       result = closest_point_res;
       result.p += length;
@@ -379,7 +383,7 @@ ClosestPointResult3d GetClosestPoint(const LineString3d& line_string, const mali
 }
 
 ClosestPointResult3d GetClosestPointUsing2dProjection(const LineString3d& line_string,
-                                                      const maliput::math::Vector3& xyz) {
+                                                      const maliput::math::Vector3& xyz, double tolerance) {
   ClosestPointResult3d result;
   result.distance = std::numeric_limits<double>::max();
   double length{};
@@ -389,13 +393,13 @@ ClosestPointResult3d GetClosestPointUsing2dProjection(const LineString3d& line_s
     const maliput::math::Vector2 second_2d = To2D(*second);
     const maliput::math::Vector2 xy = To2D(xyz);
     const Segment2d segment_2d{first_2d, second_2d};
-    const auto closest_point_res = GetClosestPointToSegment(segment_2d, xy);
+    const auto closest_point_res = GetClosestPointToSegment(segment_2d, xy, tolerance);
     if (closest_point_res.distance < result.distance) {
       const LineString3d segment_linestring_3d{*first, *second};
       const double scale_p = segment_linestring_3d.length() / (segment_2d.first - segment_2d.second).norm();
       const maliput::math::Vector3 closest_point_3d{
           closest_point_res.point.x(), closest_point_res.point.y(),
-          InterpolatedPointAtP(segment_linestring_3d, closest_point_res.p * scale_p).z()};
+          InterpolatedPointAtP(segment_linestring_3d, closest_point_res.p * scale_p, tolerance).z()};
 
       result.distance = (xyz - closest_point_3d).norm();
       result.point = closest_point_3d;
@@ -406,12 +410,12 @@ ClosestPointResult3d GetClosestPointUsing2dProjection(const LineString3d& line_s
   return result;
 }
 
-double ComputeDistance(const LineString3d& lhs, const LineString3d& rhs) {
+double ComputeDistance(const LineString3d& lhs, const LineString3d& rhs, double tolerance) {
   const LineString3d& base_ls = rhs.size() > lhs.size() ? rhs : lhs;
   const LineString3d& other_ls = rhs.size() > lhs.size() ? lhs : rhs;
   const double sum_distances =
-      std::accumulate(base_ls.begin(), base_ls.end(), 0.0, [&other_ls](double sum, const auto& base_point) {
-        const auto closest_point_res = GetClosestPoint(other_ls, base_point);
+      std::accumulate(base_ls.begin(), base_ls.end(), 0.0, [&other_ls, &tolerance](double sum, const auto& base_point) {
+        const auto closest_point_res = GetClosestPoint(other_ls, base_point, tolerance);
         return sum + closest_point_res.distance;
       });
   return sum_distances / static_cast<double>(base_ls.size());
@@ -419,14 +423,14 @@ double ComputeDistance(const LineString3d& lhs, const LineString3d& rhs) {
 
 // Explicit instantiations
 
-template BoundPointsResult3d GetBoundPointsAtP(const LineString3d&, double);
-template BoundPointsResult2d GetBoundPointsAtP(const LineString2d&, double);
+template BoundPointsResult3d GetBoundPointsAtP(const LineString3d&, double, double);
+template BoundPointsResult2d GetBoundPointsAtP(const LineString2d&, double, double);
 
-template maliput::math::Vector3 InterpolatedPointAtP(const LineString3d&, double);
-template maliput::math::Vector2 InterpolatedPointAtP(const LineString2d&, double);
+template maliput::math::Vector3 InterpolatedPointAtP(const LineString3d&, double, double);
+template maliput::math::Vector2 InterpolatedPointAtP(const LineString2d&, double, double);
 
-template ClosestPointResult3d GetClosestPointToSegment(const Segment3d&, const maliput::math::Vector3&);
-template ClosestPointResult2d GetClosestPointToSegment(const Segment2d&, const maliput::math::Vector2&);
+template ClosestPointResult3d GetClosestPointToSegment(const Segment3d&, const maliput::math::Vector3&, double);
+template ClosestPointResult2d GetClosestPointToSegment(const Segment2d&, const maliput::math::Vector2&, double);
 
 template class BoundPointsResult<maliput::math::Vector3>;
 template class BoundPointsResult<maliput::math::Vector2>;
