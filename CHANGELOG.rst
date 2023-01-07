@@ -2,6 +2,11 @@
 Changelog for package maliput_sparse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fixes bug due to segments with zero length. (`#49 <https://github.com/maliput/maliput_sparse/issues/49>`_)
+* Contributors: Franco Cipollone
+
 0.2.1 (2023-01-04)
 ------------------
 * Implements range validator for the geometry::utils methods. (`#48 <https://github.com/maliput/maliput_sparse/issues/48>`_)
