@@ -2,8 +2,8 @@
 Changelog for package maliput_sparse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.2.2 (2023-01-06)
+------------------
 * Fixes bug due to segments with zero length. (`#49 <https://github.com/maliput/maliput_sparse/issues/49>`_)
 * Contributors: Franco Cipollone
 
