@@ -26,7 +26,13 @@ target_link_libraries(geometry
   PUBLIC
   maliput::common
   maliput::math
+  PRIVATE
+  ignition-common3::profiler
 )
+
+if(PROFILER)
+  target_compile_definitions(geometry PUBLIC "IGN_PROFILER_ENABLE=1")
+endif()
 
 ##############################################################################
 # Export

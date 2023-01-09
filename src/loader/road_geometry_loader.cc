@@ -29,6 +29,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "maliput_sparse/loader/road_geometry_loader.h"
 
+#include <ignition/common3/ignition/common/Profiler.hh>
 #include <maliput/common/logger.h>
 
 #include "maliput_sparse/builder/builder.h"
@@ -58,6 +59,7 @@ RoadGeometryLoader::RoadGeometryLoader(std::unique_ptr<parser::Parser> parser,
 }
 
 std::unique_ptr<const maliput::api::RoadGeometry> RoadGeometryLoader::operator()() {
+  IGN_PROFILE("maliput_sparse::loader::RoadGeometryLoader::operator()");
   // Validates the parsed data before building the RoadGeometry.
   const auto errors = parser::Validator(
       parser_.get(),

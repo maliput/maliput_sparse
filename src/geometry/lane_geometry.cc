@@ -31,6 +31,8 @@
 
 #include <algorithm>
 
+#include <ignition/common3/ignition/common/Profiler.hh>
+
 #include "maliput_sparse/geometry/utility/geometry.h"
 
 namespace maliput_sparse {
@@ -133,6 +135,7 @@ maliput::math::Vector3 LaneGeometry::WInverse(const maliput::math::Vector3& xyz)
 }
 
 maliput::api::RBounds LaneGeometry::RBounds(double p) const {
+  IGN_PROFILE("maliput_sparse::geometry::LaneGeometry::RBounds");
   p = range_validator_(p);
   MALIPUT_THROW_UNLESS(p >= p0());
   MALIPUT_THROW_UNLESS(p <= p1());
@@ -145,6 +148,7 @@ maliput::api::RBounds LaneGeometry::RBounds(double p) const {
 }
 
 double LaneGeometry::FromCenterPToLateralP(const LineStringType& line_string_type, double p) const {
+  IGN_PROFILE("maliput_sparse::geometry::LaneGeometry::FromCenterPToLateralP");
   p = range_validator_(p);
   MALIPUT_THROW_UNLESS(line_string_type != LineStringType::kCenterLine);
   const maliput::math::Vector3 point_at_p = utility::InterpolatedPointAtP(centerline_, p, linear_tolerance_);
@@ -155,6 +159,7 @@ double LaneGeometry::FromCenterPToLateralP(const LineStringType& line_string_typ
 }
 
 maliput::math::Vector3 LaneGeometry::ToLateralPos(const LineStringType& line_string_type, double p) const {
+  IGN_PROFILE("maliput_sparse::geometry::LaneGeometry::ToLateralPos");
   p = range_validator_(p);
   MALIPUT_THROW_UNLESS(line_string_type != LineStringType::kCenterLine);
   const double p_lateral = FromCenterPToLateralP(line_string_type, p);

@@ -32,6 +32,7 @@
 #include <algorithm>
 #include <limits>
 
+#include <ignition/common3/ignition/common/Profiler.hh>
 #include <maliput/geometry_base/brute_force_find_road_positions_strategy.h>
 #include <maliput/geometry_base/filter_positions.h>
 
@@ -101,6 +102,8 @@ bool IsNewRoadPositionResultCloser(const maliput::api::RoadPositionResult& new_r
 maliput::api::RoadPositionResult RoadGeometry::DoToRoadPosition(
     const maliput::api::InertialPosition& inertial_position,
     const std::optional<maliput::api::RoadPosition>& hint) const {
+  IGN_PROFILE("maliput_sparse::RoadGeometry::DoToRoadPosition");
+
   maliput::api::RoadPositionResult result;
   if (hint.has_value()) {
     MALIPUT_THROW_UNLESS(hint->lane != nullptr);
@@ -134,6 +137,7 @@ maliput::api::RoadPositionResult RoadGeometry::DoToRoadPosition(
 
 std::vector<maliput::api::RoadPositionResult> RoadGeometry::DoFindRoadPositions(
     const maliput::api::InertialPosition& inertial_position, double radius) const {
+  IGN_PROFILE("maliput_sparse::RoadGeometry::DoFindRoadPositions");
   return maliput::geometry_base::BruteForceFindRoadPositionsStrategy(this, inertial_position, radius);
 }
 

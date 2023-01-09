@@ -29,7 +29,13 @@ target_link_libraries(loader
   maliput::base
   maliput::common
   maliput_sparse::builder
+  PRIVATE
+  ignition-common3::profiler
 )
+
+if(PROFILER)
+  target_compile_definitions(loader PUBLIC "IGN_PROFILER_ENABLE=1")
+endif()
 
 ##############################################################################
 # Export
