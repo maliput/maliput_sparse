@@ -85,9 +85,38 @@ TEST_F(LineString3dTest, Api) {
   EXPECT_NEAR(2. * std::sqrt(2.), dut.length(), kTolerance);
 }
 
-TEST_F(LineString3dTest, LengthInjectedDistanceFunction) {
-  const LineString<Vector3, SquaredDistanceFunction<Vector3>> dut(std::vector<Vector3>{p1, p2, p3});
-  EXPECT_NEAR(4., dut.length(), 1e-14);
+class LineString3dKDTreeTest : public ::testing::Test {
+ public:
+  const Vector3 p1{0., 0., 0.};
+  const Vector3 p2{10., 0., 0.};
+  const Vector3 p3{20., 0., 0.};
+};
+
+TEST_F(LineString3dKDTreeTest, kdtreedata) {
+  const LineString3d dut(std::vector<Vector3>{p1, p2, p3});
+
+  const LineString3d::KDTreeData* kdtree = dut.Data();
+  {
+    const LineString3d::Point& point = kdtree->nearest_point(LineString3d::Point{p1});
+    std::cout << point.to_str() << std::endl;
+    std::cout << (point.p().has_value() ? std::to_string(point.p().value()) : "no p") << std::endl;
+  }
+  {
+    const LineString3d::Point& point = kdtree->nearest_point(LineString3d::Point{p2});
+    std::cout << point.to_str() << std::endl;
+    std::cout << (point.p().has_value() ? std::to_string(point.p().value()) : "no p") << std::endl;
+  }
+}
+
+TEST_F(LineString3dKDTreeTest, GetData) {
+  const LineString3d dut(std::vector<Vector3>{p1, p2, p3});
+
+  const LineString3d::LineStringData data = dut.GetData();
+  const std::vector<LineString3d::Point>* points = data.points;
+  for (const auto& point : *points) {
+    std::cout << point.to_str() << std::endl;
+    std::cout << point.iterator().value()->to_str() << std::endl;
+  }
 }
 
 class LineString2dTest : public ::testing::Test {

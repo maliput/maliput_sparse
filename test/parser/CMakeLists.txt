@@ -14,6 +14,7 @@ if (TARGET ${target})
 
       target_link_libraries(${target}
           maliput::common
+          maliput::math
           maliput_sparse::geometry
           maliput_sparse::parser
       )

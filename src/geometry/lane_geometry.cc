@@ -149,7 +149,8 @@ double LaneGeometry::FromCenterPToLateralP(const LineStringType& line_string_typ
   MALIPUT_THROW_UNLESS(line_string_type != LineStringType::kCenterLine);
   const maliput::math::Vector3 point_at_p = utility::InterpolatedPointAtP(centerline_, p, linear_tolerance_);
   // The lateral p is the one that matches closest point in the lateral to the centerline at p.
-  const utility::ClosestPointResult closest_to_point = utility::GetClosestPointUsing2dProjection(
+  const utility::ClosestPointResult closest_to_point = utility::GetClosestPointUsingKd(
+  // const utility::ClosestPointResult closest_to_point = utility::GetClosestPointUsing2dProjection(
       line_string_type == LineStringType::kLeftBoundary ? left_ : right_, point_at_p, linear_tolerance_);
   return closest_to_point.p;
 }

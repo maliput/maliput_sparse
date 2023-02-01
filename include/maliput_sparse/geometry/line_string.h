@@ -32,9 +32,11 @@
 #include <cmath>
 #include <initializer_list>
 #include <iterator>
+#include <memory>
 #include <vector>
 
 #include <maliput/common/maliput_throw.h>
+#include <maliput/math/kd_tree.h>
 #include <maliput/math/vector.h>
 
 namespace maliput_sparse {
@@ -74,6 +76,31 @@ class LineString final {
   using iterator = typename std::vector<CoordinateT>::iterator;
   using const_iterator = typename std::vector<CoordinateT>::const_iterator;
 
+  class Point : public CoordinateT {
+   public:
+    Point() = default;
+    Point(const CoordinateT& coordinate, const_iterator iterator, double p)
+        : CoordinateT(coordinate), iterator_(iterator), p_(p) {}
+    explicit Point(const CoordinateT& coordinate) : CoordinateT(coordinate) {}
+
+    ~Point() = default;
+
+    std::optional<const_iterator> iterator() const { return iterator_; }
+    std::optional<double> p() const { return p_; }
+
+    const CoordinateT* coordinate() const { return this; }
+
+   private:
+    std::optional<const_iterator> iterator_;
+    std::optional<double> p_;
+  };
+  using KDTreeData = maliput::math::KDTree<Point, CoordinateT::kDimension>;
+
+  struct LineStringData {
+    const KDTreeData* kdtree_data;
+    const std::vector<Point>* points;
+  };
+
   /// Constructs a LineString from a std::vector.
   ///
   /// This function calls LineString(coordinates.begin, coordinates.end)
@@ -101,8 +128,18 @@ class LineString final {
   /// @throws maliput::common::assertion_error When there are less than two points.
   template <typename Iterator>
   LineString(Iterator begin, Iterator end) : coordinates_(begin, end) {
+    // std::cout << "constructor" << std::endl;
     MALIPUT_THROW_UNLESS(coordinates_.size() > 1);
     length_ = ComputeLength();
+    double length{};
+    for (auto it = coordinates_.begin(); it != coordinates_.end(); ++it) {
+      if (it != coordinates_.begin()) {
+        length += (*it - *(it - 1)).norm();
+      }
+      // std::cout << "// " << it->to_str() << std::endl;
+      points_.push_back(Point(*it, it, length));
+    }
+    kdtree_ = std::make_unique<KDTreeData>(points_.begin(), points_.end());
   }
 
   /// @return The first point in the LineString.
@@ -117,6 +154,22 @@ class LineString final {
 
   /// @return The number of points this LineString has.
   size_t size() const { return coordinates_.size(); }
+
+  // CoordinateT InterpolatedPointAtP(double p, double tolerance) {
+  //   Point& first;
+  //   Point& second;
+  //   for (auto it = points_.begin(); it != points_.end(); ++it) {
+  //     if (it->p() && it->p().value() >= p) {
+  //       second = *it;
+  //       if (it != points_.begin()) {
+  //         first = *(it - 1);
+  //       } else {
+  //         first = *it;
+  //       }
+  //       break;
+  //     }
+  //   }
+  // }
 
   /// @return The accumulated length between consecutive points in this LineString by means of DistanceFunction.
   double length() const { return length_; }
@@ -138,6 +191,11 @@ class LineString final {
     return coordinates_ == other.coordinates_;
   }
 
+  const LineStringData GetData() const { return LineStringData{kdtree_.get(), &points_}; }
+
+  /// Get KD Tree of the LineString.
+  const KDTreeData* Data() const { return kdtree_.get(); }
+
  private:
   // @return The accumulated Length of this LineString.
   const double ComputeLength() const {
@@ -149,7 +207,10 @@ class LineString final {
   }
 
   std::vector<CoordinateT> coordinates_{};
+  std::vector<Point> points_{};
   double length_{};
+  // Point point_;
+  std::shared_ptr<KDTreeData> kdtree_;
 };
 
 // Convenient aliases.

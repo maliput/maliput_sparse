@@ -41,8 +41,8 @@ namespace utility {
 /// @tparam CoordinateT The coordinate type.
 template <typename CoordinateT>
 struct BoundPointsResult {
-  typename LineString<CoordinateT>::const_iterator first;
-  typename LineString<CoordinateT>::const_iterator second;
+  CoordinateT first;
+  CoordinateT second;
   // Length up to first.
   double length;
 };
@@ -104,6 +104,12 @@ template <typename CoordinateT = maliput::math::Vector3>
 BoundPointsResult<CoordinateT> GetBoundPointsAtP(const LineString<CoordinateT>& line_string, double p,
                                                  double tolerance);
 
+/// Obtains the points that confines @p xyz in the @p line_string .
+/// @param line_string LineString.
+/// @param xyz Point.
+template <typename CoordinateT = maliput::math::Vector3>
+BoundPointsResult<CoordinateT> GetBoundPointsAtXYZ(const LineString<CoordinateT>& line_string, const CoordinateT& xyz);
+
 /// Returns the heading of a @p line_string for a given @p p .
 /// @param line_string LineString to be computed the heading from.
 /// @param p P parameter at which compute the heading.
@@ -145,6 +151,10 @@ ClosestPointResult<CoordinateT> GetClosestPointToSegment(const std::pair<Coordin
 /// and the p coordinate in the LineString3d matching the closest point.
 ClosestPointResult3d GetClosestPoint(const LineString3d& line_string, const maliput::math::Vector3& xyz,
                                      double tolerance);
+
+template <typename CoordinateT>
+ClosestPointResult<CoordinateT> GetClosestPointUsingKd(const LineString<CoordinateT>& line_string,
+                                                       const CoordinateT& xyz, double tolerance);
 
 /// Gets the closest point in the @p line_string to the given @p xyz point.
 /// @details This method is similar to #ref GetClosestPoint, but it first projects the @p line_string and the @p xyz on
