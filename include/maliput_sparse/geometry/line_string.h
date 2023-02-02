@@ -77,6 +77,8 @@ class LineString final {
 
   struct Segment {
     struct Interval {
+      // Interval() = default;
+
       /// Creates a Interval.
       /// @param min_in Is the minimum value of the interval.
       /// @param max_in Is the maximum value of the interval.
@@ -97,13 +99,13 @@ class LineString final {
         }
       }
 
-      const double min{};
-      const double max{};
+      double min{};
+      double max{};
     };
 
-    const std::size_t idx_start;
-    const std::size_t idx_end;
-    const Segment::Interval p_interval;
+    std::size_t idx_start;
+    std::size_t idx_end;
+    Segment::Interval p_interval;
   };
 
   using Segments = std::map<typename Segment::Interval, Segment>;

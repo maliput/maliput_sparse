@@ -62,6 +62,7 @@
 #include <cmath>
 #include <numeric>
 
+#include <execution>
 #include <maliput/common/range_validator.h>
 
 namespace maliput_sparse {
@@ -83,14 +84,6 @@ namespace {
 Vector2 To2D(const Vector3& vector) { return {vector.x(), vector.y()}; }
 
 Segment2d To2D(const Segment3d& segment) { return {To2D(segment.first), To2D(segment.second)}; }
-
-LineString2d To2D(const LineString3d& line_string) {
-  std::vector<Vector2> points;
-  for (const auto& point : line_string) {
-    points.push_back(To2D(point));
-  }
-  return LineString2d{points};
-}
 
 // Determines whether two line segments intersects.
 //
@@ -356,52 +349,60 @@ ClosestPointResult<CoordinateT> GetClosestPointToSegment(const std::pair<Coordin
 
 ClosestPointResult3d GetClosestPoint(const LineString3d& line_string, const maliput::math::Vector3& xyz,
                                      double tolerance) {
-  ClosestPointResult3d result;
-  result.distance = std::numeric_limits<double>::max();
-  double length{};
-  for (auto first = line_string.begin(), second = std::next(line_string.begin()); second != line_string.end();
-       ++first, ++second) {
-    // If points are under numeric tolerance, skip segment.
-    if ((*first - *second).norm() < kEpsilon) continue;
-    const auto closest_point_res = GetClosestPointToSegment(Segment3d{*first, *second}, xyz, tolerance);
-    if (closest_point_res.distance < result.distance) {
-      result = closest_point_res;
-      result.p += length;
+  std::optional<LineString3d::Segment> closest_segment{std::nullopt};
+  ClosestPointResult3d segment_closest_point_result;
+  segment_closest_point_result.distance = std::numeric_limits<double>::max();
+
+  const auto& segments = line_string.segments();
+  std::for_each(std::execution::par, segments.begin(), segments.end(), [&](const auto& segment) {
+    const auto& start = line_string[segment.second.idx_start];
+    const auto& end = line_string[segment.second.idx_end];
+    const auto current_closest_point_res = GetClosestPointToSegment(Segment3d{start, end}, xyz, tolerance);
+    if (current_closest_point_res.distance < segment_closest_point_result.distance) {
+      segment_closest_point_result = current_closest_point_res;
+      closest_segment = {segment.second.idx_start, segment.second.idx_end, segment.second.p_interval};
     }
-    length += (*second - *first).norm();  //> Adds segment length
-  }
-  return result;
+  });
+
+  return {segment_closest_point_result.p + closest_segment->p_interval.min, segment_closest_point_result.point,
+          segment_closest_point_result.distance};
 }
 
 ClosestPointResult3d GetClosestPointUsing2dProjection(const LineString3d& line_string,
                                                       const maliput::math::Vector3& xyz, double tolerance) {
-  ClosestPointResult3d result;
-  result.distance = std::numeric_limits<double>::max();
-  double length{};
-  for (auto first = line_string.begin(), second = std::next(line_string.begin()); second != line_string.end();
-       ++first, ++second) {
-    // If points are under numeric tolerance, skip segment.
-    if ((*first - *second).norm() < kEpsilon) continue;
-    const double segment_3d_length = (*second - *first).norm();
-    const maliput::math::Vector2 xy = To2D(xyz);
-    const Segment2d segment_2d{To2D(*first), To2D(*second)};
-    const auto closest_point_res = GetClosestPointToSegment(segment_2d, xy, tolerance);
-    if (closest_point_res.distance < result.distance) {
-      // Retrieve the z coordinate from the 3d line string.
-      const double scale_p = segment_3d_length / (segment_2d.first - segment_2d.second).norm();
-      const double p_3d = closest_point_res.p * scale_p;
-      const double z_coordinate = first->z() + ((*second - *first).normalized() * p_3d).z();
-      // Compound closest point in 3d.
-      const maliput::math::Vector3 closest_point_3d{closest_point_res.point.x(), closest_point_res.point.y(),
-                                                    z_coordinate};
+  const maliput::math::Vector2 xy = To2D(xyz);
 
-      result.distance = (xyz - closest_point_3d).norm();
-      result.point = closest_point_3d;
-      result.p = length + p_3d;
+  // Find the closest segment in 2D
+  std::optional<LineString3d::Segment> closest_segment{std::nullopt};
+  ClosestPointResult2d segment_closest_point_result;
+  segment_closest_point_result.distance = std::numeric_limits<double>::max();
+
+  const auto& segments = line_string.segments();
+  std::for_each(std::execution::par, segments.begin(), segments.end(), [&](const auto& segment) {
+    const auto& start = line_string[segment.second.idx_start];
+    const auto& end = line_string[segment.second.idx_end];
+    const Segment2d segment_2d{To2D(start), To2D(end)};
+    const auto current_closest_point_res = GetClosestPointToSegment(segment_2d, xy, tolerance);
+    if (current_closest_point_res.distance < segment_closest_point_result.distance) {
+      segment_closest_point_result = current_closest_point_res;
+      closest_segment = {segment.second.idx_start, segment.second.idx_end, segment.second.p_interval};
     }
-    length += segment_3d_length;  //> Adds segment length
-  }
-  return result;
+  });
+
+  // Analyze closest segment and compute the closest point in 3D.
+  const auto& start_point = line_string[closest_segment->idx_start];
+  const auto& end_point = line_string[closest_segment->idx_end];
+  const double segment_3d_length = (end_point - start_point).norm();
+  const Segment2d segment_2d{To2D(start_point), To2D(end_point)};
+
+  const double scale_p = segment_3d_length / (segment_2d.first - segment_2d.second).norm();
+  const double p_3d = segment_closest_point_result.p * scale_p;
+  const double z_coordinate = start_point.z() + ((end_point - start_point).normalized() * p_3d).z();
+  // Compound closest point in 3d.
+  const maliput::math::Vector3 closest_point_3d{segment_closest_point_result.point.x(),
+                                                segment_closest_point_result.point.y(), z_coordinate};
+
+  return {p_3d + closest_segment->p_interval.min, closest_point_3d, (xyz - closest_point_3d).norm()};
 }
 
 double ComputeDistance(const LineString3d& lhs, const LineString3d& rhs, double tolerance) {
