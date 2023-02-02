@@ -31,6 +31,13 @@ target_link_libraries(loader
   maliput_sparse::builder
 )
 
+if(MALIPUT_PROFILER_ENABLE)
+  target_link_libraries(loader
+    PRIVATE
+      ignition-common3::profiler
+  )
+endif()
+
 ##############################################################################
 # Export
 ##############################################################################

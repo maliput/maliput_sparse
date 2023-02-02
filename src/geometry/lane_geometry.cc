@@ -31,6 +31,8 @@
 
 #include <algorithm>
 
+#include <maliput/common/profiler.h>
+
 #include "maliput_sparse/geometry/utility/geometry.h"
 
 namespace maliput_sparse {
@@ -52,9 +54,13 @@ LaneGeometry::LaneGeometry(const LineString3d& center, const LineString3d& left,
       range_validator_(maliput::common::RangeValidator::GetAbsoluteEpsilonValidator(0., centerline_.length(),
                                                                                     linear_tolerance_, kEpsilon)) {}
 
-double LaneGeometry::ArcLength() const { return centerline_.length(); }
+double LaneGeometry::ArcLength() const {
+  MALIPUT_PROFILE("LaneGeometry::ArcLength");
+  return centerline_.length();
+}
 
 maliput::math::Vector3 LaneGeometry::W(const maliput::math::Vector3& prh) const {
+  MALIPUT_PROFILE("LaneGeometry::W");
   const double p = range_validator_(prh.x());
   // Obtains the point on the centerline (p, 0, 0).
   const maliput::math::Vector3 on_centerline_point = utility::InterpolatedPointAtP(centerline_, p, linear_tolerance_);
@@ -65,10 +71,12 @@ maliput::math::Vector3 LaneGeometry::W(const maliput::math::Vector3& prh) const 
 }
 
 maliput::math::Vector3 LaneGeometry::WDot(double p) const {
+  MALIPUT_PROFILE("LaneGeometry::WDot(p)");
   return utility::GetTangentAtP(centerline_, range_validator_(p), linear_tolerance_);
 };
 
 maliput::math::Vector3 LaneGeometry::WDot(const maliput::math::Vector3& prh) const {
+  MALIPUT_PROFILE("LaneGeometry::WDot(prh)");
   // Implementation based on
   // https://github.com/maliput/maliput_malidrive/blob/2eb648a030fa4439370b6ed757b84cb726459896/src/maliput_malidrive/road_curve/road_curve.cc#L92-L122
   const double p = range_validator_(prh.x());
@@ -99,6 +107,7 @@ maliput::math::Vector3 LaneGeometry::WDot(const maliput::math::Vector3& prh) con
 }
 
 maliput::math::RollPitchYaw LaneGeometry::Orientation(double p) const {
+  MALIPUT_PROFILE("LaneGeometry::Orientation");
   p = range_validator_(p);
   const maliput::math::Vector3 diff =
       ToLateralPos(LineStringType::kLeftBoundary, p) - ToLateralPos(LineStringType::kRightBoundary, p);
@@ -117,6 +126,7 @@ maliput::math::RollPitchYaw LaneGeometry::Orientation(const maliput::math::Vecto
 }
 
 maliput::math::Vector3 LaneGeometry::WInverse(const maliput::math::Vector3& xyz) const {
+  MALIPUT_PROFILE("LaneGeometry::WInverse");
   const utility::ClosestPointResult closest_centerline_point =
       utility::GetClosestPoint(centerline_, xyz, linear_tolerance_);
   const double p = closest_centerline_point.p;
@@ -133,6 +143,7 @@ maliput::math::Vector3 LaneGeometry::WInverse(const maliput::math::Vector3& xyz)
 }
 
 maliput::api::RBounds LaneGeometry::RBounds(double p) const {
+  MALIPUT_PROFILE("LaneGeometry::RBounds");
   p = range_validator_(p);
   MALIPUT_THROW_UNLESS(p >= p0());
   MALIPUT_THROW_UNLESS(p <= p1());
@@ -145,6 +156,7 @@ maliput::api::RBounds LaneGeometry::RBounds(double p) const {
 }
 
 double LaneGeometry::FromCenterPToLateralP(const LineStringType& line_string_type, double p) const {
+  MALIPUT_PROFILE("LaneGeometry::FromCenterPToLateralP");
   p = range_validator_(p);
   MALIPUT_THROW_UNLESS(line_string_type != LineStringType::kCenterLine);
   const maliput::math::Vector3 point_at_p = utility::InterpolatedPointAtP(centerline_, p, linear_tolerance_);
@@ -155,6 +167,7 @@ double LaneGeometry::FromCenterPToLateralP(const LineStringType& line_string_typ
 }
 
 maliput::math::Vector3 LaneGeometry::ToLateralPos(const LineStringType& line_string_type, double p) const {
+  MALIPUT_PROFILE("LaneGeometry::ToLateralPos");
   p = range_validator_(p);
   MALIPUT_THROW_UNLESS(line_string_type != LineStringType::kCenterLine);
   const double p_lateral = FromCenterPToLateralP(line_string_type, p);

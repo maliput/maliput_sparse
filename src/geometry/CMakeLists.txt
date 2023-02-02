@@ -28,6 +28,13 @@ target_link_libraries(geometry
   maliput::math
 )
 
+if(MALIPUT_PROFILER_ENABLE)
+  target_link_libraries(geometry
+    PRIVATE
+      ignition-common3::profiler
+  )
+endif()
+
 ##############################################################################
 # Export
 ##############################################################################

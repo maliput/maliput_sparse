@@ -30,6 +30,7 @@
 #include "base/lane.h"
 
 #include <maliput/common/maliput_throw.h>
+#include <maliput/common/profiler.h>
 
 namespace maliput_sparse {
 
@@ -39,9 +40,16 @@ Lane::Lane(const maliput::api::LaneId& id, const maliput::api::HBounds& elevatio
   MALIPUT_THROW_UNLESS(lane_geometry_ != nullptr);
 }
 
-double Lane::do_length() const { return lane_geometry_->ArcLength(); }
+double Lane::do_length() const {
+  MALIPUT_PROFILE("Lane::do_length");
+  return lane_geometry_->ArcLength();
+}
 
-maliput::api::RBounds Lane::do_lane_bounds(double s) const { return lane_geometry_->RBounds(s); }
+maliput::api::RBounds Lane::do_lane_bounds(double s) const {
+  MALIPUT_PROFILE("Lane::do_lane_bounds");
+
+  return lane_geometry_->RBounds(s);
+}
 
 maliput::api::RBounds Lane::do_segment_bounds(double s) const {
   const double bound_left = ComputeDistanceToSegmentBoundary(kToLeft, s);
@@ -66,10 +74,14 @@ double Lane::ComputeDistanceToSegmentBoundary(bool to_left, double s) const {
 maliput::api::HBounds Lane::do_elevation_bounds(double, double) const { return elevation_bounds_; }
 
 maliput::math::Vector3 Lane::DoToBackendPosition(const maliput::api::LanePosition& lane_pos) const {
+  MALIPUT_PROFILE("Lane::DoToBackendPosition");
+
   return lane_geometry_->W(lane_pos.srh());
 }
 
 maliput::api::LanePositionResult Lane::ToLanePositionBackend(const maliput::api::InertialPosition& backend_pos) const {
+  MALIPUT_PROFILE("Lane::ToLanePositionBackend");
+
   maliput::api::LanePosition lane_position;
   maliput::math::Vector3 nearest_backend_pos;
   double distance{};
@@ -79,6 +91,7 @@ maliput::api::LanePositionResult Lane::ToLanePositionBackend(const maliput::api:
 
 maliput::api::LanePositionResult Lane::ToSegmentPositionBackend(
     const maliput::api::InertialPosition& backend_pos) const {
+  MALIPUT_PROFILE("Lane::ToSegmentPositionBackend");
   maliput::api::LanePosition lane_position;
   maliput::math::Vector3 nearest_backend_pos;
   double distance{};
@@ -89,6 +102,7 @@ maliput::api::LanePositionResult Lane::ToSegmentPositionBackend(
 void Lane::InertialToLaneSegmentPositionBackend(bool use_lane_boundaries, const maliput::math::Vector3& backend_pos,
                                                 maliput::api::LanePosition* lane_position,
                                                 maliput::math::Vector3* nearest_backend_pos, double* distance) const {
+  MALIPUT_PROFILE("Lane::InertialToLaneSegmentPositionBackend");
   MALIPUT_THROW_UNLESS(lane_position != nullptr);
   MALIPUT_THROW_UNLESS(nearest_backend_pos != nullptr);
   MALIPUT_THROW_UNLESS(distance != nullptr);
@@ -111,23 +125,27 @@ void Lane::InertialToLaneSegmentPositionBackend(bool use_lane_boundaries, const 
 
 void Lane::DoToLanePositionBackend(const maliput::math::Vector3& backend_pos, maliput::api::LanePosition* lane_position,
                                    maliput::math::Vector3* nearest_backend_pos, double* distance) const {
+  MALIPUT_PROFILE("Lane::DoToLanePositionBackend");
   InertialToLaneSegmentPositionBackend(kUseLaneBoundaries, backend_pos, lane_position, nearest_backend_pos, distance);
 }
 
 void Lane::DoToSegmentPositionBackend(const maliput::math::Vector3& backend_pos,
                                       maliput::api::LanePosition* lane_position,
                                       maliput::math::Vector3* nearest_backend_pos, double* distance) const {
+  MALIPUT_PROFILE("Lane::DoToSegmentPositionBackend");
   InertialToLaneSegmentPositionBackend(kUseSegmentBoundaries, backend_pos, lane_position, nearest_backend_pos,
                                        distance);
 }
 
 maliput::api::Rotation Lane::DoGetOrientation(const maliput::api::LanePosition& lane_pos) const {
+  MALIPUT_PROFILE("Lane::DoGetOrientation");
   const auto rpy = lane_geometry_->Orientation(lane_pos.srh());
   return maliput::api::Rotation::FromRpy(rpy.roll_angle(), rpy.pitch_angle(), rpy.yaw_angle());
 }
 
 maliput::api::LanePosition Lane::DoEvalMotionDerivatives(const maliput::api::LanePosition& position,
                                                          const maliput::api::IsoLaneVelocity& velocity) const {
+  MALIPUT_PROFILE("Lane::DoEvalMotionDerivatives");
   // The definition of path-length of a path along σ yields dσ = |∂W/∂s| ds
   // evaluated at (s, r, h).
   const double ds_dsigma = lane_geometry_->WDot(position.s()).norm() / lane_geometry_->WDot(position.srh()).norm();

@@ -30,6 +30,7 @@
 #include "maliput_sparse/loader/road_geometry_loader.h"
 
 #include <maliput/common/logger.h>
+#include <maliput/common/profiler.h>
 
 #include "maliput_sparse/builder/builder.h"
 #include "maliput_sparse/parser/validator.h"
@@ -58,6 +59,7 @@ RoadGeometryLoader::RoadGeometryLoader(std::unique_ptr<parser::Parser> parser,
 }
 
 std::unique_ptr<const maliput::api::RoadGeometry> RoadGeometryLoader::operator()() {
+  MALIPUT_PROFILE("RoadGeometryLoader::operator()");
   // Validates the parsed data before building the RoadGeometry.
   const auto errors = parser::Validator(
       parser_.get(),

@@ -30,6 +30,13 @@ target_link_libraries(base
   maliput::math
 )
 
+if(MALIPUT_PROFILER_ENABLE)
+  target_link_libraries(base
+    PRIVATE
+      ignition-common3::profiler
+  )
+endif()
+
 ##############################################################################
 # Export
 ##############################################################################
