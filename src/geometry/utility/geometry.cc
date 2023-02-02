@@ -328,11 +328,8 @@ double Get2DHeadingAtP(const LineString3d& line_string, double p, double toleran
 }
 
 Vector2 Get2DTangentAtP(const LineString3d& line_string, double p, double tolerance) {
-  // const double heading = Get2DHeadingAtP(line_string, p);
-  // return {std::cos(heading), std::sin(heading)};
-  const auto bound_points = GetBoundPointsAtP(line_string, p, tolerance);
-  const Vector2 d_xy{To2D(line_string[bound_points.idx_end]) - To2D(line_string[bound_points.idx_start])};
-  return (d_xy / (To2D(line_string).length())).normalized();
+  const double heading = Get2DHeadingAtP(line_string, p, tolerance);
+  return {std::cos(heading), std::sin(heading)};
 }
 
 Vector3 GetTangentAtP(const LineString3d& line_string, double p, double tolerance) {
