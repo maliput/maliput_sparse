@@ -242,34 +242,34 @@ class GetBoundPointsAtPTest : public ::testing::Test {
 TEST_F(GetBoundPointsAtPTest, Test) {
   {
     const double p{0.};
-    const BoundPointsResult3d expected_result{line_string.begin(), line_string.begin() + 1, 0.};
-    const BoundPointsResult3d dut = GetBoundPointsAtP(line_string, p, kTolerance);
-    EXPECT_EQ(expected_result.first, dut.first);
-    EXPECT_EQ(expected_result.second, dut.second);
+    const BoundPointsResult expected_result{0, 1, 0.};
+    const BoundPointsResult dut = GetBoundPointsAtP(line_string, p, kTolerance);
+    EXPECT_EQ(expected_result.idx_start, dut.idx_start);
+    EXPECT_EQ(expected_result.idx_end, dut.idx_end);
     EXPECT_EQ(expected_result.length, dut.length);
   }
   {
     const double p{7.5};
-    const BoundPointsResult3d expected_result{line_string.begin() + 1, line_string.begin() + 2, 7.};
-    const BoundPointsResult3d dut = GetBoundPointsAtP(line_string, p, kTolerance);
-    EXPECT_EQ(expected_result.first, dut.first);
-    EXPECT_EQ(expected_result.second, dut.second);
+    const BoundPointsResult expected_result{1, 2, 7.};
+    const BoundPointsResult dut = GetBoundPointsAtP(line_string, p, kTolerance);
+    EXPECT_EQ(expected_result.idx_start, dut.idx_start);
+    EXPECT_EQ(expected_result.idx_end, dut.idx_end);
     EXPECT_EQ(expected_result.length, dut.length);
   }
   {
     const double p{12.5};
-    const BoundPointsResult3d expected_result{line_string.begin() + 2, line_string.begin() + 3, 12.};
-    const BoundPointsResult3d dut = GetBoundPointsAtP(line_string, p, kTolerance);
-    EXPECT_EQ(expected_result.first, dut.first);
-    EXPECT_EQ(expected_result.second, dut.second);
+    const BoundPointsResult expected_result{2, 3, 12.};
+    const BoundPointsResult dut = GetBoundPointsAtP(line_string, p, kTolerance);
+    EXPECT_EQ(expected_result.idx_start, dut.idx_start);
+    EXPECT_EQ(expected_result.idx_end, dut.idx_end);
     EXPECT_EQ(expected_result.length, dut.length);
   }
   {
     const double p{19.5};
-    const BoundPointsResult3d expected_result{line_string.begin() + 3, line_string.begin() + 4, 19.};
-    const BoundPointsResult3d dut = GetBoundPointsAtP(line_string, p, kTolerance);
-    EXPECT_EQ(expected_result.first, dut.first);
-    EXPECT_EQ(expected_result.second, dut.second);
+    const BoundPointsResult expected_result{3, 4, 19.};
+    const BoundPointsResult dut = GetBoundPointsAtP(line_string, p, kTolerance);
+    EXPECT_EQ(expected_result.idx_start, dut.idx_start);
+    EXPECT_EQ(expected_result.idx_end, dut.idx_end);
     EXPECT_EQ(expected_result.length, dut.length);
   }
 }
@@ -291,19 +291,19 @@ std::vector<SlopeTestCase> SlopeTestCases() {
       {
           // LineString with different z values along y axis.
           LineString3d{{0., 0., 0.}, {5., 0., 5.}, {10., 0., 5.}, {15., 0., 10.}} /* line string*/,
-          {0., std::sqrt(2.) * 5, std::sqrt(2.) * 5 + 5., 2 * std::sqrt(2.) * 5 + 5.} /* ps */,
+          {0., std::sqrt(2.) * 5. / 2., std::sqrt(2.) * 5. + 5. / 2., 2 * std::sqrt(2.) * 5. + 5.} /* ps */,
           {1., 1., 0., 1.} /* expected_slopes */
       },
       {
           // LineString with different z values along x axis.
           LineString3d{{0., 0., 0.}, {0., 5., 5.}, {0., 10., 5.}, {0., 15., 10.}} /* line string*/,
-          {0., std::sqrt(2.) * 5, std::sqrt(2.) * 5 + 5., 2 * std::sqrt(2.) * 5 + 5.} /* ps */,
+          {0., std::sqrt(2.) * 5. / 2., std::sqrt(2.) * 5. + 5. / 2., 2 * std::sqrt(2.) * 5. + 5.} /* ps */,
           {1., 1., 0., 1.} /* expected_slopes */
       },
       {
           // LineString with different z values.
           LineString3d{{0., 0., 0.}, {6., 3., 2.}, {10., 6., 2.}, {16., 9., 4.}, {10., 6., 2.}} /* line string*/,
-          {0., 7., 12., 19., 26.} /* ps */,
+          {0., 3.5, 10.5, 17., 26.} /* ps */,
           {2. / std::sqrt(45), 2. / std::sqrt(45), 0., 2. / std::sqrt(45), -2. / std::sqrt(45)} /* expected_slopes */
       },
   };

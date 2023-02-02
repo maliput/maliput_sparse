@@ -111,20 +111,18 @@ class SegmentTest : public ::testing::Test {
   LineString3d::Segment::Interval interval_2{10., 20.};
 };
 
-TEST_F(SegmentTest, Constructor) {
-  EXPECT_NO_THROW((LineString3d::Segment{points_3d_.begin(), points_3d_.begin() + 1, interval_1}));
-}
+TEST_F(SegmentTest, Constructor) { EXPECT_NO_THROW((LineString3d::Segment{0, 1, interval_1})); }
 
 TEST_F(SegmentTest, Values) {
-  const LineString3d::Segment dut_1{points_3d_.begin(), points_3d_.begin() + 1, interval_1};
-  EXPECT_EQ(points_3d_.begin(), dut_1.start);
-  EXPECT_EQ(points_3d_.begin() + 1, dut_1.end);
+  const LineString3d::Segment dut_1{0, 1, interval_1};
+  EXPECT_EQ(static_cast<std::size_t>(0), dut_1.idx_start);
+  EXPECT_EQ(static_cast<std::size_t>(1), dut_1.idx_end);
   EXPECT_EQ(interval_1.min, dut_1.p_interval.min);
   EXPECT_EQ(interval_1.max, dut_1.p_interval.max);
 
-  const LineString3d::Segment dut_2{points_3d_.begin() + 1, points_3d_.end(), interval_2};
-  EXPECT_EQ(points_3d_.begin() + 1, dut_2.start);
-  EXPECT_EQ(points_3d_.end(), dut_2.end);
+  const LineString3d::Segment dut_2{1, 2, interval_2};
+  EXPECT_EQ(static_cast<std::size_t>(1), dut_2.idx_start);
+  EXPECT_EQ(static_cast<std::size_t>(2), dut_2.idx_end);
   EXPECT_EQ(interval_2.min, dut_2.p_interval.min);
   EXPECT_EQ(interval_2.max, dut_2.p_interval.max);
 }
@@ -169,14 +167,14 @@ TEST_F(LineString3dTest, Segments) {
   const double p_in_p2_p3 = (p1 - p2).norm() + (p2 - p3).norm() / 2.;
 
   const auto segment_p1_p2 = segments.at(LineString3d::Segment::Interval(p_in_p1_p2));
-  EXPECT_TRUE(p1 == *segment_p1_p2.start);
-  EXPECT_TRUE(p2 == *segment_p1_p2.end);
+  EXPECT_TRUE(p1 == dut[segment_p1_p2.idx_start]);
+  EXPECT_TRUE(p2 == dut[segment_p1_p2.idx_end]);
   EXPECT_NEAR(0., segment_p1_p2.p_interval.min, kTolerance);
   EXPECT_NEAR((p1 - p2).norm(), segment_p1_p2.p_interval.max, kTolerance);
 
   const auto segment_p2_p3 = segments.at(LineString3d::Segment::Interval(p_in_p2_p3));
-  EXPECT_TRUE(p2 == *segment_p2_p3.start);
-  EXPECT_TRUE(p3 == *segment_p2_p3.end);
+  EXPECT_TRUE(p2 == dut[segment_p2_p3.idx_start]);
+  EXPECT_TRUE(p3 == dut[segment_p2_p3.idx_end]);
   EXPECT_NEAR((p1 - p2).norm(), segment_p2_p3.p_interval.min, kTolerance);
   EXPECT_NEAR((p1 - p2).norm() + (p2 - p3).norm(), segment_p2_p3.p_interval.max, kTolerance);
 }

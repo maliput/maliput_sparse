@@ -101,8 +101,8 @@ class LineString final {
       const double max{};
     };
 
-    const const_iterator start;
-    const const_iterator end;
+    const std::size_t idx_start;
+    const std::size_t idx_end;
     const Segment::Interval p_interval;
   };
 
@@ -138,10 +138,10 @@ class LineString final {
     MALIPUT_THROW_UNLESS(coordinates_.size() > 1);
     // Fill up the segments collection
     double p = 0;
-    for (auto it = coordinates_.cbegin(); it != coordinates_.cend() - 1; ++it) {
-      const double segment_length = DistanceFunction()(*it, *(it + 1));
+    for (std::size_t idx{}; idx < coordinates_.size() - 1; ++idx) {
+      const double segment_length = DistanceFunction()(coordinates_[idx], coordinates_[idx + 1]);
       const typename Segment::Interval interval{p, p + segment_length};
-      segments_.emplace(interval, Segment{it, it + 1, interval});
+      segments_.emplace(interval, Segment{idx, idx + 1, interval});
       p += segment_length;
     }
     length_ = p;
