@@ -32,6 +32,7 @@
 #include <cmath>
 #include <initializer_list>
 #include <iterator>
+#include <map>
 #include <vector>
 
 #include <maliput/common/maliput_throw.h>
@@ -74,6 +75,39 @@ class LineString final {
   using iterator = typename std::vector<CoordinateT>::iterator;
   using const_iterator = typename std::vector<CoordinateT>::const_iterator;
 
+  struct Segment {
+    struct Interval {
+      /// Creates a Interval.
+      /// @param min_in Is the minimum value of the interval.
+      /// @param max_in Is the maximum value of the interval.
+      /// @throw maliput::common::assertion_error When `min_in` is greater than `max_in`.
+      Interval(double min_in, double max_in) : min(min_in), max(max_in) { MALIPUT_THROW_UNLESS(min_in <= max_in); }
+
+      /// Creates a Interval where
+      /// the minimum value is equal to the maximum value.
+      /// @param min_max Is the minimum and maximum value of the interval.
+      Interval(double min_max) : min(min_max), max(min_max) {}
+
+      // Less than operator.
+      bool operator<(const Interval& rhs) const {
+        if (min < rhs.min) {
+          return max <= rhs.max ? true : false;
+        } else {
+          return false;
+        }
+      }
+
+      const double min{};
+      const double max{};
+    };
+
+    const const_iterator start;
+    const const_iterator end;
+    const Segment::Interval p_interval;
+  };
+
+  using Segments = std::map<typename Segment::Interval, Segment>;
+
   /// Constructs a LineString from a std::vector.
   ///
   /// This function calls LineString(coordinates.begin, coordinates.end)
@@ -102,7 +136,15 @@ class LineString final {
   template <typename Iterator>
   LineString(Iterator begin, Iterator end) : coordinates_(begin, end) {
     MALIPUT_THROW_UNLESS(coordinates_.size() > 1);
-    length_ = ComputeLength();
+    // Fill up the segments collection
+    double p = 0;
+    for (auto it = coordinates_.cbegin(); it != coordinates_.cend() - 1; ++it) {
+      const double segment_length = DistanceFunction()(*it, *(it + 1));
+      const typename Segment::Interval interval{p, p + segment_length};
+      segments_.emplace(interval, Segment{it, it + 1, interval});
+      p += segment_length;
+    }
+    length_ = p;
   }
 
   /// @return The first point in the LineString.
@@ -120,6 +162,10 @@ class LineString final {
 
   /// @return The accumulated length between consecutive points in this LineString by means of DistanceFunction.
   double length() const { return length_; }
+
+  /// Return the segments of this LineString.
+  /// @return A vector of segments.
+  const Segments& segments() const { return segments_; }
 
   /// @returns begin iterator of the underlying collection.
   iterator begin() { return coordinates_.begin(); }
@@ -139,16 +185,8 @@ class LineString final {
   }
 
  private:
-  // @return The accumulated Length of this LineString.
-  const double ComputeLength() const {
-    double accumulated_{0.};
-    for (size_t i = 0; i < size() - 1; ++i) {
-      accumulated_ += DistanceFunction()(at(i), at(i + 1));
-    }
-    return accumulated_;
-  }
-
   std::vector<CoordinateT> coordinates_{};
+  Segments segments_{};
   double length_{};
 };
 

@@ -314,20 +314,9 @@ double GetSlopeAtP(const LineString3d& line_string, double p, double tolerance) 
 template <typename CoordinateT>
 BoundPointsResult<CoordinateT> GetBoundPointsAtP(const LineString<CoordinateT>& line_string, double p,
                                                  double tolerance) {
-  maliput::common::RangeValidator::GetAbsoluteEpsilonValidator(0., line_string.length(), tolerance, kEpsilon)(p);
-  BoundPointsResult<CoordinateT> result;
-  double current_cumulative_length = 0.0;
-  for (auto first = line_string.begin(), second = std::next(line_string.begin()); second != line_string.end();
-       ++first, ++second) {
-    const auto p1 = *first;
-    const auto p2 = *second;
-    const double current_length = (p1 - p2).norm();
-    if (current_cumulative_length + current_length >= p) {
-      return {first, second, current_cumulative_length};
-    }
-    current_cumulative_length += current_length;
-  }
-  return {line_string.end() - 1, line_string.end() - 2, line_string.length()};
+  p = maliput::common::RangeValidator::GetAbsoluteEpsilonValidator(0., line_string.length(), tolerance, kEpsilon)(p);
+  const auto segment = line_string.segments().at(typename LineString<CoordinateT>::Segment::Interval{p});
+  return {segment.start, segment.end, segment.p_interval.min};
 }
 
 double Get2DHeadingAtP(const LineString3d& line_string, double p, double tolerance) {
