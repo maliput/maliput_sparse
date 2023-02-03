@@ -444,7 +444,8 @@ class GetClosestPointToSegmentTest : public ::testing::TestWithParam<GetClosestP
 TEST_P(GetClosestPointToSegmentTest, Test) {
   ASSERT_EQ(case_.eval_points.size(), case_.expected_closest.size()) << ">>>>> Test case is ill-formed.";
   for (std::size_t i = 0; i < case_.eval_points.size(); ++i) {
-    const auto dut = GetClosestPointToSegment(case_.segment, case_.eval_points[i], kTolerance);
+    const auto dut =
+        GetClosestPointToSegment(case_.segment.first, case_.segment.second, case_.eval_points[i], kTolerance);
     EXPECT_NEAR(case_.expected_closest[i].p, dut.p, kTolerance);
     EXPECT_TRUE(maliput::math::test::CompareVectors(case_.expected_closest[i].point, dut.point, kTolerance));
     EXPECT_NEAR(case_.expected_closest[i].distance, dut.distance, kTolerance);

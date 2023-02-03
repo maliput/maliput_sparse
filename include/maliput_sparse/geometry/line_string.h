@@ -36,6 +36,7 @@
 #include <vector>
 
 #include <maliput/common/maliput_throw.h>
+#include <maliput/math/kd_tree.h>
 #include <maliput/math/vector.h>
 
 namespace maliput_sparse {
@@ -121,6 +122,30 @@ class LineString final {
 
   using Segments = std::map<typename Segment::Interval, Segment>;
 
+  class Point : public CoordinateT {
+   public:
+    Point() = default;
+    Point(const CoordinateT& coordinate, std::size_t idx, double p) : CoordinateT(coordinate), idx_(idx), p_(p) {}
+    explicit Point(const CoordinateT& coordinate) : CoordinateT(coordinate) {}
+
+    ~Point() = default;
+
+    std::optional<std::size_t> idx() const { return idx_; }
+    std::optional<double> p() const { return p_; }
+
+    const CoordinateT* coordinate() const { return this; }
+
+   private:
+    std::optional<std::size_t> idx_;
+    std::optional<double> p_;
+  };
+  using KDTreeData = maliput::math::KDTree<Point, CoordinateT::kDimension>;
+
+  struct LineStringData {
+    const KDTreeData* kdtree_data;
+    const std::vector<Point>* points;
+  };
+
   /// Constructs a LineString from a std::vector.
   ///
   /// This function calls LineString(coordinates.begin, coordinates.end)
@@ -151,12 +176,18 @@ class LineString final {
     MALIPUT_THROW_UNLESS(coordinates_.size() > 1);
     // Fill up the segments collection
     double p = 0;
+    points_.reserve(coordinates_.size());
     for (std::size_t idx{}; idx < coordinates_.size() - 1; ++idx) {
       const double segment_length = DistanceFunction()(coordinates_[idx], coordinates_[idx + 1]);
       const typename Segment::Interval interval{p, p + segment_length};
       segments_.emplace(interval, Segment{idx, idx + 1, interval});
+      points_.push_back(Point(coordinates_[idx], idx, p));
       p += segment_length;
     }
+
+    points_.push_back(Point(coordinates_[coordinates_.size() - 1], coordinates_.size() - 1, p));
+    kdtree_ = std::make_unique<KDTreeData>(points_.begin(), points_.end());
+
     length_ = p;
   }
 
@@ -180,6 +211,11 @@ class LineString final {
   /// @return A vector of segments.
   const Segments& segments() const { return segments_; }
 
+  const LineStringData GetData() const { return LineStringData{kdtree_.get(), &points_}; }
+
+  /// Get KD Tree of the LineString.
+  const KDTreeData* Data() const { return kdtree_.get(); }
+
   /// @returns begin iterator of the underlying collection.
   iterator begin() { return coordinates_.begin(); }
   /// @returns begin const iterator of the underlying collection.
@@ -199,8 +235,10 @@ class LineString final {
 
  private:
   std::vector<CoordinateT> coordinates_{};
+  std::vector<Point> points_{};
   Segments segments_{};
   double length_{};
+  std::shared_ptr<KDTreeData> kdtree_;
 };
 
 // Convenient aliases.
