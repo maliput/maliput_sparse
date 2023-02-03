@@ -24,8 +24,10 @@ target_include_directories(geometry
 
 target_link_libraries(geometry
   PUBLIC
-  maliput::common
-  maliput::math
+    maliput::common
+    maliput::math
+  PRIVATE
+    TBB::tbb
 )
 
 ##############################################################################

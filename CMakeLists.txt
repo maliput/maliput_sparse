@@ -14,6 +14,9 @@ message(STATUS "\n\n====== Finding 3rd Party Packages ======\n")
 find_package(ament_cmake REQUIRED)
 find_package(maliput REQUIRED)
 
+# TODO(francocipollone): Remove this once we move to GCC 10.
+find_package(TBB REQUIRED)
+
 ##############################################################################
 # Project Configuration
 ##############################################################################
