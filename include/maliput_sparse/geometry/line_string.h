@@ -75,7 +75,13 @@ class LineString final {
   using iterator = typename std::vector<CoordinateT>::iterator;
   using const_iterator = typename std::vector<CoordinateT>::const_iterator;
 
+  /// A segment of a LineString.
+  /// A segment is defined by a:
+  /// - start index: index of the first coordinate of the segment.
+  /// - end index: index of the last coordinate of the segment, in general it is the start index + 1.
   struct Segment {
+    /// Defines an interval in the P value of the parametrized LineString.
+    /// The Less than operator is defined to allow the use of this struct as a key in a collection like std::map.
     struct Interval {
       // Interval() = default;
 
@@ -99,12 +105,17 @@ class LineString final {
         }
       }
 
+      // Min p value.
       double min{};
+      // Max p value.
       double max{};
     };
 
+    /// Start index of the segment.
     std::size_t idx_start;
+    /// End index of the segment.
     std::size_t idx_end;
+    /// Interval of the segment.
     Segment::Interval p_interval;
   };
 
