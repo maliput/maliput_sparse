@@ -290,10 +290,7 @@ CoordinateT InterpolatedPointAtP(const LineString<CoordinateT>& line_string, dou
   const CoordinateT& end = line_string[bound_points.idx_end];
   const CoordinateT d_segment{end - start};
   const double remaining_distance = p - bound_points.length;
-  if (remaining_distance < kEpsilon) {
-    return start;
-  }
-  return start + d_segment.normalized() * remaining_distance;
+  return remaining_distance < kEpsilon ? start : start + d_segment.normalized() * remaining_distance;
 }
 
 double GetSlopeAtP(const LineString3d& line_string, double p, double tolerance) {
@@ -309,7 +306,7 @@ double GetSlopeAtP(const LineString3d& line_string, double p, double tolerance) 
 template <typename CoordinateT>
 BoundPointsResult GetBoundPointsAtP(const LineString<CoordinateT>& line_string, double p, double tolerance) {
   p = maliput::common::RangeValidator::GetAbsoluteEpsilonValidator(0., line_string.length(), tolerance, kEpsilon)(p);
-  const auto segment = line_string.segments().at(typename LineString<CoordinateT>::Segment::Interval{p});
+  const auto segment = line_string.segments().at({p});
   return {segment.idx_start, segment.idx_end, segment.p_interval.min};
 }
 
