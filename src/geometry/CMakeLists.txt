@@ -26,8 +26,6 @@ target_link_libraries(geometry
   PUBLIC
     maliput::common
     maliput::math
-  PRIVATE
-    TBB::tbb
 )
 
 ##############################################################################

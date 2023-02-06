@@ -62,7 +62,6 @@
 #include <cmath>
 #include <numeric>
 
-#include <execution>
 #include <maliput/common/range_validator.h>
 
 namespace maliput_sparse {
@@ -354,7 +353,7 @@ ClosestPointResult3d GetClosestPoint(const LineString3d& line_string, const mali
   segment_closest_point_result.distance = std::numeric_limits<double>::max();
 
   const auto& segments = line_string.segments();
-  std::for_each(std::execution::par, segments.begin(), segments.end(), [&](const auto& segment) {
+  std::for_each(segments.begin(), segments.end(), [&](const auto& segment) {
     const auto& start = line_string[segment.second.idx_start];
     const auto& end = line_string[segment.second.idx_end];
     const auto current_closest_point_res = GetClosestPointToSegment(Segment3d{start, end}, xyz, tolerance);
@@ -378,7 +377,7 @@ ClosestPointResult3d GetClosestPointUsing2dProjection(const LineString3d& line_s
   segment_closest_point_result.distance = std::numeric_limits<double>::max();
 
   const auto& segments = line_string.segments();
-  std::for_each(std::execution::par, segments.begin(), segments.end(), [&](const auto& segment) {
+  std::for_each(segments.begin(), segments.end(), [&](const auto& segment) {
     const auto& start = line_string[segment.second.idx_start];
     const auto& end = line_string[segment.second.idx_end];
     const Segment2d segment_2d{To2D(start), To2D(end)};
