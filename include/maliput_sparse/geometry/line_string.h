@@ -134,9 +134,8 @@ class LineString final {
     /// @param coordinate The coordinate of the point.
     /// @param idx The index of the coordinate in the LineString.
     /// @param p The @f$ p @f$ value up-to the coordinate in the parametrized LineString.
-    /// @throw maliput::common::assertion_error When `idx` or `p` are negative.
+    /// @throw maliput::common::assertion_error When `p` is negative.
     Point(const CoordinateT& coordinate, std::size_t idx, double p) : CoordinateT(coordinate), idx_(idx), p_(p) {
-      MALIPUT_THROW_UNLESS(idx >= 0);
       MALIPUT_THROW_UNLESS(p >= 0.);
     }
 
