@@ -79,13 +79,13 @@ class LineString final {
   /// A segment of a LineString.
   /// A segment is defined by a:
   /// - start index: index of the first coordinate of the segment.
-  /// - end index: index of the last coordinate of the segment, in general it is the start index + 1.
+  /// - end index: index of the last coordinate of the segment, it is expected to be `start index + 1` as `LineString`'s
+  /// constructor
+  ///              builds the segments from consecutive coordinates.
   struct Segment {
-    /// Defines an interval in the P value of the parametrized LineString.
+    /// Defines an interval in the @f$ p @f$ value of the parametrized LineString.
     /// The Less than operator is defined to allow the use of this struct as a key in a collection like std::map.
     struct Interval {
-      // Interval() = default;
-
       /// Creates a Interval.
       /// @param min_in Is the minimum value of the interval.
       /// @param max_in Is the maximum value of the interval.
@@ -97,7 +97,7 @@ class LineString final {
       /// @param min_max Is the minimum and maximum value of the interval.
       Interval(double min_max) : min(min_max), max(min_max) {}
 
-      // Less than operator.
+      /// Less than operator.
       bool operator<(const Interval& rhs) const {
         if (min < rhs.min) {
           return max <= rhs.max ? true : false;

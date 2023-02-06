@@ -62,7 +62,6 @@
 #include <cmath>
 #include <numeric>
 
-#include <execution>
 #include <maliput/common/range_validator.h>
 
 namespace maliput_sparse {
@@ -291,10 +290,7 @@ CoordinateT InterpolatedPointAtP(const LineString<CoordinateT>& line_string, dou
   const CoordinateT& end = line_string[bound_points.idx_end];
   const CoordinateT d_segment{end - start};
   const double remaining_distance = p - bound_points.length;
-  if (remaining_distance < kEpsilon) {
-    return start;
-  }
-  return start + d_segment.normalized() * remaining_distance;
+  return remaining_distance < kEpsilon ? start : start + d_segment.normalized() * remaining_distance;
 }
 
 double GetSlopeAtP(const LineString3d& line_string, double p, double tolerance) {
@@ -310,7 +306,7 @@ double GetSlopeAtP(const LineString3d& line_string, double p, double tolerance) 
 template <typename CoordinateT>
 BoundPointsResult GetBoundPointsAtP(const LineString<CoordinateT>& line_string, double p, double tolerance) {
   p = maliput::common::RangeValidator::GetAbsoluteEpsilonValidator(0., line_string.length(), tolerance, kEpsilon)(p);
-  const auto segment = line_string.segments().at(typename LineString<CoordinateT>::Segment::Interval{p});
+  const auto segment = line_string.segments().at({p});
   return {segment.idx_start, segment.idx_end, segment.p_interval.min};
 }
 
@@ -413,7 +409,7 @@ ClosestPointResult3d GetClosestPointUsing2dProjection(const LineString3d& line_s
   segment_closest_point_result.distance = std::numeric_limits<double>::max();
 
   const auto& segments = line_string.segments();
-  std::for_each(std::execution::par, segments.begin(), segments.end(), [&](const auto& segment) {
+  std::for_each(segments.begin(), segments.end(), [&](const auto& segment) {
     const auto& start = line_string[segment.second.idx_start];
     const auto& end = line_string[segment.second.idx_end];
     const auto current_closest_point_res = GetClosestPointToSegment(To2D(start), To2D(end), xy, tolerance);
