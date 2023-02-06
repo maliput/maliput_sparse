@@ -134,7 +134,11 @@ class LineString final {
     /// @param coordinate The coordinate of the point.
     /// @param idx The index of the coordinate in the LineString.
     /// @param p The @f$ p @f$ value up-to the coordinate in the parametrized LineString.
-    Point(const CoordinateT& coordinate, std::size_t idx, double p) : CoordinateT(coordinate), idx_(idx), p_(p) {}
+    /// @throw maliput::common::assertion_error When `idx` or `p` are negative.
+    Point(const CoordinateT& coordinate, std::size_t idx, double p) : CoordinateT(coordinate), idx_(idx), p_(p) {
+      MALIPUT_THROW_UNLESS(idx >= 0);
+      MALIPUT_THROW_UNLESS(p >= 0.);
+    }
 
     /// Creates a point
     /// @param coordinate The coordinate of the point.
@@ -150,16 +154,11 @@ class LineString final {
     const CoordinateT* coordinate() const { return this; }
 
    private:
-    std::optional<std::size_t> idx_;
-    std::optional<double> p_;
+    std::optional<std::size_t> idx_{};
+    std::optional<double> p_{};
   };
 
-  using KDTreeData = maliput::math::KDTree<Point, CoordinateT::kDimension>;
-
-  struct LineStringData {
-    const KDTreeData* kdtree_data;
-    const std::vector<Point>* points;
-  };
+  using KDTree = maliput::math::KDTree<Point, CoordinateT::kDimension>;
 
   /// Constructs a LineString from a std::vector.
   ///
@@ -204,7 +203,7 @@ class LineString final {
     // Add the last point.
     points_.push_back(Point(coordinates_[coordinates_.size() - 1], coordinates_.size() - 1, p));
     // Build the KDTree.
-    kdtree_ = std::make_unique<KDTreeData>(points_.begin(), points_.end());
+    kd_tree_ = std::make_shared<KDTree>(points_.begin(), points_.end());
     // Set the length.
     length_ = p;
   }
@@ -229,10 +228,11 @@ class LineString final {
   /// @return A vector of segments.
   const Segments& segments() const { return segments_; }
 
-  const LineStringData GetData() const { return LineStringData{kdtree_.get(), &points_}; }
+  /// Return the points of this LineString.
+  const std::vector<Point>& points() const { return points_; }
 
   /// Get KD Tree of the LineString.
-  const KDTreeData* Data() const { return kdtree_.get(); }
+  const KDTree* kd_tree() const { return kd_tree_.get(); }
 
   /// @returns begin iterator of the underlying collection.
   iterator begin() { return coordinates_.begin(); }
@@ -256,7 +256,7 @@ class LineString final {
   std::vector<Point> points_{};
   Segments segments_{};
   double length_{};
-  std::shared_ptr<KDTreeData> kdtree_;
+  std::shared_ptr<KDTree> kd_tree_;
 };
 
 // Convenient aliases.

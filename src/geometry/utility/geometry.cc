@@ -347,16 +347,22 @@ ClosestPointResult<CoordinateT> GetClosestPointToSegment(const CoordinateT& star
   return {p, point, distance};
 }
 
+enum class IdxType {
+  kStart,
+  kMiddle,
+  kEnd,
+};
+
 ClosestPointResult3d GetClosestPoint(const LineString3d& line_string, const maliput::math::Vector3& xyz,
                                      double tolerance) {
   std::optional<LineString3d::Segment> closest_segment{std::nullopt};
   ClosestPointResult3d segment_closest_point_result;
   segment_closest_point_result.distance = std::numeric_limits<double>::max();
 
-  const LineString3d::LineStringData line_string_data = line_string.GetData();
-  const LineString3d::KDTreeData* kd_tree_data = line_string_data.kdtree_data;
-  MALIPUT_THROW_UNLESS(kd_tree_data != nullptr);
-  const LineString3d::Point& nearest_point = kd_tree_data->nearest_point(LineString3d::Point{xyz});
+  const std::vector<LineString3d::Point>& line_string_points = line_string.points();
+  const LineString3d::KDTree* kd_tree = line_string.kd_tree();
+  MALIPUT_THROW_UNLESS(kd_tree != nullptr);
+  const LineString3d::Point& nearest_point = kd_tree->nearest_point(LineString3d::Point{xyz});
   // Nearest point is the closest point to the line string.
   // If the idx is the first or last then obtain the first or last segment.
   // Otherwise, obtain the segment that contains the nearest point.
@@ -384,14 +390,14 @@ ClosestPointResult3d GetClosestPoint(const LineString3d& line_string, const mali
     if (previous_segment_closest_point_res.distance < next_segment_closest_point_res.distance) {
       closest_segment = LineString3d::Segment{
           nearest_point.idx().value() - 1, nearest_point.idx().value(),
-          LineString3d::Segment::Interval{line_string_data.points->at(nearest_point.idx().value() - 1).p().value(),
+          LineString3d::Segment::Interval{line_string_points.at(nearest_point.idx().value() - 1).p().value(),
                                           nearest_point.p().value()}};
       segment_closest_point_result = previous_segment_closest_point_res;
     } else {
       closest_segment = LineString3d::Segment{
           nearest_point.idx().value(), nearest_point.idx().value() + 1,
           LineString3d::Segment::Interval{nearest_point.p().value(),
-                                          line_string_data.points->at(nearest_point.idx().value() + 1).p().value()}};
+                                          line_string_points.at(nearest_point.idx().value() + 1).p().value()}};
       segment_closest_point_result = next_segment_closest_point_res;
     }
   }
