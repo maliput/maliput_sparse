@@ -347,12 +347,6 @@ ClosestPointResult<CoordinateT> GetClosestPointToSegment(const CoordinateT& star
   return {p, point, distance};
 }
 
-enum class IdxType {
-  kStart,
-  kMiddle,
-  kEnd,
-};
-
 ClosestPointResult3d GetClosestPoint(const LineString3d& line_string, const maliput::math::Vector3& xyz,
                                      double tolerance) {
   std::optional<LineString3d::Segment> closest_segment{std::nullopt};
