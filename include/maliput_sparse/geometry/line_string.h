@@ -122,23 +122,38 @@ class LineString final {
 
   using Segments = std::map<typename Segment::Interval, Segment>;
 
+  /// Extends the CoordinateT class with information about the index of the coordinate in the LineString and the
+  /// @f$ p @f$ value up-to the coordinate in the parametrized LineString.
+  /// Convenient to use with the KDTree.
   class Point : public CoordinateT {
    public:
+    /// Default constructor.
     Point() = default;
+
+    /// Creates a Point.
+    /// @param coordinate The coordinate of the point.
+    /// @param idx The index of the coordinate in the LineString.
+    /// @param p The @f$ p @f$ value up-to the coordinate in the parametrized LineString.
     Point(const CoordinateT& coordinate, std::size_t idx, double p) : CoordinateT(coordinate), idx_(idx), p_(p) {}
+
+    /// Creates a point
+    /// @param coordinate The coordinate of the point.
     explicit Point(const CoordinateT& coordinate) : CoordinateT(coordinate) {}
 
-    ~Point() = default;
-
+    /// @return If provided via constructor, the index of the coordinate in the LineString, std::nullopt otherwise.
     std::optional<std::size_t> idx() const { return idx_; }
+    /// @return If provided via constructor, the @f$ p @f$ value up-to the coordinate in the parametrized LineString,
+    /// std::nullopt otherwise.
     std::optional<double> p() const { return p_; }
 
+    /// @return The underlying coordinate of the point.
     const CoordinateT* coordinate() const { return this; }
 
    private:
     std::optional<std::size_t> idx_;
     std::optional<double> p_;
   };
+
   using KDTreeData = maliput::math::KDTree<Point, CoordinateT::kDimension>;
 
   struct LineStringData {
@@ -174,20 +189,23 @@ class LineString final {
   template <typename Iterator>
   LineString(Iterator begin, Iterator end) : coordinates_(begin, end) {
     MALIPUT_THROW_UNLESS(coordinates_.size() > 1);
-    // Fill up the segments collection
+    // Fill up the segments collection and the points collection.
     double p = 0;
     points_.reserve(coordinates_.size());
     for (std::size_t idx{}; idx < coordinates_.size() - 1; ++idx) {
       const double segment_length = DistanceFunction()(coordinates_[idx], coordinates_[idx + 1]);
       const typename Segment::Interval interval{p, p + segment_length};
+      // Add the segment.
       segments_.emplace(interval, Segment{idx, idx + 1, interval});
+      // Add the point.
       points_.push_back(Point(coordinates_[idx], idx, p));
       p += segment_length;
     }
-
+    // Add the last point.
     points_.push_back(Point(coordinates_[coordinates_.size() - 1], coordinates_.size() - 1, p));
+    // Build the KDTree.
     kdtree_ = std::make_unique<KDTreeData>(points_.begin(), points_.end());
-
+    // Set the length.
     length_ = p;
   }
 
