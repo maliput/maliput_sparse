@@ -137,7 +137,8 @@ TEST_F(PointTest, BadConstructors) {
 TEST_F(PointTest, Constructors) {
   {
     const LineString3d::Point dut{};
-    EXPECT_EQ({}, dut.coordinate());
+    ASSERT_NE(nullptr, dut.coordinate());
+    EXPECT_EQ(maliput::math::Vector3{}, *dut.coordinate());
     EXPECT_EQ(std::nullopt, dut.p());
     EXPECT_EQ(std::nullopt, dut.idx());
   }
@@ -231,7 +232,7 @@ TEST_F(LineString3dTest, Points) {
   ASSERT_NE(nullptr, points.at(idx).coordinate());
   EXPECT_EQ(p2, *(points.at(idx).coordinate()));
   ASSERT_NE(std::nullopt, points.at(idx).p());
-  EXPECT_EQ(p1.norm(), points.at(idx).p().value());
+  EXPECT_EQ((p2 - p1).norm(), points.at(idx).p().value());
   ASSERT_NE(std::nullopt, points.at(idx).idx());
   EXPECT_EQ(idx, points.at(idx).idx().value());
 
@@ -239,7 +240,7 @@ TEST_F(LineString3dTest, Points) {
   ASSERT_NE(nullptr, points.at(idx).coordinate());
   EXPECT_EQ(p3, *(points.at(idx).coordinate()));
   ASSERT_NE(std::nullopt, points.at(idx).p());
-  EXPECT_EQ(p1.norm() + p2.norm(), points.at(idx).p().value());
+  EXPECT_EQ((p2 - p1).norm() + (p3 - p2).norm(), points.at(idx).p().value());
   ASSERT_NE(std::nullopt, points.at(idx).idx());
   EXPECT_EQ(idx, points.at(idx).idx().value());
 }
