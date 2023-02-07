@@ -45,6 +45,18 @@ struct BoundPointsResult {
   double length;
 };
 
+/// Holds the result of #GetClosestPointToSegment method.
+/// @tparam CoordinateT The coordinate type.
+template <typename CoordinateT>
+struct ClosestPointToSegmentResult {
+  /// P coordinate in the line string matching the closest point.
+  double p;
+  /// Closest point.
+  CoordinateT point;
+  /// Distance between the closest point and the given point.
+  double distance;
+};
+
 /// Holds the result of #GetClosestPoint method.
 /// @tparam CoordinateT The coordinate type.
 template <typename CoordinateT>
@@ -55,10 +67,14 @@ struct ClosestPointResult {
   CoordinateT point;
   /// Distance between the closest point and the given point.
   double distance;
+  /// Linestring's segment that contains the closest point.
+  typename LineString<CoordinateT>::Segment segment;
 };
 
 using ClosestPointResult3d = ClosestPointResult<maliput::math::Vector3>;
 using ClosestPointResult2d = ClosestPointResult<maliput::math::Vector2>;
+using ClosestPointToSegmentResult3d = ClosestPointToSegmentResult<maliput::math::Vector3>;
+using ClosestPointToSegmentResult2d = ClosestPointToSegmentResult<maliput::math::Vector2>;
 
 /// Computes a 3-dimensional centerline out of the @p left and @p right line string.
 ///
@@ -129,9 +145,9 @@ maliput::math::Vector3 GetTangentAtP(const LineString3d& line_string, double p, 
 /// @return A ClosestPointResult struct containing the closest point, the distance between the closest point and @p xyz
 /// and the p coordinate in the segment matching the closest point.
 template <typename CoordinateT = maliput::math::Vector3>
-ClosestPointResult<CoordinateT> GetClosestPointToSegment(const CoordinateT& start_segment_point,
-                                                         const CoordinateT& end_segment_point,
-                                                         const CoordinateT& coordinate, double tolerance);
+ClosestPointToSegmentResult<CoordinateT> GetClosestPointToSegment(const CoordinateT& start_segment_point,
+                                                                  const CoordinateT& end_segment_point,
+                                                                  const CoordinateT& coordinate, double tolerance);
 
 /// Gets the closest point in the @p line_string to the given @p xyz point.
 /// @param line_string LineString3d to be computed the closest point from.

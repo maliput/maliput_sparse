@@ -328,9 +328,9 @@ Vector3 GetTangentAtP(const LineString3d& line_string, double p, double toleranc
 }
 
 template <typename CoordinateT>
-ClosestPointResult<CoordinateT> GetClosestPointToSegment(const CoordinateT& start_segment_point,
-                                                         const CoordinateT& end_segment_point,
-                                                         const CoordinateT& coordinate, double tolerance) {
+ClosestPointToSegmentResult<CoordinateT> GetClosestPointToSegment(const CoordinateT& start_segment_point,
+                                                                  const CoordinateT& end_segment_point,
+                                                                  const CoordinateT& coordinate, double tolerance) {
   if (start_segment_point == end_segment_point) {
     return {0., start_segment_point, (start_segment_point - coordinate).norm()};
   }
@@ -350,7 +350,7 @@ ClosestPointResult<CoordinateT> GetClosestPointToSegment(const CoordinateT& star
 ClosestPointResult3d GetClosestPoint(const LineString3d& line_string, const maliput::math::Vector3& xyz,
                                      double tolerance) {
   std::optional<LineString3d::Segment> closest_segment{std::nullopt};
-  ClosestPointResult3d segment_closest_point_result;
+  ClosestPointToSegmentResult3d segment_closest_point_result;
   segment_closest_point_result.distance = std::numeric_limits<double>::max();
 
   const std::vector<LineString3d::Point>& line_string_points = line_string.points();
@@ -396,43 +396,35 @@ ClosestPointResult3d GetClosestPoint(const LineString3d& line_string, const mali
     }
   }
   return {segment_closest_point_result.p + closest_segment->p_interval.min, segment_closest_point_result.point,
-          segment_closest_point_result.distance};
+          segment_closest_point_result.distance, closest_segment.value()};
 }
 
 ClosestPointResult3d GetClosestPointUsing2dProjection(const LineString3d& line_string,
                                                       const maliput::math::Vector3& xyz, double tolerance) {
+  // Get the closest segment in 3d.
+  const LineString3d::Segment closest_segment_3d = GetClosestPoint(line_string, xyz, tolerance).segment;
+  const auto& start = line_string[closest_segment_3d.idx_start];
+  const auto& end = line_string[closest_segment_3d.idx_end];
+
+  // Once we have the segment let's project the point to the segment in 2d.
+  const auto start_2d = To2D(start);
+  const auto end_2d = To2D(end);
   const maliput::math::Vector2 xy = To2D(xyz);
+  // Get the closest point in 2d.
+  const ClosestPointToSegmentResult2d closest_point_to_segment_2d =
+      GetClosestPointToSegment(start_2d, end_2d, xy, tolerance);
 
-  // Find the closest segment in 2D
-  std::optional<LineString3d::Segment> closest_segment{std::nullopt};
-  ClosestPointResult2d segment_closest_point_result;
-  segment_closest_point_result.distance = std::numeric_limits<double>::max();
-
-  const auto& segments = line_string.segments();
-  std::for_each(segments.begin(), segments.end(), [&](const auto& segment) {
-    const auto& start = line_string[segment.second.idx_start];
-    const auto& end = line_string[segment.second.idx_end];
-    const auto current_closest_point_res = GetClosestPointToSegment(To2D(start), To2D(end), xy, tolerance);
-    if (current_closest_point_res.distance < segment_closest_point_result.distance) {
-      segment_closest_point_result = current_closest_point_res;
-      closest_segment = {segment.second.idx_start, segment.second.idx_end, segment.second.p_interval};
-    }
-  });
-
-  // Analyze closest segment and compute the closest point in 3D.
-  const auto& start_point = line_string[closest_segment->idx_start];
-  const auto& end_point = line_string[closest_segment->idx_end];
-  const double segment_3d_length = (end_point - start_point).norm();
-  const Segment2d segment_2d{To2D(start_point), To2D(end_point)};
-
-  const double scale_p = segment_3d_length / (segment_2d.first - segment_2d.second).norm();
-  const double p_3d = segment_closest_point_result.p * scale_p;
-  const double z_coordinate = start_point.z() + ((end_point - start_point).normalized() * p_3d).z();
+  // Scale the p coordinate in 2d to the 3d segment length to obtain the correct p coordinate in 3d.
+  const double segment_3d_length = (start - end).norm();
+  const double scale_p = segment_3d_length / (start_2d - end_2d).norm();
+  const double p_3d = closest_point_to_segment_2d.p * scale_p;
+  const double z_coordinate = start.z() + ((end - start).normalized() * p_3d).z();
   // Compound closest point in 3d.
-  const maliput::math::Vector3 closest_point_3d{segment_closest_point_result.point.x(),
-                                                segment_closest_point_result.point.y(), z_coordinate};
+  const maliput::math::Vector3 closest_point_3d{closest_point_to_segment_2d.point.x(),
+                                                closest_point_to_segment_2d.point.y(), z_coordinate};
 
-  return {p_3d + closest_segment->p_interval.min, closest_point_3d, (xyz - closest_point_3d).norm()};
+  return {p_3d + closest_segment_3d.p_interval.min, closest_point_3d, (xyz - closest_point_3d).norm(),
+          closest_segment_3d};
 }
 
 double ComputeDistance(const LineString3d& lhs, const LineString3d& rhs, double tolerance) {
@@ -451,10 +443,12 @@ double ComputeDistance(const LineString3d& lhs, const LineString3d& rhs, double 
 template maliput::math::Vector3 InterpolatedPointAtP(const LineString3d&, double, double);
 template maliput::math::Vector2 InterpolatedPointAtP(const LineString2d&, double, double);
 
-template ClosestPointResult3d GetClosestPointToSegment(const maliput::math::Vector3&, const maliput::math::Vector3&,
-                                                       const maliput::math::Vector3&, double);
-template ClosestPointResult2d GetClosestPointToSegment(const maliput::math::Vector2&, const maliput::math::Vector2&,
-                                                       const maliput::math::Vector2&, double);
+template ClosestPointToSegmentResult3d GetClosestPointToSegment(const maliput::math::Vector3&,
+                                                                const maliput::math::Vector3&,
+                                                                const maliput::math::Vector3&, double);
+template ClosestPointToSegmentResult2d GetClosestPointToSegment(const maliput::math::Vector2&,
+                                                                const maliput::math::Vector2&,
+                                                                const maliput::math::Vector2&, double);
 
 template class ClosestPointResult<maliput::math::Vector3>;
 template class ClosestPointResult<maliput::math::Vector2>;

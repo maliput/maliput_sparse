@@ -396,7 +396,7 @@ INSTANTIATE_TEST_CASE_P(Get2DHeadingAtPTestGroup, Get2DHeadingAtPTest, ::testing
 struct GetClosestPointToSegmentTestCase {
   std::pair<maliput::math::Vector3, maliput::math::Vector3> segment;
   std::vector<maliput::math::Vector3> eval_points;
-  std::vector<ClosestPointResult3d> expected_closest{};
+  std::vector<ClosestPointToSegmentResult3d> expected_closest{};
 };
 
 std::vector<GetClosestPointToSegmentTestCase> GetClosestPointToSegmentTestCases() {
@@ -466,15 +466,15 @@ std::vector<GetClosestPointLineStringTestCase> GetClosestPointLineStringTestCase
       {LineString3d{{0., 0., 0.}, {10., 0., 0.}} /* line_string */,
        {{5., 5., 0.}, {-5., 5., 0.}, {10., 5., 0.}, {15., 5., 0.}} /* eval points */,
        {
-           {5., {5., 0., 0.}, 5.}, /* expected: p, point, distance */
-           {0., {0., 0., 0.}, 5. * std::sqrt(2.)},
-           {10., {10., 0., 0.}, 5.},
-           {10., {10., 0., 0.}, 5. * std::sqrt(2.)},
+           {5., {5., 0., 0.}, 5., {0, 1, {0., 10.}}}, /* expected: p, point, distance, segment */
+           {0., {0., 0., 0.}, 5. * std::sqrt(2.), {0, 1, {0., 10.}}},
+           {10., {10., 0., 0.}, 5., {0, 1, {0., 10.}}},
+           {10., {10., 0., 0.}, 5. * std::sqrt(2.), {0, 1, {0., 10.}}},
        }},
       {LineString3d{{0., 0., 0.}, {10., 0., 0.}, {15., 0., 0.}} /* line_string */,
        {{12.5, 0., 0.}} /* eval points */,
        {
-           {12.5, {12.5, 0., 0.}, 0.}, /* expected: p, point, distance */
+           {12.5, {12.5, 0., 0.}, 0., {1, 2, {10., 15.}}}, /* expected: p, point, distance, segment */
        }},
       {LineString3d{{-2., -4., -6.},
                     {0., -2., -4.},
@@ -484,10 +484,12 @@ std::vector<GetClosestPointLineStringTestCase> GetClosestPointLineStringTestCase
                     {40., 20., 10.}} /* line_string */,
        {{-1., -3., -5.}, {5., 5., 5.}} /* eval points */,
        {
-           {std::sqrt(3.), {-1., -3., -5.}, 0.}, /* expected: p, point, distance */
+           {std::sqrt(3.), {-1., -3., -5.}, 0., {0, 1, {0., 3.4641016151377544}}}, /* expected: p, point, distance,
+                                                                                      segment */
            {std::sqrt(2. * 2. + 2. * 2. + 2. * 2.) + std::sqrt(2. * 2. + 4. * 4.) + 5.,
             {5., 0., 0.},
-            5. * std::sqrt(2.)},
+            5. * std::sqrt(2.),
+            {2, 3, {7.936237570137334, 17.936237570137333}}},
        }},
   };
 }
@@ -505,6 +507,10 @@ TEST_P(GetClosestPointLineStringTest, Test) {
     EXPECT_NEAR(case_.expected_closest[i].p, dut.p, kTolerance);
     EXPECT_TRUE(maliput::math::test::CompareVectors(case_.expected_closest[i].point, dut.point, kTolerance));
     EXPECT_NEAR(case_.expected_closest[i].distance, dut.distance, kTolerance);
+    EXPECT_EQ(case_.expected_closest[i].segment.idx_start, dut.segment.idx_start);
+    EXPECT_EQ(case_.expected_closest[i].segment.idx_end, dut.segment.idx_end);
+    EXPECT_NEAR(case_.expected_closest[i].segment.p_interval.min, dut.segment.p_interval.min, kTolerance);
+    EXPECT_NEAR(case_.expected_closest[i].segment.p_interval.max, dut.segment.p_interval.max, kTolerance);
   }
 }
 
@@ -529,8 +535,12 @@ std::vector<GetClosestPointLineStringTestCase> GetClosestPointIn2dLineStringTest
       {LineString3d{{0., 0., 0.}, {10., 0., 10.}} /* line_string */,
        {{5., 0., 0.}, {5., -2., 0.}} /* eval points */,
        {
-           {10 * std::sqrt(2.) / 2., {5., 0., 5.}, 5.},                /* expected: p, point, distance */
-           {10 * std::sqrt(2.) / 2., {5., 0., 5.}, 5.385164807134504}, /* expected: p, point, distance */
+           {10 * std::sqrt(2.) / 2., {5., 0., 5.}, 5., {0, 1, {0., 10. * std::sqrt(2.)}}}, /* expected: p, point,
+                                                                                              distance, segment */
+           {10 * std::sqrt(2.) / 2.,
+            {5., 0., 5.},
+            5.385164807134504,
+            {0, 1, {0., 10. * std::sqrt(2.)}}}, /* expected: p, point, distance, segment */
        }},
   };
 }
@@ -548,6 +558,10 @@ TEST_P(GetClosestPointIn2dLineStringTest, Test) {
     EXPECT_NEAR(case_.expected_closest[i].p, dut.p, kTolerance);
     EXPECT_TRUE(maliput::math::test::CompareVectors(case_.expected_closest[i].point, dut.point, kTolerance));
     EXPECT_NEAR(case_.expected_closest[i].distance, dut.distance, kTolerance);
+    EXPECT_EQ(case_.expected_closest[i].segment.idx_start, dut.segment.idx_start);
+    EXPECT_EQ(case_.expected_closest[i].segment.idx_end, dut.segment.idx_end);
+    EXPECT_NEAR(case_.expected_closest[i].segment.p_interval.min, dut.segment.p_interval.min, kTolerance);
+    EXPECT_NEAR(case_.expected_closest[i].segment.p_interval.max, dut.segment.p_interval.max, kTolerance);
   }
 }
 
