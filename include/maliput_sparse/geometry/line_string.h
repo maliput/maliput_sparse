@@ -153,6 +153,11 @@ class LineString final {
     double p = 0;
     for (std::size_t idx{}; idx < coordinates_.size() - 1; ++idx) {
       const double segment_length = DistanceFunction()(coordinates_[idx], coordinates_[idx + 1]);
+      // Add the segment. If the points are numerically the same, do not add the segment to avoid
+      // a wrong lookup when querying the segment map.
+      if (segment_length <= std::numeric_limits<double>::epsilon()) {
+        continue;
+      }
       const typename Segment::Interval interval{p, p + segment_length};
       segments_.emplace(interval, Segment{idx, idx + 1, interval});
       p += segment_length;
