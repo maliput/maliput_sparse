@@ -158,6 +158,15 @@ TEST_F(LineString3dTest, Api) {
   EXPECT_NEAR(2. * std::sqrt(2.), dut.length(), kTolerance);
 }
 
+TEST_F(LineString3dTest, SameConsecutivePoints) {
+  const LineString3d dut(std::vector<Vector3>{p1, p2, p3, p3, p2, p1, p1, p2});
+  const std::vector<Vector3> expected_points{p1, p2, p3, p2, p1, p2};
+  ASSERT_EQ(expected_points.size(), dut.size());
+  for (size_t i = 0; i < dut.size() - 1; ++i) {
+    EXPECT_EQ(expected_points.at(i), dut.at(i));
+  }
+}
+
 TEST_F(LineString3dTest, Segments) {
   const LineString3d dut(std::vector<Vector3>{p1, p2, p3});
   const auto segments = dut.segments();
