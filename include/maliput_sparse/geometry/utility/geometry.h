@@ -38,17 +38,12 @@ namespace geometry {
 namespace utility {
 
 /// Holds the result of #GetBoundPointsAtP method.
-/// @tparam CoordinateT The coordinate type.
-template <typename CoordinateT>
 struct BoundPointsResult {
-  typename LineString<CoordinateT>::const_iterator first;
-  typename LineString<CoordinateT>::const_iterator second;
+  std::size_t idx_start;
+  std::size_t idx_end;
   // Length up to first.
   double length;
 };
-
-using BoundPointsResult3d = BoundPointsResult<maliput::math::Vector3>;
-using BoundPointsResult2d = BoundPointsResult<maliput::math::Vector2>;
 
 /// Holds the result of #GetClosestPoint method.
 /// @tparam CoordinateT The coordinate type.
@@ -101,8 +96,7 @@ double GetSlopeAtP(const LineString3d& line_string, double p, double tolerance);
 /// @param tolerance tolerance.
 /// @throws maliput::common::assertion_error When `p ∉ [0., line_string.length()]`.
 template <typename CoordinateT = maliput::math::Vector3>
-BoundPointsResult<CoordinateT> GetBoundPointsAtP(const LineString<CoordinateT>& line_string, double p,
-                                                 double tolerance);
+BoundPointsResult GetBoundPointsAtP(const LineString<CoordinateT>& line_string, double p, double tolerance);
 
 /// Returns the heading of a @p line_string for a given @p p .
 /// @param line_string LineString to be computed the heading from.
