@@ -391,8 +391,8 @@ ClosestPointResult3d GetClosestPoint(const LineString3d& line_string, const mali
                                     LineString3d::Segment::Interval{line_string_points.at(nearest_idx - 1).p().value(),
                                                                     nearest_point.p().value()}}
             : LineString3d::Segment{nearest_idx, nearest_idx + 1,
-                                    LineString3d::Segment::Interval{line_string_points.at(nearest_idx).p().value(),
-                                                                    nearest_point.p().value()}};
+                                    LineString3d::Segment::Interval{
+                                        nearest_point.p().value(), line_string_points.at(nearest_idx + 1).p().value()}};
   }
   return {segment_closest_point_result.p + closest_segment->p_interval.min, segment_closest_point_result.point,
           segment_closest_point_result.distance, closest_segment.value()};
