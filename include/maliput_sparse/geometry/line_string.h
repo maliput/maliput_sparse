@@ -35,6 +35,7 @@
 #include <map>
 #include <vector>
 
+#include <maliput/common/logger.h>
 #include <maliput/common/maliput_throw.h>
 #include <maliput/math/kd_tree.h>
 #include <maliput/math/vector.h>
@@ -186,6 +187,21 @@ class LineString final {
   /// @throws maliput::common::assertion_error When there are less than two points.
   template <typename Iterator>
   LineString(Iterator begin, Iterator end) : coordinates_(begin, end) {
+    // Remove consecutive points that are numerically the same.
+    // Duplicated points creates zero length segments, which leads to a wrong lookup when querying the segment map.
+    std::vector<std::size_t> remove_idx;
+    for (std::size_t idx{}; idx < coordinates_.size() - 1; ++idx) {
+      const double segment_length = DistanceFunction()(coordinates_[idx], coordinates_[idx + 1]);
+      if (segment_length <= std::numeric_limits<double>::epsilon()) {
+        maliput::log()->warn("LineString: consecutive points are numerically the same, removing duplicated point: {}",
+                             coordinates_[idx + 1]);
+        remove_idx.push_back(idx + 1);
+      }
+    }
+    // Remove the duplicated points.
+    for (auto it = remove_idx.rbegin(); it != remove_idx.rend(); ++it) {
+      coordinates_.erase(coordinates_.begin() + *it);
+    }
     MALIPUT_THROW_UNLESS(coordinates_.size() > 1);
     // Fill up the segments collection and the points collection.
     double p = 0;

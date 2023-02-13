@@ -330,11 +330,6 @@ class GetSlopeAtPSpecialCasesTest : public testing::Test {
   static constexpr double kTolerance{1e-12};
 };
 
-TEST_F(GetSlopeAtPSpecialCasesTest, Throw) {
-  const LineString3d kNoLength{{0., 0., 0.}, {0., 0., 0.}};
-  EXPECT_THROW(GetSlopeAtP(kNoLength, 0., kTolerance), maliput::common::assertion_error);
-}
-
 TEST_F(GetSlopeAtPSpecialCasesTest, InfinitySlope) {
   const double inf{std::numeric_limits<double>::infinity()};
   const LineString3d kOnlyZ{{0., 0., 0.}, {0., 0., 100.}, {0., 0., 0.}};
