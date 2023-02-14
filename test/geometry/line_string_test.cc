@@ -127,6 +127,41 @@ TEST_F(SegmentTest, Values) {
   EXPECT_EQ(interval_2.max, dut_2.p_interval.max);
 }
 
+class PointTest : public ::testing::Test {};
+
+TEST_F(PointTest, BadConstructors) {
+  const maliput::math::Vector3 coordinate{1., 2., 3.};
+  EXPECT_THROW((LineString3d::Point{coordinate, 0, -1.}), maliput::common::assertion_error);
+}
+
+TEST_F(PointTest, Constructors) {
+  {
+    const LineString3d::Point dut{};
+    ASSERT_NE(nullptr, dut.coordinate());
+    EXPECT_EQ(maliput::math::Vector3{}, *dut.coordinate());
+    EXPECT_EQ(std::nullopt, dut.p());
+    EXPECT_EQ(std::nullopt, dut.idx());
+  }
+  {
+    const maliput::math::Vector3 coordinate{1., 2., 3.};
+    const LineString3d::Point dut(coordinate);
+    ASSERT_NE(nullptr, dut.coordinate());
+    EXPECT_EQ(coordinate, *dut.coordinate());
+    EXPECT_EQ(std::nullopt, dut.p());
+    EXPECT_EQ(std::nullopt, dut.idx());
+  }
+  {
+    const maliput::math::Vector3 coordinate{1., 2., 3.};
+    const std::size_t idx = 213;
+    const double p = 0.123;
+    const LineString3d::Point dut(coordinate, idx, p);
+    ASSERT_NE(nullptr, dut.coordinate());
+    EXPECT_EQ(coordinate, *dut.coordinate());
+    EXPECT_EQ(p, dut.p());
+    EXPECT_EQ(idx, dut.idx());
+  }
+}
+
 class LineString3dTest : public ::testing::Test {
  public:
   const Vector3 p1{Vector3::UnitX()};
@@ -186,6 +221,45 @@ TEST_F(LineString3dTest, Segments) {
   EXPECT_TRUE(p3 == dut[segment_p2_p3.idx_end]);
   EXPECT_NEAR((p1 - p2).norm(), segment_p2_p3.p_interval.min, kTolerance);
   EXPECT_NEAR((p1 - p2).norm() + (p2 - p3).norm(), segment_p2_p3.p_interval.max, kTolerance);
+}
+
+TEST_F(LineString3dTest, Points) {
+  const LineString3d dut(std::vector<Vector3>{p1, p2, p3});
+  const std::vector<LineString3d::Point>& points = dut.points();
+
+  ASSERT_EQ(static_cast<size_t>(3), points.size());
+
+  std::size_t idx{0};
+  ASSERT_NE(nullptr, points.at(idx).coordinate());
+  EXPECT_EQ(p1, *(points.at(idx).coordinate()));
+  ASSERT_NE(std::nullopt, points.at(idx).p());
+  EXPECT_EQ(0., points.at(idx).p().value());
+  ASSERT_NE(std::nullopt, points.at(idx).idx());
+  EXPECT_EQ(idx, points.at(0).idx().value());
+
+  idx = 1;
+  ASSERT_NE(nullptr, points.at(idx).coordinate());
+  EXPECT_EQ(p2, *(points.at(idx).coordinate()));
+  ASSERT_NE(std::nullopt, points.at(idx).p());
+  EXPECT_EQ((p2 - p1).norm(), points.at(idx).p().value());
+  ASSERT_NE(std::nullopt, points.at(idx).idx());
+  EXPECT_EQ(idx, points.at(idx).idx().value());
+
+  idx = 2;
+  ASSERT_NE(nullptr, points.at(idx).coordinate());
+  EXPECT_EQ(p3, *(points.at(idx).coordinate()));
+  ASSERT_NE(std::nullopt, points.at(idx).p());
+  EXPECT_EQ((p2 - p1).norm() + (p3 - p2).norm(), points.at(idx).p().value());
+  ASSERT_NE(std::nullopt, points.at(idx).idx());
+  EXPECT_EQ(idx, points.at(idx).idx().value());
+}
+
+TEST_F(LineString3dTest, KDTree) {
+  const LineString3d dut(std::vector<Vector3>{p1, p2, p3});
+  const auto kd_tree = dut.kd_tree();
+  ASSERT_NE(nullptr, kd_tree);
+  const auto res = kd_tree->nearest_point(LineString3d::Point{p2});
+  EXPECT_EQ(p2, *res.coordinate());
 }
 
 TEST_F(LineString3dTest, LengthInjectedDistanceFunction) {
