@@ -66,10 +66,10 @@ std::unique_ptr<const maliput::api::RoadGeometry> RoadGeometryLoader::operator()
   for (const auto& error : errors) {
     switch (error.severity) {
       case parser::Validator::Error::Severity::kError:
-        maliput::log()->error("[{}] {}", error.type, error.message);
+        maliput::log()->error("[", error.type, "] ", error.message);
         break;
       case parser::Validator::Error::Severity::kWarning:
-        maliput::log()->warn("[{}] {}", error.type, error.message);
+        maliput::log()->warn("[", error.type, "] ", error.message);
         break;
       default:
         MALIPUT_THROW_MESSAGE("Unknown parser::Validator::Error::Severity value: " + static_cast<int>(error.severity));
