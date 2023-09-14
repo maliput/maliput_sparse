@@ -193,7 +193,7 @@ class LineString final {
     for (std::size_t idx{}; idx < coordinates_.size() - 1; ++idx) {
       const double segment_length = DistanceFunction()(coordinates_[idx], coordinates_[idx + 1]);
       if (segment_length <= std::numeric_limits<double>::epsilon()) {
-        maliput::log()->warn("LineString: consecutive points are numerically the same, removing duplicated point: {}",
+        maliput::log()->warn("LineString: consecutive points are numerically the same, removing duplicated point: ",
                              coordinates_[idx + 1]);
         remove_idx.push_back(idx + 1);
       }

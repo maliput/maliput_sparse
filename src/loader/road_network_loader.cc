@@ -63,9 +63,9 @@ std::unique_ptr<maliput::api::RoadNetwork> RoadNetworkLoader::operator()() {
   std::unique_ptr<const maliput::api::RoadGeometry> rg = road_geometry_loader_->operator()();
 
   maliput::log()->trace("Building TrafficLightBook...");
-  maliput::log()->trace("{}", builder_configuration_.traffic_light_book.has_value()
-                                  ? "TrafficLight file provided: " + builder_configuration_.traffic_light_book.value()
-                                  : "No TrafficLight file provided");
+  maliput::log()->trace(builder_configuration_.traffic_light_book.has_value()
+                            ? "TrafficLight file provided: " + builder_configuration_.traffic_light_book.value()
+                            : "No TrafficLight file provided");
   auto traffic_light_book =
       !builder_configuration_.traffic_light_book.has_value()
           ? std::make_unique<maliput::TrafficLightBook>()
@@ -73,9 +73,9 @@ std::unique_ptr<maliput::api::RoadNetwork> RoadNetworkLoader::operator()() {
 
   maliput::log()->trace("Building RuleRegistry...");
 
-  maliput::log()->trace("{}", builder_configuration_.rule_registry.has_value()
-                                  ? "RuleRegistry file provided: " + builder_configuration_.rule_registry.value()
-                                  : "No RuleRegistry file provided");
+  maliput::log()->trace(builder_configuration_.rule_registry.has_value()
+                            ? "RuleRegistry file provided: " + builder_configuration_.rule_registry.value()
+                            : "No RuleRegistry file provided");
   auto rule_registry = !builder_configuration_.rule_registry.has_value()
                            ? std::make_unique<maliput::api::rules::RuleRegistry>()
                            : maliput::LoadRuleRegistryFromFile(builder_configuration_.rule_registry.value());
@@ -84,9 +84,9 @@ std::unique_ptr<maliput::api::RoadNetwork> RoadNetworkLoader::operator()() {
 
   maliput::log()->trace("Building RuleRoadBook...");
 
-  maliput::log()->trace("{}", builder_configuration_.road_rule_book.has_value()
-                                  ? "RoadRulebook file provided: " + builder_configuration_.road_rule_book.value()
-                                  : "No RoadRulebook file provided");
+  maliput::log()->trace(builder_configuration_.road_rule_book.has_value()
+                            ? "RoadRulebook file provided: " + builder_configuration_.road_rule_book.value()
+                            : "No RoadRulebook file provided");
 
   auto rule_book =
       builder_configuration_.road_rule_book.has_value()
@@ -97,9 +97,9 @@ std::unique_ptr<maliput::api::RoadNetwork> RoadNetworkLoader::operator()() {
 
   maliput::log()->trace("Building PhaseRingBook...");
 
-  maliput::log()->trace("{}", builder_configuration_.phase_ring_book.has_value()
-                                  ? "PhaseRingBook file provided: " + builder_configuration_.phase_ring_book.value()
-                                  : "No PhaseRingBook file provided");
+  maliput::log()->trace(builder_configuration_.phase_ring_book.has_value()
+                            ? "PhaseRingBook file provided: " + builder_configuration_.phase_ring_book.value()
+                            : "No PhaseRingBook file provided");
 
   auto phase_ring_book = builder_configuration_.phase_ring_book.has_value()
                              ? maliput::LoadPhaseRingBookFromFile(rule_book.get(), traffic_light_book.get(),
@@ -125,8 +125,7 @@ std::unique_ptr<maliput::api::RoadNetwork> RoadNetworkLoader::operator()() {
 
   maliput::log()->trace("Building IntersectionBook...");
 
-  maliput::log()->trace("{}",
-                        builder_configuration_.intersection_book.has_value()
+  maliput::log()->trace(builder_configuration_.intersection_book.has_value()
                             ? "IntersectionBook file provided: " + builder_configuration_.intersection_book.value()
                             : "No IntersectionBook file provided");
 

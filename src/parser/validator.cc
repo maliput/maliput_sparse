@@ -73,7 +73,7 @@ Validator::Validator(const Parser* parser, const Types& types, const ValidatorCo
     const auto& dependencies = kDependentTypes.at(type);
     for (const auto& dependency : dependencies) {
       if (std::find(types_.begin(), types_.end(), dependency) == types_.end()) {
-        maliput::log()->debug("Validator: {} depends on {}, adding it to the validation types.", type, dependency);
+        maliput::log()->debug("Validator: ", type, " depends on ", dependency, ", adding it to the validation types.");
         types_.insert(dependency);
       }
     }
