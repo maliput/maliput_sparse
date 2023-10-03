@@ -300,7 +300,10 @@ double GetSlopeAtP(const LineString3d& line_string, double p, double tolerance) 
   const double delta_z{end.z() - start.z()};
   const double dist{(To2D(end) - To2D(start)).norm()};
   MALIPUT_THROW_UNLESS(start != end);
-  return delta_z / dist;
+  return dist < std::numeric_limits<double>::epsilon()
+             ? (std::signbit(delta_z) ? -std::numeric_limits<double>::infinity()
+                                      : std::numeric_limits<double>::infinity())
+             : delta_z / dist;
 }
 
 template <typename CoordinateT>
@@ -449,8 +452,10 @@ template ClosestPointToSegmentResult2d GetClosestPointToSegment(const maliput::m
                                                                 const maliput::math::Vector2&,
                                                                 const maliput::math::Vector2&, double);
 
-template class ClosestPointResult<maliput::math::Vector3>;
-template class ClosestPointResult<maliput::math::Vector2>;
+template struct ClosestPointResult<maliput::math::Vector3>;
+template struct ClosestPointResult<maliput::math::Vector2>;
+
+template BoundPointsResult GetBoundPointsAtP<maliput::math::Vector3>(const LineString3d&, double, double);
 
 }  // namespace utility
 }  // namespace geometry
