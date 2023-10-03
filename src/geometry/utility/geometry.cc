@@ -452,6 +452,8 @@ template ClosestPointToSegmentResult2d GetClosestPointToSegment(const maliput::m
 template class ClosestPointResult<maliput::math::Vector3>;
 template class ClosestPointResult<maliput::math::Vector2>;
 
+template BoundPointsResult GetBoundPointsAtP<maliput::math::Vector3>(const LineString3d&, double, double);
+
 }  // namespace utility
 }  // namespace geometry
 }  // namespace maliput_sparse
