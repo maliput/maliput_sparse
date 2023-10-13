@@ -35,6 +35,7 @@
 #include <vector>
 
 #include <gtest/gtest.h>
+#include <maliput/api/compare.h>
 #include <maliput/api/junction.h>
 #include <maliput/api/lane.h>
 #include <maliput/api/lane_data.h>
@@ -42,8 +43,8 @@
 #include <maliput/api/segment.h>
 #include <maliput/common/assertion_error.h>
 #include <maliput/math/vector.h>
-#include <maliput/test_utilities/maliput_types_compare.h>
 
+#include "assert_compare.h"
 #include "maliput_sparse/geometry/lane_geometry.h"
 #include "maliput_sparse/geometry/line_string.h"
 #include "maliput_sparse/geometry/utility/geometry.h"
@@ -52,10 +53,11 @@ namespace maliput_sparse {
 namespace builder {
 namespace test {
 namespace {
-using maliput::api::test::IsHBoundsClose;
-using maliput::api::test::IsLaneEndEqual;
+using maliput::api::IsHBoundsClose;
+using maliput::api::IsLaneEndEqual;
 using maliput::math::Vector3;
 using maliput_sparse::geometry::LineString3d;
+using maliput_sparse::test::AssertCompare;
 
 class LaneEndTest : public ::testing::Test {
  protected:
@@ -396,12 +398,12 @@ TEST_F(RoadGeometryBuilderTest, CompleteCase) {
   auto* lane_a = segment_a->lane(0);
   ASSERT_NE(nullptr, lane_a);
   ASSERT_EQ(kLaneAId, lane_a->id());
-  ASSERT_TRUE(IsHBoundsClose(kHBoundsA, lane_a->elevation_bounds(0., 0.), kEqualityTolerance));
+  ASSERT_TRUE(AssertCompare(IsHBoundsClose(kHBoundsA, lane_a->elevation_bounds(0., 0.), kEqualityTolerance)));
 
   auto* lane_b = segment_a->lane(1);
   ASSERT_NE(nullptr, lane_b);
   ASSERT_EQ(kLaneBId, lane_b->id());
-  ASSERT_TRUE(IsHBoundsClose(kHBoundsB, lane_b->elevation_bounds(0., 0.), kEqualityTolerance));
+  ASSERT_TRUE(AssertCompare(IsHBoundsClose(kHBoundsB, lane_b->elevation_bounds(0., 0.), kEqualityTolerance)));
 
   ASSERT_EQ(lane_a, lane_b->to_right());
   ASSERT_EQ(lane_b, lane_a->to_left());
@@ -414,7 +416,7 @@ TEST_F(RoadGeometryBuilderTest, CompleteCase) {
   auto* lane_c = segment_b->lane(0);
   ASSERT_NE(nullptr, lane_c);
   ASSERT_EQ(kLaneCId, lane_c->id());
-  ASSERT_TRUE(IsHBoundsClose(kHBoundsC, lane_c->elevation_bounds(0., 0.), kEqualityTolerance));
+  ASSERT_TRUE(AssertCompare(IsHBoundsClose(kHBoundsC, lane_c->elevation_bounds(0., 0.), kEqualityTolerance)));
 
   auto* junction_b = rg->junction(1);
   ASSERT_NE(nullptr, junction_b);
@@ -429,7 +431,7 @@ TEST_F(RoadGeometryBuilderTest, CompleteCase) {
   auto* lane_d = segment_c->lane(0);
   ASSERT_NE(nullptr, lane_d);
   ASSERT_EQ(kLaneDId, lane_d->id());
-  ASSERT_TRUE(IsHBoundsClose(kHBoundsD, lane_d->elevation_bounds(0., 0.), kEqualityTolerance));
+  ASSERT_TRUE(AssertCompare(IsHBoundsClose(kHBoundsD, lane_d->elevation_bounds(0., 0.), kEqualityTolerance)));
 
   ASSERT_EQ(8, rg->num_branch_points());
   // Configure the BranchPoint check struct.
@@ -619,7 +621,7 @@ TEST_F(RoadGeometryBuilderTest, OutgoingBranches) {
   ASSERT_TRUE(lane_end_is_in(lane_b->GetConfluentBranches(start)->get(1), expected_lane_ends));
   ASSERT_TRUE(lane_end_is_in(lane_b->GetConfluentBranches(start)->get(2), expected_lane_ends));
   ASSERT_EQ(1, lane_b->GetOngoingBranches(start)->size());
-  ASSERT_TRUE(IsLaneEndEqual(lane_end_a_finish, lane_b->GetOngoingBranches(start)->get(0)));
+  ASSERT_TRUE(AssertCompare(IsLaneEndEqual(lane_end_a_finish, lane_b->GetOngoingBranches(start)->get(0))));
   ASSERT_EQ(1, lane_b->GetConfluentBranches(finish)->size());
   ASSERT_EQ(0, lane_b->GetOngoingBranches(finish)->size());
 
@@ -628,7 +630,7 @@ TEST_F(RoadGeometryBuilderTest, OutgoingBranches) {
   ASSERT_TRUE(lane_end_is_in(lane_c->GetConfluentBranches(start)->get(1), expected_lane_ends));
   ASSERT_TRUE(lane_end_is_in(lane_c->GetConfluentBranches(start)->get(2), expected_lane_ends));
   ASSERT_EQ(1, lane_c->GetOngoingBranches(start)->size());
-  ASSERT_TRUE(IsLaneEndEqual(lane_end_a_finish, lane_c->GetOngoingBranches(start)->get(0)));
+  ASSERT_TRUE(AssertCompare(IsLaneEndEqual(lane_end_a_finish, lane_c->GetOngoingBranches(start)->get(0))));
   ASSERT_EQ(1, lane_c->GetConfluentBranches(finish)->size());
   ASSERT_EQ(0, lane_c->GetOngoingBranches(finish)->size());
 
@@ -637,7 +639,7 @@ TEST_F(RoadGeometryBuilderTest, OutgoingBranches) {
   ASSERT_TRUE(lane_end_is_in(lane_d->GetConfluentBranches(start)->get(1), expected_lane_ends));
   ASSERT_TRUE(lane_end_is_in(lane_d->GetConfluentBranches(start)->get(2), expected_lane_ends));
   ASSERT_EQ(1, lane_d->GetOngoingBranches(start)->size());
-  ASSERT_TRUE(IsLaneEndEqual(lane_end_a_finish, lane_d->GetOngoingBranches(start)->get(0)));
+  ASSERT_TRUE(AssertCompare(IsLaneEndEqual(lane_end_a_finish, lane_d->GetOngoingBranches(start)->get(0))));
   ASSERT_EQ(1, lane_d->GetConfluentBranches(finish)->size());
   ASSERT_EQ(0, lane_d->GetOngoingBranches(finish)->size());
 }

@@ -15,7 +15,6 @@ if (TARGET ${target})
           maliput::common
           maliput::geometry_base
           maliput::math
-          maliput::test_utilities
           maliput_sparse::base
           maliput_sparse::builder
           maliput_sparse::geometry

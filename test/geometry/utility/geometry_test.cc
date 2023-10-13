@@ -35,8 +35,10 @@
 
 #include <gtest/gtest.h>
 #include <maliput/common/assertion_error.h>
+#include <maliput/math/compare.h>
 #include <maliput/math/vector.h>
-#include <maliput/test_utilities/maliput_math_compare.h>
+
+#include "assert_compare.h"
 
 namespace maliput_sparse {
 namespace geometry {
@@ -44,7 +46,9 @@ namespace utility {
 namespace test {
 namespace {
 
+using maliput::math::CompareVectors;
 using maliput::math::Vector3;
+using maliput_sparse::test::AssertCompare;
 
 struct LeftRightCenterlineCase {
   LineString3d left{};
@@ -215,7 +219,7 @@ class InterpolatedPointAtPTest : public ::testing::TestWithParam<LineStringPoint
 TEST_P(InterpolatedPointAtPTest, Test) {
   const auto dut =
       InterpolatedPointAtP(line_string_point_at_p_case_.line_string, line_string_point_at_p_case_.p, kTolerance);
-  EXPECT_TRUE(maliput::math::test::CompareVectors(line_string_point_at_p_case_.expected_point, dut, kTolerance));
+  EXPECT_TRUE(AssertCompare(CompareVectors(line_string_point_at_p_case_.expected_point, dut, kTolerance)));
 }
 
 TEST_P(InterpolatedPointAtPTest, NegativeP) {
@@ -442,7 +446,7 @@ TEST_P(GetClosestPointToSegmentTest, Test) {
     const auto dut =
         GetClosestPointToSegment(case_.segment.first, case_.segment.second, case_.eval_points[i], kTolerance);
     EXPECT_NEAR(case_.expected_closest[i].p, dut.p, kTolerance);
-    EXPECT_TRUE(maliput::math::test::CompareVectors(case_.expected_closest[i].point, dut.point, kTolerance));
+    EXPECT_TRUE(AssertCompare(CompareVectors(case_.expected_closest[i].point, dut.point, kTolerance)));
     EXPECT_NEAR(case_.expected_closest[i].distance, dut.distance, kTolerance);
   }
 }
@@ -500,7 +504,7 @@ TEST_P(GetClosestPointLineStringTest, Test) {
   for (std::size_t i = 0; i < case_.eval_points.size(); ++i) {
     const auto dut = GetClosestPoint(case_.line_string, case_.eval_points[i], kTolerance);
     EXPECT_NEAR(case_.expected_closest[i].p, dut.p, kTolerance);
-    EXPECT_TRUE(maliput::math::test::CompareVectors(case_.expected_closest[i].point, dut.point, kTolerance));
+    EXPECT_TRUE(AssertCompare(CompareVectors(case_.expected_closest[i].point, dut.point, kTolerance)));
     EXPECT_NEAR(case_.expected_closest[i].distance, dut.distance, kTolerance);
     EXPECT_EQ(case_.expected_closest[i].segment.idx_start, dut.segment.idx_start);
     EXPECT_EQ(case_.expected_closest[i].segment.idx_end, dut.segment.idx_end);
@@ -551,7 +555,7 @@ TEST_P(GetClosestPointIn2dLineStringTest, Test) {
   for (std::size_t i = 0; i < case_.eval_points.size(); ++i) {
     const auto dut = GetClosestPointUsing2dProjection(case_.line_string, case_.eval_points[i], kTolerance);
     EXPECT_NEAR(case_.expected_closest[i].p, dut.p, kTolerance);
-    EXPECT_TRUE(maliput::math::test::CompareVectors(case_.expected_closest[i].point, dut.point, kTolerance));
+    EXPECT_TRUE(AssertCompare(CompareVectors(case_.expected_closest[i].point, dut.point, kTolerance)));
     EXPECT_NEAR(case_.expected_closest[i].distance, dut.distance, kTolerance);
     EXPECT_EQ(case_.expected_closest[i].segment.idx_start, dut.segment.idx_start);
     EXPECT_EQ(case_.expected_closest[i].segment.idx_end, dut.segment.idx_end);
