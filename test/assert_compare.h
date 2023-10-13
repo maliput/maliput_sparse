@@ -1,7 +1,6 @@
 // BSD 3-Clause License
 //
-// Copyright (c) 2022, Woven Planet.
-// All rights reserved.
+// Copyright (c) 2023, Woven by Toyota. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
@@ -27,25 +26,20 @@
 // CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#include "maliput_sparse/test_utilties/maliput_sparse_types_compare.h"
+#pragma once
 
-#include <maliput/math/compare.h>
+#include <gtest/gtest.h>
+#include <maliput/common/compare.h>
 
 namespace maliput_sparse {
 namespace test {
 
-::testing::AssertionResult CompareLineString3d(const maliput_sparse::geometry::LineString3d& lhs,
-                                               const maliput_sparse::geometry::LineString3d& rhs, double tolerance) {
-  if (lhs.size() != rhs.size()) {
-    return ::testing::AssertionFailure() << "LineString3d size mismatch: " << lhs.size() << " != " << rhs.size();
+template <typename T>
+::testing::AssertionResult AssertCompare(const maliput::common::ComparisonResult<T>& res) {
+  if (!res.message.has_value()) {
+    return ::testing::AssertionSuccess();
   }
-  for (size_t i = 0; i < lhs.size(); ++i) {
-    if (maliput::math::CompareVectors(lhs[i], rhs[i], tolerance).message.has_value()) {
-      return ::testing::AssertionFailure()
-             << "LineString3d point mismatch at index " << i << ": " << lhs[i] << " != " << rhs[i];
-    }
-  }
-  return ::testing::AssertionSuccess();
+  return ::testing::AssertionFailure() << res.message.value();
 }
 
 }  // namespace test

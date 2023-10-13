@@ -32,12 +32,13 @@
 #include <string>
 
 #include <gtest/gtest.h>
+#include <maliput/api/compare.h>
 #include <maliput/api/lane.h>
 #include <maliput/api/lane_data.h>
 #include <maliput/api/road_geometry.h>
 #include <maliput/math/vector.h>
-#include <maliput/test_utilities/maliput_types_compare.h>
 
+#include "assert_compare.h"
 #include "maliput_sparse/builder/builder.h"
 #include "maliput_sparse/geometry/line_string.h"
 
@@ -116,8 +117,8 @@ TEST_F(RoadGeometryTest, OnLaneA) {
       {5., 8., 0.}, /* nearest position */
       0.,           /* distance */
   };
-  EXPECT_TRUE(maliput::api::test::IsRoadPositionResultClose(expected_road_position_result,
-                                                            dut_->ToRoadPosition(inertial_pos), kLinearTolerance));
+  EXPECT_TRUE(AssertCompare(maliput::api::IsRoadPositionResultClose(
+      expected_road_position_result, dut_->ToRoadPosition(inertial_pos), kLinearTolerance)));
 }
 
 TEST_F(RoadGeometryTest, OnLaneB) {
@@ -129,8 +130,8 @@ TEST_F(RoadGeometryTest, OnLaneB) {
       {5., 0., 0.}, /* nearest position */
       0.,           /* distance */
   };
-  EXPECT_TRUE(maliput::api::test::IsRoadPositionResultClose(expected_road_position_result,
-                                                            dut_->ToRoadPosition(inertial_pos), kLinearTolerance));
+  EXPECT_TRUE(AssertCompare(maliput::api::IsRoadPositionResultClose(
+      expected_road_position_result, dut_->ToRoadPosition(inertial_pos), kLinearTolerance)));
 }
 
 TEST_F(RoadGeometryTest, CloseToLaneA) {
@@ -142,8 +143,8 @@ TEST_F(RoadGeometryTest, CloseToLaneA) {
       {5., 10., 0.}, /* nearest position */
       1.,            /* distance */
   };
-  EXPECT_TRUE(maliput::api::test::IsRoadPositionResultClose(expected_road_position_result,
-                                                            dut_->ToRoadPosition(inertial_pos), kLinearTolerance));
+  EXPECT_TRUE(AssertCompare(maliput::api::IsRoadPositionResultClose(
+      expected_road_position_result, dut_->ToRoadPosition(inertial_pos), kLinearTolerance)));
 }
 
 }  // namespace

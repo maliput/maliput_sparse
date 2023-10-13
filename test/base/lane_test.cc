@@ -30,14 +30,15 @@
 #include "base/lane.h"
 
 #include <gtest/gtest.h>
+#include <maliput/api/compare.h>
 #include <maliput/api/lane.h>
 #include <maliput/api/lane_data.h>
 #include <maliput/common/assertion_error.h>
 #include <maliput/geometry_base/segment.h>
+#include <maliput/math/compare.h>
 #include <maliput/math/vector.h>
-#include <maliput/test_utilities/maliput_math_compare.h>
-#include <maliput/test_utilities/maliput_types_compare.h>
 
+#include "assert_compare.h"
 #include "maliput_sparse/geometry/line_string.h"
 
 namespace maliput_sparse {
@@ -46,16 +47,16 @@ namespace {
 
 using geometry::LineString3d;
 using maliput::api::InertialPosition;
+using maliput::api::IsInertialPositionClose;
+using maliput::api::IsLanePositionClose;
+using maliput::api::IsLanePositionResultClose;
 using maliput::api::IsoLaneVelocity;
+using maliput::api::IsRotationClose;
 using maliput::api::LaneId;
 using maliput::api::LanePosition;
 using maliput::api::LanePositionResult;
 using maliput::api::RBounds;
 using maliput::api::Rotation;
-using maliput::api::test::IsInertialPositionClose;
-using maliput::api::test::IsLanePositionClose;
-using maliput::api::test::IsLanePositionResultClose;
-using maliput::api::test::IsRotationClose;
 using maliput::math::Vector2;
 using maliput::math::Vector3;
 
@@ -231,10 +232,11 @@ TEST_P(LaneTest, Test) {
     const auto backend_pos = dut->ToBackendPosition(case_.srh[i]);
     const auto rpy = dut->GetOrientation(case_.srh[i]);
     const auto lane_position_result = dut->ToLanePositionBackend(case_.expected_backend_pos[i]);
-    EXPECT_TRUE(IsRotationClose(case_.expected_rotation[i], rpy, kTolerance));
-    EXPECT_TRUE(
-        IsInertialPositionClose(case_.expected_backend_pos[i], InertialPosition::FromXyz(backend_pos), kTolerance));
-    EXPECT_TRUE(IsLanePositionResultClose(case_.expected_lane_position_result[i], lane_position_result, kTolerance));
+    EXPECT_TRUE(AssertCompare(IsRotationClose(case_.expected_rotation[i], rpy, kTolerance)));
+    EXPECT_TRUE(AssertCompare(
+        IsInertialPositionClose(case_.expected_backend_pos[i], InertialPosition::FromXyz(backend_pos), kTolerance)));
+    EXPECT_TRUE(AssertCompare(
+        IsLanePositionResultClose(case_.expected_lane_position_result[i], lane_position_result, kTolerance)));
   }
 }
 
@@ -402,10 +404,11 @@ TEST_P(ToLaneSegmentPositionTest, Test) {
   EXPECT_DOUBLE_EQ(case_.segment_bounds.max(), seg_bounds.max());
   for (std::size_t i = 0; i < case_.backend_pos.size(); ++i) {
     const LanePositionResult lane_position_result = dut_->ToLanePositionBackend(case_.backend_pos[i]);
-    EXPECT_TRUE(IsLanePositionResultClose(case_.expected_lane_position_result[i], lane_position_result, kTolerance));
+    EXPECT_TRUE(AssertCompare(
+        IsLanePositionResultClose(case_.expected_lane_position_result[i], lane_position_result, kTolerance)));
     const LanePositionResult segment_position_result = dut_->ToSegmentPositionBackend(case_.backend_pos[i]);
-    EXPECT_TRUE(
-        IsLanePositionResultClose(case_.expected_segment_lane_position_result[i], segment_position_result, kTolerance));
+    EXPECT_TRUE(AssertCompare(IsLanePositionResultClose(case_.expected_segment_lane_position_result[i],
+                                                        segment_position_result, kTolerance)));
   }
 }
 

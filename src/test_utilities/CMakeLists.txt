@@ -23,7 +23,6 @@ target_include_directories(
 
 target_link_libraries(test_utilities
    PRIVATE
-    maliput::test_utilities
     maliput_sparse::geometry
 )
 

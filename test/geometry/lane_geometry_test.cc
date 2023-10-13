@@ -31,16 +31,20 @@
 
 #include <gtest/gtest.h>
 #include <maliput/common/assertion_error.h>
+#include <maliput/math/compare.h>
 #include <maliput/math/vector.h>
-#include <maliput/test_utilities/maliput_math_compare.h>
+
+#include "assert_compare.h"
 
 namespace maliput_sparse {
 namespace geometry {
 namespace test {
 namespace {
 
+using maliput::math::CompareVectors;
 using maliput::math::Vector2;
 using maliput::math::Vector3;
+using maliput_sparse::test::AssertCompare;
 
 class LaneGeometryBasicTest : public testing::Test {
  public:
@@ -152,7 +156,7 @@ class OrientationTest : public ::testing::TestWithParam<OrientationTestCase> {
             : LaneGeometry{case_.left, case_.right, kLinearTolerance, kScaleLength};
     for (std::size_t i = 0; i < case_.p.size(); ++i) {
       const auto rpy = lane_geometry.Orientation(case_.p[i]);
-      EXPECT_TRUE(maliput::math::test::CompareVectors(case_.expected_rpy[i].vector(), rpy.vector(), GetTolerance()));
+      EXPECT_TRUE(AssertCompare(CompareVectors(case_.expected_rpy[i].vector(), rpy.vector(), GetTolerance())));
     }
   }
 };
@@ -265,9 +269,9 @@ TEST_P(WAndWInverseTest, Test) {
   const LaneGeometry lane_geometry{case_.left, case_.right, 1e-3, 1.};
   for (std::size_t i = 0; i < case_.prh.size(); ++i) {
     const auto dut_w = lane_geometry.W(case_.prh[i]);
-    EXPECT_TRUE(maliput::math::test::CompareVectors(case_.expected_w[i], dut_w, kTolerance));
+    EXPECT_TRUE(AssertCompare(CompareVectors(case_.expected_w[i], dut_w, kTolerance)));
     const auto dut_w_inverse = lane_geometry.WInverse(case_.expected_w[i]);
-    EXPECT_TRUE(maliput::math::test::CompareVectors(case_.prh[i], dut_w_inverse, kTolerance));
+    EXPECT_TRUE(AssertCompare(CompareVectors(case_.prh[i], dut_w_inverse, kTolerance)));
   }
 }
 
@@ -335,7 +339,7 @@ TEST_P(WDotTest, Test) {
   const LaneGeometry lane_geometry{case_.left, case_.right, 1e-3, 1.};
   for (std::size_t i = 0; i < case_.prh.size(); ++i) {
     const auto dut = lane_geometry.WDot(case_.prh[i]);
-    EXPECT_TRUE(maliput::math::test::CompareVectors(case_.expected_w_dot[i], dut, kTolerance));
+    EXPECT_TRUE(AssertCompare(CompareVectors(case_.expected_w_dot[i], dut, kTolerance)));
   }
 }
 
