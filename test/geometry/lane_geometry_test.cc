@@ -30,7 +30,7 @@
 #include "maliput_sparse/geometry/lane_geometry.h"
 
 #include <gtest/gtest.h>
-#include <maliput/common/assertion_error.h>
+#include <maliput/common/error.h>
 #include <maliput/math/compare.h>
 #include <maliput/math/vector.h>
 

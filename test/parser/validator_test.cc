@@ -32,7 +32,7 @@
 #include <string>
 
 #include <gtest/gtest.h>
-#include <maliput/common/assertion_error.h>
+#include <maliput/common/error.h>
 
 #include "maliput_sparse/parser/parser.h"
 #include "parser/validation_methods.h"
