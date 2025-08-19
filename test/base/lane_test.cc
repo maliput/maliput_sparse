@@ -33,7 +33,7 @@
 #include <maliput/api/compare.h>
 #include <maliput/api/lane.h>
 #include <maliput/api/lane_data.h>
-#include <maliput/common/assertion_error.h>
+#include <maliput/common/error.h>
 #include <maliput/geometry_base/segment.h>
 #include <maliput/math/compare.h>
 #include <maliput/math/vector.h>
