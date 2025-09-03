@@ -49,8 +49,8 @@ LaneGeometry::LaneGeometry(const LineString3d& center, const LineString3d& left,
       linear_tolerance_(linear_tolerance),
       scale_length_(scale_length),
       centerline_(center),
-      range_validator_(maliput::common::RangeValidator::GetAbsoluteEpsilonValidator(0., centerline_.length(),
-                                                                                    linear_tolerance_, kEpsilon)) {}
+      range_validator_(maliput::common::RangeValidator<>::GetAbsoluteEpsilonValidator(0., centerline_.length(),
+                                                                                      linear_tolerance_, kEpsilon)) {}
 
 double LaneGeometry::ArcLength() const { return centerline_.length(); }
 
