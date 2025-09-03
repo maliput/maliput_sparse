@@ -308,7 +308,7 @@ double GetSlopeAtP(const LineString3d& line_string, double p, double tolerance) 
 
 template <typename CoordinateT>
 BoundPointsResult GetBoundPointsAtP(const LineString<CoordinateT>& line_string, double p, double tolerance) {
-  p = maliput::common::RangeValidator::GetAbsoluteEpsilonValidator(0., line_string.length(), tolerance, kEpsilon)(p);
+  p = maliput::common::RangeValidator<>::GetAbsoluteEpsilonValidator(0., line_string.length(), tolerance, kEpsilon)(p);
   const auto segment = line_string.segments().at({p});
   return {segment.idx_start, segment.idx_end, segment.p_interval.min};
 }

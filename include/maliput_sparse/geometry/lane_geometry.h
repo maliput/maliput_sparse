@@ -164,7 +164,7 @@ class LaneGeometry {
   const double linear_tolerance_{};
   const double scale_length_{};
   const LineString3d centerline_;
-  const maliput::common::RangeValidator range_validator_;
+  const maliput::common::RangeValidator<> range_validator_;
 };
 
 }  // namespace geometry
