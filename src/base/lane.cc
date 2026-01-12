@@ -69,6 +69,18 @@ maliput::math::Vector3 Lane::DoToBackendPosition(const maliput::api::LanePositio
   return lane_geometry_->W(lane_pos.srh());
 }
 
+double Lane::DoGetCurvature(const maliput::api::LanePosition& /* lane_pos */) const {
+  // maliput_sparse uses piecewise linear geometry (polylines) to represent lanes.
+  // Within each linear segment, the curvature is exactly zero.
+  // At segment vertices, the curvature is undefined (discontinuous heading).
+  //
+  // TODO: Consider implementing an approximate curvature by:
+  //       - Fitting a smooth curve to the polyline vertices.
+  //       - Computing curvature from heading changes at vertices.
+  //       - Returning the curvature of the underlying road if available.
+  return 0.0;
+}
+
 maliput::api::LanePositionResult Lane::ToLanePositionBackend(const maliput::api::InertialPosition& backend_pos) const {
   maliput::api::LanePosition lane_position;
   maliput::math::Vector3 nearest_backend_pos;
