@@ -13,6 +13,9 @@ on:
       - .devcontainer/bazel-zen/Dockerfile
     branches:
       - main
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
