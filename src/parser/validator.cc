@@ -105,9 +105,9 @@ std::vector<Validator::Error> ValidateLaneAdjacency(const Parser* parser, bool v
     }
     return condition;
   };
-  const auto junctions = parser->GetJunctions();
-  for (const auto junction : junctions) {
-    for (const auto segment : junction.second.segments) {
+  const auto& junctions = parser->GetJunctions();
+  for (const auto& junction : junctions) {
+    for (const auto& segment : junction.second.segments) {
       const std::vector<Lane>& lanes = segment.second.lanes;
       // Iterates lanes from right to left.
       // | idx=N-1 | idx=3 | idx=2 | idx=1 | idx=0 |

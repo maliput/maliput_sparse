@@ -45,7 +45,8 @@ maliput::api::LaneEnd::Which ToMaliputLaneEndWhich(const parser::LaneEnd::Which 
     case parser::LaneEnd::Which::kFinish:
       return maliput::api::LaneEnd::Which::kFinish;
     default:
-      MALIPUT_THROW_MESSAGE("Unknown parser::LaneEnd::Which value: " + static_cast<int>(end));
+      MALIPUT_THROW_MESSAGE(std::string("Unknown parser::LaneEnd::Which value: ") +
+                            std::to_string(static_cast<int>(end)));
   }
 }
 
@@ -72,7 +73,8 @@ std::unique_ptr<const maliput::api::RoadGeometry> RoadGeometryLoader::operator()
         maliput::log()->warn("[", error.type, "] ", error.message);
         break;
       default:
-        MALIPUT_THROW_MESSAGE("Unknown parser::Validator::Error::Severity value: " + static_cast<int>(error.severity));
+        MALIPUT_THROW_MESSAGE(std::string("Unknown parser::Validator::Error::Severity value: ") +
+                              std::to_string(static_cast<int>(error.severity)));
     }
   }
 
