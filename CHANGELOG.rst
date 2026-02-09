@@ -2,6 +2,21 @@
 Changelog for package maliput_sparse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.2.4 (2026-02-09)
+------------------
+* Setup package for BCR. (`#68 <https://github.com/maliput/maliput_sparse/issues/68>`_)
+* Bazel support (`#67 <https://github.com/maliput/maliput_sparse/issues/67>`_)
+* Implement Lane::DoGetCurvature. (`#63 <https://github.com/maliput/maliput_sparse/issues/63>`_)
+* `RangeValidator` default template. (`#62 <https://github.com/maliput/maliput_sparse/issues/62>`_)
+* Update maliput common error lib. (`#61 <https://github.com/maliput/maliput_sparse/issues/61>`_)
+* Fixes CI. (`#60 <https://github.com/maliput/maliput_sparse/issues/60>`_)
+* Update github action versions. (`#59 <https://github.com/maliput/maliput_sparse/issues/59>`_)
+* Updates ros-tooling verison to avoid error with dependency. (`#58 <https://github.com/maliput/maliput_sparse/issues/58>`_)
+* Uses compare methods instead of maliput test utilities. (`#57 <https://github.com/maliput/maliput_sparse/issues/57>`_)
+* Some fixes for clang build and sanitizers checks (`#56 <https://github.com/maliput/maliput_sparse/issues/56>`_)
+* Matches with change in logger format. (`#55 <https://github.com/maliput/maliput_sparse/issues/55>`_)
+* Contributors: Agustin Alba Chicar, Franco Cipollone, Santiago Lopez
+
 0.2.3 (2023-02-15)
 ------------------
 * Relies on GetClosestPoint for the GetClosestPointUsing2dProjection method. (`#53 <https://github.com/maliput/maliput_sparse/issues/53>`_)
