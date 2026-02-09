@@ -1,0 +1,162 @@
+###############################################################################
+# Loaders
+###############################################################################
+
+load("//:bazel/variables.bzl", "COPTS")
+
+###############################################################################
+# Libraries
+###############################################################################
+
+# Aggregate library for maliput_sparse
+cc_library(
+    name = "maliput_sparse",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":base",
+        ":builder",
+        ":geometry",
+        ":loader",
+        ":parser",
+    ],
+)
+
+# Geometry library (line_string, lane_geometry, utility)
+cc_library(
+    name = "geometry",
+    srcs = glob([
+        "src/geometry/*.cc",
+        "src/geometry/utility/*.cc",
+    ]),
+    hdrs = glob([
+        "include/maliput_sparse/geometry/*.h",
+        "include/maliput_sparse/geometry/utility/*.h",
+    ]),
+    copts = COPTS,
+    strip_include_prefix = "include",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@maliput//:api",
+        "@maliput//:common",
+        "@maliput//:math",
+    ],
+)
+
+# Private parser headers
+cc_library(
+    name = "private_parser_headers",
+    hdrs = glob(["src/parser/*.h"]),
+    copts = COPTS,
+    strip_include_prefix = "src",
+    visibility = ["//:__pkg__"],
+    deps = [
+        ":geometry",
+    ],
+)
+
+# Parser library
+cc_library(
+    name = "parser",
+    srcs = glob(["src/parser/*.cc"]),
+    hdrs = glob(["include/maliput_sparse/parser/*.h"]),
+    copts = COPTS,
+    strip_include_prefix = "include",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":geometry",
+        ":private_parser_headers",
+        "@maliput//:common",
+        "@maliput//:math",
+    ],
+)
+
+# Private base headers (internal implementation)
+cc_library(
+    name = "private_base_headers",
+    hdrs = glob(["src/base/*.h"]),
+    copts = COPTS,
+    strip_include_prefix = "src",
+    visibility = [
+        "//:__pkg__",
+        "//test:__subpackages__",
+    ],
+    deps = [
+        ":geometry",
+        "@maliput//:api",
+        "@maliput//:common",
+        "@maliput//:geometry_base",
+        "@maliput//:math",
+    ],
+)
+
+# Base library (internal Lane, RoadGeometry implementations)
+cc_library(
+    name = "base",
+    srcs = glob(["src/base/*.cc"]),
+    copts = COPTS,
+    visibility = [
+        "//:__pkg__",
+        "//test:__subpackages__",
+    ],
+    deps = [
+        ":private_base_headers",
+        ":geometry",
+        "@maliput//:api",
+        "@maliput//:common",
+        "@maliput//:geometry_base",
+        "@maliput//:math",
+    ],
+)
+
+# Builder library
+cc_library(
+    name = "builder",
+    srcs = glob(["src/builder/*.cc"]),
+    hdrs = glob(["include/maliput_sparse/builder/*.h"]),
+    copts = COPTS,
+    strip_include_prefix = "include",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":base",
+        ":geometry",
+        ":parser",
+        ":private_base_headers",
+        "@maliput//:api",
+        "@maliput//:common",
+        "@maliput//:geometry_base",
+        "@maliput//:math",
+    ],
+)
+
+# Loader library
+cc_library(
+    name = "loader",
+    srcs = glob(["src/loader/*.cc"]),
+    hdrs = glob(["include/maliput_sparse/loader/*.h"]),
+    copts = COPTS,
+    strip_include_prefix = "include",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":builder",
+        ":parser",
+        "@maliput//:api",
+        "@maliput//:base",
+        "@maliput//:common",
+    ],
+)
+
+# Test utilities library
+cc_library(
+    name = "test_utilities",
+    srcs = glob(["src/test_utilities/*.cc"]),
+    hdrs = glob(["include/maliput_sparse/test_utilties/*.h"]),
+    copts = COPTS,
+    strip_include_prefix = "include",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":geometry",
+        "@googletest//:gtest",
+        "@maliput//:math",
+    ],
+)
+

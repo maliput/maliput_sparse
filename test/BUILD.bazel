@@ -1,0 +1,179 @@
+###############################################################################
+# Loaders
+###############################################################################
+
+load("//:bazel/variables.bzl", "COPTS")
+
+###############################################################################
+# Private test headers
+###############################################################################
+
+cc_library(
+    name = "private_test_headers",
+    hdrs = ["assert_compare.h"],
+    copts = COPTS,
+    includes = ["."],
+    visibility = ["//visibility:private"],
+    deps = [
+        "@googletest//:gtest",
+        "@maliput//:common",
+    ],
+)
+
+###############################################################################
+# Tests
+###############################################################################
+
+# Base tests
+cc_test(
+    name = "base_lane_test",
+    srcs = ["base/lane_test.cc"],
+    size = "small",
+    copts = COPTS,
+    deps = [
+        ":private_test_headers",
+        "//:base",
+        "//:geometry",
+        "//:private_base_headers",
+        "@googletest//:gtest_main",
+        "@maliput//:api",
+        "@maliput//:common",
+        "@maliput//:geometry_base",
+        "@maliput//:math",
+        "@maliput//:test_utilities",
+    ],
+)
+
+cc_test(
+    name = "base_road_geometry_test",
+    srcs = ["base/road_geometry_test.cc"],
+    size = "small",
+    copts = COPTS,
+    deps = [
+        ":private_test_headers",
+        "//:base",
+        "//:builder",
+        "//:geometry",
+        "//:private_base_headers",
+        "@googletest//:gtest_main",
+        "@maliput//:api",
+        "@maliput//:common",
+        "@maliput//:geometry_base",
+        "@maliput//:math",
+        "@maliput//:test_utilities",
+    ],
+)
+
+# Builder tests
+cc_test(
+    name = "builder_builder_test",
+    srcs = ["builder/builder_test.cc"],
+    size = "small",
+    copts = COPTS,
+    deps = [
+        ":private_test_headers",
+        "//:builder",
+        "//:geometry",
+        "//:test_utilities",
+        "@googletest//:gtest_main",
+        "@maliput//:api",
+        "@maliput//:common",
+        "@maliput//:math",
+        "@maliput//:test_utilities",
+    ],
+)
+
+# Geometry tests
+cc_test(
+    name = "geometry_lane_geometry_test",
+    srcs = ["geometry/lane_geometry_test.cc"],
+    size = "small",
+    copts = COPTS,
+    deps = [
+        ":private_test_headers",
+        "//:geometry",
+        "//:test_utilities",
+        "@googletest//:gtest_main",
+        "@maliput//:common",
+        "@maliput//:math",
+        "@maliput//:test_utilities",
+    ],
+)
+
+cc_test(
+    name = "geometry_line_string_test",
+    srcs = ["geometry/line_string_test.cc"],
+    size = "small",
+    copts = COPTS,
+    deps = [
+        ":private_test_headers",
+        "//:geometry",
+        "//:test_utilities",
+        "@googletest//:gtest_main",
+        "@maliput//:common",
+        "@maliput//:math",
+        "@maliput//:test_utilities",
+    ],
+)
+
+cc_test(
+    name = "geometry_utility_geometry_test",
+    srcs = ["geometry/utility/geometry_test.cc"],
+    size = "small",
+    copts = COPTS,
+    deps = [
+        ":private_test_headers",
+        "//:geometry",
+        "//:test_utilities",
+        "@googletest//:gtest_main",
+        "@maliput//:common",
+        "@maliput//:math",
+        "@maliput//:test_utilities",
+    ],
+)
+
+# Parser tests
+cc_test(
+    name = "parser_lane_test",
+    srcs = ["parser/lane_test.cc"],
+    size = "small",
+    copts = COPTS,
+    deps = [
+        ":private_test_headers",
+        "//:geometry",
+        "//:parser",
+        "@googletest//:gtest_main",
+        "@maliput//:common",
+        "@maliput//:math",
+    ],
+)
+
+cc_test(
+    name = "parser_segment_test",
+    srcs = ["parser/segment_test.cc"],
+    size = "small",
+    copts = COPTS,
+    deps = [
+        ":private_test_headers",
+        "//:geometry",
+        "//:parser",
+        "@googletest//:gtest_main",
+        "@maliput//:common",
+        "@maliput//:math",
+    ],
+)
+
+cc_test(
+    name = "parser_validator_test",
+    srcs = ["parser/validator_test.cc"],
+    size = "small",
+    copts = COPTS,
+    deps = [
+        ":private_test_headers",
+        "//:geometry",
+        "//:parser",
+        "@googletest//:gtest_main",
+        "@maliput//:common",
+        "@maliput//:math",
+    ],
+)

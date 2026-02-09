@@ -1,3 +1,10 @@
 # Python caches
 __pycache__
 *.pyc
+
+# Bazel
+bazel-bin
+bazel-out
+bazel-testlogs
+bazel-maliput_sparse
+
