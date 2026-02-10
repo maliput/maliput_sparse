@@ -111,7 +111,7 @@ class SegmentTest : public ::testing::Test {
   LineString3d::Segment::Interval interval_2{10., 20.};
 };
 
-TEST_F(SegmentTest, Constructor) { EXPECT_NO_THROW((LineString3d::Segment{0, 1, interval_1})); }
+TEST_F(SegmentTest, Constructor) { EXPECT_NO_THROW((static_cast<void>(LineString3d::Segment{0, 1, interval_1}))); }
 
 TEST_F(SegmentTest, Values) {
   const LineString3d::Segment dut_1{0, 1, interval_1};
