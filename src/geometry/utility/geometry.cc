@@ -189,7 +189,7 @@ std::pair<LineString3d::const_iterator, OptDistance> FindClosestNonintersectingP
     LineString3d::const_iterator current_position, LineString3d::const_iterator other_point, const BoundChecker& bounds,
     const Vector3& last_point, bool is_left) {
   OptDistance distance;
-  LineString3d::const_iterator closest_position{};
+  LineString3d::const_iterator closest_position = current_position;
   double d_last_other = (*other_point - last_point).norm();
 
   auto non_intersecting_point_loop = [&](LineString3d::const_iterator candidate) {
