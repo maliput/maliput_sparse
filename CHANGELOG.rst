@@ -2,6 +2,12 @@
 Changelog for package maliput_sparse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.2.5 (2026-02-12)
+------------------
+* Fix BCR and add bazel workflow. (`#72 <https://github.com/maliput/maliput_sparse/issues/72>`_)
+* Some fixes for macos build (`#71 <https://github.com/maliput/maliput_sparse/issues/71>`_)
+* Contributors: Franco Cipollone
+
 0.2.4 (2026-02-09)
 ------------------
 * Setup package for BCR. (`#68 <https://github.com/maliput/maliput_sparse/issues/68>`_)
