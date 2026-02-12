@@ -84,6 +84,9 @@ Vector2 To2D(const Vector3& vector) { return {vector.x(), vector.y()}; }
 
 Segment2d To2D(const Segment3d& segment) { return {To2D(segment.first), To2D(segment.second)}; }
 
+// Small epsilon for floating point comparisons
+constexpr double kIntersectionEpsilon = 1e-9;
+
 // Determines whether two line segments intersects.
 //
 // Based on https://en.wikipedia.org/wiki/Line%E2%80%93line_intersection#Given_two_points_on_each_line_segment
@@ -106,6 +109,34 @@ bool SegmentsIntersect2d(const Segment2d& lhs, const Segment2d& rhs) {
   const double t = t_num / den;
   const double u = u_num / den;
   return (t >= 0 && t <= 1 && u >= 0 && u <= 1);
+}
+
+// Returns the parameter t for the intersection point on segment lhs.
+// Returns std::nullopt if segments don't intersect.
+// t=0 means intersection at lhs.first, t=1 means intersection at lhs.second.
+std::optional<double> GetIntersectionParameterT(const Segment2d& lhs, const Segment2d& rhs) {
+  const auto& s1_xa = lhs.first[0];
+  const auto& s1_ya = lhs.first[1];
+  const auto& s1_xb = lhs.second[0];
+  const auto& s1_yb = lhs.second[1];
+  const auto& s2_xa = rhs.first[0];
+  const auto& s2_ya = rhs.first[1];
+  const auto& s2_xb = rhs.second[0];
+  const auto& s2_yb = rhs.second[1];
+  const double den = (s1_xa - s1_xb) * (s2_ya - s2_yb) - (s1_ya - s1_yb) * (s2_xa - s2_xb);
+  if (std::abs(den) < kIntersectionEpsilon) {
+    // They are parallel or coincident.
+    return std::nullopt;
+  }
+  const double t_num = (s1_xa - s2_xa) * (s2_ya - s2_yb) - (s1_ya - s2_ya) * (s2_xa - s2_xb);
+  const double u_num = (s1_xa - s2_xa) * (s1_ya - s1_yb) - (s1_ya - s2_ya) * (s1_xa - s1_xb);
+  const double t = t_num / den;
+  const double u = u_num / den;
+  if (t >= -kIntersectionEpsilon && t <= 1 + kIntersectionEpsilon && u >= -kIntersectionEpsilon &&
+      u <= 1 + kIntersectionEpsilon) {
+    return t;
+  }
+  return std::nullopt;
 }
 
 // Obtains the distance between @p lhs and @p rhs points projected on the xy plane.
@@ -144,18 +175,39 @@ class BoundChecker {
 
   bool CrossesEntry2d(const Segment2d& seg) const {
     const Segment2d entry_2d{To2D(entry_)};
-    return SegmentsIntersect2d(seg, entry_2d)
-               ? PointIsLeftOf({entry_2d.first.x(), entry_2d.first.y(), 0.},
-                               {entry_2d.second.x(), entry_2d.second.y(), 0.}, {seg.second.x(), seg.second.y(), 0.})
-               : false;
+    // Get the intersection parameter t on the centerline segment.
+    // t=0 means intersection at the start of seg (which is allowed since the centerline starts on the entry).
+    // Only flag as crossing if t > epsilon (intersection happens after the start point).
+    const auto t = GetIntersectionParameterT(seg, entry_2d);
+    if (!t.has_value()) {
+      return false;
+    }
+    // If intersection is at or very close to the start of the centerline segment (t ≈ 0),
+    // this is not a crossing - the centerline is allowed to start from the entry line.
+    if (*t <= kIntersectionEpsilon) {
+      return false;
+    }
+    // Check if the endpoint is to the left of the entry line (meaning we crossed it going the wrong way)
+    return PointIsLeftOf({entry_2d.first.x(), entry_2d.first.y(), 0.}, {entry_2d.second.x(), entry_2d.second.y(), 0.},
+                         {seg.second.x(), seg.second.y(), 0.});
   }
 
   bool CrossesExit2d(const Segment2d& seg) const {
     const Segment2d exit_2d{{exit_.first.x(), exit_.first.y()}, {exit_.second.x(), exit_.second.y()}};
-    return SegmentsIntersect2d(seg, exit_2d)
-               ? PointIsLeftOf({exit_2d.first.x(), exit_2d.first.y(), 0.}, {exit_2d.second.x(), exit_2d.second.y(), 0.},
-                               {seg.second.x(), seg.second.y(), 0.})
-               : false;
+    // Get the intersection parameter t on the centerline segment.
+    // Similar logic to CrossesEntry2d - exclude intersections at t ≈ 0.
+    const auto t = GetIntersectionParameterT(seg, exit_2d);
+    if (!t.has_value()) {
+      return false;
+    }
+    // If intersection is at or very close to the start of the centerline segment (t ≈ 0),
+    // this is not a crossing.
+    if (*t <= kIntersectionEpsilon) {
+      return false;
+    }
+    // Check if the endpoint is to the left of the exit line
+    return PointIsLeftOf({exit_2d.first.x(), exit_2d.first.y(), 0.}, {exit_2d.second.x(), exit_2d.second.y(), 0.},
+                         {seg.second.x(), seg.second.y(), 0.});
   }
 
   template <typename Func>

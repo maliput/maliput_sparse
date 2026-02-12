@@ -608,6 +608,134 @@ TEST_P(ComputeDistanceTest, Test) {
 
 INSTANTIATE_TEST_CASE_P(ComputeDistanceTestGroup, ComputeDistanceTest, ::testing::ValuesIn(ComputeDistanceTestCases()));
 
+// Test for arc road centerline computation.
+// This test verifies that ComputeCenterline3d correctly handles arc geometries
+// where the first centerline point lies on the entry segment.
+// Bug fix: The algorithm was incorrectly flagging centerline segments as
+// intersecting the entry line when the intersection was at t=0 (start point).
+class ComputeCenterlineArcTest : public ::testing::Test {
+ public:
+  static constexpr double kTolerance{1e-6};
+
+  // Generate arc points for a given radius and number of samples
+  static std::vector<Vector3> GenerateArcPoints(double center_x, double center_y, double radius, double start_angle,
+                                                double end_angle, int num_points) {
+    std::vector<Vector3> points;
+    for (int i = 0; i < num_points; ++i) {
+      const double t = static_cast<double>(i) / (num_points - 1);
+      const double angle = start_angle + t * (end_angle - start_angle);
+      const double x = center_x + radius * std::cos(angle);
+      const double y = center_y + radius * std::sin(angle);
+      points.push_back({x, y, 0.0});
+    }
+    return points;
+  }
+
+  // Calculate total length of a polyline
+  static double CalculateLength(const LineString3d& line) { return line.length(); }
+};
+
+// Test arc road where the first centerline point is on the entry segment.
+// Arc parameters: center at (0, 40), radius 40m for road centerline,
+// left boundary at radius 41m (outer), right boundary at radius 39m (inner).
+// Arc spans from -π/2 to a small angle for a short test arc.
+TEST_F(ComputeCenterlineArcTest, ArcRoadWithFirstPointOnEntry) {
+  // Arc parameters for a simple test arc
+  const double center_x = 0.0;
+  const double center_y = 10.0;  // Center 10m to the left of start
+  const double road_radius = 10.0;
+  const double lane_half_width = 1.0;
+  const double start_angle = -M_PI / 2.0;  // -90 degrees (pointing down from center)
+  const double arc_angle = M_PI / 4.0;     // 45 degrees arc
+  const double end_angle = start_angle + arc_angle;
+  const int num_points = 5;
+
+  // Left boundary (outer) at radius + lane_half_width
+  const auto left_points =
+      GenerateArcPoints(center_x, center_y, road_radius + lane_half_width, start_angle, end_angle, num_points);
+  // Right boundary (inner) at radius - lane_half_width
+  const auto right_points =
+      GenerateArcPoints(center_x, center_y, road_radius - lane_half_width, start_angle, end_angle, num_points);
+
+  const LineString3d left(left_points);
+  const LineString3d right(right_points);
+
+  // Verify boundary setup: first points should be at x ≈ 0 (on the entry line)
+  EXPECT_NEAR(left_points[0].x(), 0.0, kTolerance);
+  EXPECT_NEAR(right_points[0].x(), 0.0, kTolerance);
+
+  // Compute centerline
+  const auto centerline = ComputeCenterline3d(left, right);
+
+  // The centerline should have multiple points, not just start and end
+  // If the bug exists, it will only have 2 points (start and end) and wrong length
+  EXPECT_GT(centerline.size(), 2u) << "Centerline should have more than just start and end points";
+
+  // Calculate expected centerline length (arc length at road_radius)
+  const double expected_centerline_length = road_radius * arc_angle;
+
+  // The computed centerline length should be close to the expected arc length
+  const double computed_length = CalculateLength(centerline);
+  EXPECT_NEAR(computed_length, expected_centerline_length, 0.5)
+      << "Centerline length should be approximately " << expected_centerline_length << "m but got " << computed_length
+      << "m";
+
+  // Verify first and last centerline points are midpoints of boundaries
+  const Vector3 expected_first = (left_points[0] + right_points[0]) / 2.0;
+  const Vector3 expected_last = (left_points.back() + right_points.back()) / 2.0;
+
+  EXPECT_TRUE(AssertCompare(CompareVectors(expected_first, centerline.first(), kTolerance)));
+  EXPECT_TRUE(AssertCompare(CompareVectors(expected_last, centerline.last(), kTolerance)));
+}
+
+// Test with a larger arc (similar to the arc_lane.gpkg test case)
+TEST_F(ComputeCenterlineArcTest, LargeArcRoad) {
+  // Arc parameters matching arc_lane.gpkg
+  const double center_x = 0.0;
+  const double center_y = 40.0;  // Radius = 40m
+  const double road_radius = 40.0;
+  const double lane_half_width = 1.0;
+  const double start_angle = -M_PI / 2.0;
+  const double arc_length = 100.0;                    // 100m arc
+  const double arc_angle = arc_length / road_radius;  // 2.5 radians
+  const double end_angle = start_angle + arc_angle;
+  const int num_points = 21;  // Same as arc_lane.gpkg
+
+  // Left boundary (outer)
+  const auto left_points =
+      GenerateArcPoints(center_x, center_y, road_radius + lane_half_width, start_angle, end_angle, num_points);
+  // Right boundary (inner)
+  const auto right_points =
+      GenerateArcPoints(center_x, center_y, road_radius - lane_half_width, start_angle, end_angle, num_points);
+
+  const LineString3d left(left_points);
+  const LineString3d right(right_points);
+
+  // Calculate boundary lengths for reference
+  const double left_length = left.length();
+  const double right_length = right.length();
+  const double expected_left_length = (road_radius + lane_half_width) * arc_angle;   // ~102.5m
+  const double expected_right_length = (road_radius - lane_half_width) * arc_angle;  // ~97.5m
+
+  EXPECT_NEAR(left_length, expected_left_length, 1.0);
+  EXPECT_NEAR(right_length, expected_right_length, 1.0);
+
+  // Compute centerline
+  const auto centerline = ComputeCenterline3d(left, right);
+
+  // Should have many points, not just 2
+  EXPECT_GT(centerline.size(), 2u) << "Centerline should have more than just start and end points";
+
+  // The centerline length should be approximately 100m (road_radius * arc_angle)
+  const double expected_centerline_length = road_radius * arc_angle;
+  const double computed_length = CalculateLength(centerline);
+
+  // Allow some tolerance due to chord approximation
+  EXPECT_NEAR(computed_length, expected_centerline_length, 2.0)
+      << "Centerline length should be approximately " << expected_centerline_length << "m but got " << computed_length
+      << "m";
+}
+
 }  // namespace
 }  // namespace test
 }  // namespace utility
