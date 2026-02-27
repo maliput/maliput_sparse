@@ -30,6 +30,7 @@
 #pragma once
 
 #include <optional>
+#include <string>
 #include <vector>
 
 #include <maliput/api/lane_data.h>
@@ -42,9 +43,11 @@ namespace maliput_sparse {
 class RoadGeometry final : public maliput::geometry_base::RoadGeometry {
  public:
   RoadGeometry(const maliput::api::RoadGeometryId& id, double linear_tolerance, double angular_tolerance,
-               double scale_length, const maliput::math::Vector3& inertial_to_backend_frame_translation)
+               double scale_length, const maliput::math::Vector3& inertial_to_backend_frame_translation,
+               const std::string& geo_reference_info)
       : maliput::geometry_base::RoadGeometry(id, linear_tolerance, angular_tolerance, scale_length,
-                                             inertial_to_backend_frame_translation) {}
+                                             inertial_to_backend_frame_translation),
+        geo_reference_info_(geo_reference_info) {}
 
  private:
   // TODO(https://github.com/maliput/maliput/pull/517): Remove these overrides once default implementations are
@@ -56,7 +59,11 @@ class RoadGeometry final : public maliput::geometry_base::RoadGeometry {
 
   std::vector<maliput::api::RoadPositionResult> DoFindRoadPositions(
       const maliput::api::InertialPosition& inertial_position, double radius) const override;
+
+  std::string DoGeoReferenceInfo() const override { return geo_reference_info_; }
   // @}
+
+  std::string geo_reference_info_{};
 };
 
 }  // namespace maliput_sparse
