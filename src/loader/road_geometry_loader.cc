@@ -88,13 +88,15 @@ std::unique_ptr<const maliput::api::RoadGeometry> RoadGeometryLoader::operator()
   // Builds the RoadGeometry.
   const std::unordered_map<parser::Junction::Id, parser::Junction>& junctions = parser_->GetJunctions();
   const std::vector<parser::Connection>& connections = parser_->GetConnections();
+  const std::string& geo_reference_info = parser_->GetGeoReferenceInfo();
 
   maliput_sparse::builder::RoadGeometryBuilder rg_builder{};
   rg_builder.Id(builder_configuration_.road_geometry_id)
       .LinearTolerance(builder_configuration_.linear_tolerance)
       .AngularTolerance(builder_configuration_.angular_tolerance)
       .ScaleLength(builder_configuration_.scale_length)
-      .InertialToBackendFrameTranslation(builder_configuration_.inertial_to_backend_frame_translation);
+      .InertialToBackendFrameTranslation(builder_configuration_.inertial_to_backend_frame_translation)
+      .GeoReferenceInfo(geo_reference_info);
 
   for (const auto& junction : junctions) {
     maliput_sparse::builder::JunctionBuilder junction_builder = rg_builder.StartJunction();

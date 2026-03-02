@@ -53,6 +53,10 @@ class MockParser : public Parser {
  private:
   const std::unordered_map<Junction::Id, Junction>& DoGetJunctions() const override { return junctions_; }
   const std::vector<Connection>& DoGetConnections() const override { return connections_; }
+  const std::string& DoGetGeoReferenceInfo() const override {
+    static const std::string empty_geo_ref = "";
+    return empty_geo_ref;
+  }
   const std::unordered_map<Junction::Id, Junction> junctions_;
   const std::vector<Connection> connections_;
 };
