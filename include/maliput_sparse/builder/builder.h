@@ -400,6 +400,11 @@ class RoadGeometryBuilder final {
   /// @return A reference to this RoadGeometryBuilder.
   RoadGeometryBuilder& InertialToBackendFrameTranslation(const maliput::math::Vector3& translation);
 
+  /// @brief Sets the Geo Reference info of the maliput::api::RoadGeometry.
+  /// @param geo_reference_info The Geo Reference info of the maliput::api::RoadGeometry.
+  /// @return A reference to this RoadGeometryBuilder.
+  RoadGeometryBuilder& GeoReferenceInfo(const std::string& geo_reference_info);
+
   /// @brief Starts the Junction builder for this RoadGeometry.
   /// @return A JunctionBuilder.
   JunctionBuilder StartJunction();
@@ -445,6 +450,7 @@ class RoadGeometryBuilder final {
   double linear_tolerance_{1e-6};
   double angular_tolerance_{1e-6};
   double scale_length_{1.};
+  std::string geo_reference_info_{};
   maliput::math::Vector3 inertial_to_backend_frame_translation_{0., 0., 0.};
   std::vector<std::unique_ptr<maliput::geometry_base::Junction>> junctions_{};
   std::vector<std::unique_ptr<maliput::geometry_base::BranchPoint>> branch_points_{};

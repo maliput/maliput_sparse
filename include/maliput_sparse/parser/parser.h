@@ -63,10 +63,13 @@ class Parser {
   const std::unordered_map<Junction::Id, Junction>& GetJunctions() const { return DoGetJunctions(); }
   /// Gets connections between the map's lanes.
   const std::vector<Connection>& GetConnections() const { return DoGetConnections(); }
+  /// Gets the geo reference information parsed from the input description.
+  const std::string& GetGeoReferenceInfo() const { return DoGetGeoReferenceInfo(); }
 
  private:
   virtual const std::unordered_map<Junction::Id, Junction>& DoGetJunctions() const = 0;
   virtual const std::vector<Connection>& DoGetConnections() const = 0;
+  virtual const std::string& DoGetGeoReferenceInfo() const = 0;
 };
 
 }  // namespace parser

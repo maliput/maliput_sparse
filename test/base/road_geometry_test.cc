@@ -57,10 +57,11 @@ GTEST_TEST(RoadGeometryStubTest, Stub) {
   constexpr double kAngularTolerance{1e-12};
   constexpr double kScaleLength{1.};
   const maliput::math::Vector3 kInertialToBackendFrameTranslation{1., 2., 3.};
+  const std::string kGeoReferenceInfo{"geo_reference_info"};
 
   EXPECT_NO_THROW({
     RoadGeometry(maliput::api::RoadGeometryId{"rg_id"}, kLinearTolerance, kAngularTolerance, kScaleLength,
-                 kInertialToBackendFrameTranslation);
+                 kInertialToBackendFrameTranslation, kGeoReferenceInfo);
   });
 }
 
@@ -89,12 +90,14 @@ class RoadGeometryTest : public ::testing::Test {
                .EndJunction()
                .StartBranchPoints()
                .EndBranchPoints()
+               .GeoReferenceInfo(kGeoReferenceInfo)
                .Build();
   }
 
   static constexpr double kLinearTolerance{1e-12};
   const maliput::api::RoadGeometryId kRoadGeometryId{"custom_rg_id"};
   const maliput::math::Vector3 kInertialToBackendFrameTranslation{0., 0., 0.};
+  const std::string kGeoReferenceInfo{"geo_reference_info"};
   const maliput::api::JunctionId kJunctionAId{"junction_a"};
   const maliput::api::SegmentId kSegmentAId{"segment_a"};
   const maliput::api::LaneId kLaneAId{"lane_a"};
@@ -146,6 +149,8 @@ TEST_F(RoadGeometryTest, CloseToLaneA) {
   EXPECT_TRUE(AssertCompare(maliput::api::IsRoadPositionResultClose(
       expected_road_position_result, dut_->ToRoadPosition(inertial_pos), kLinearTolerance)));
 }
+
+TEST_F(RoadGeometryTest, GeoReferenceInfo) { EXPECT_EQ(dut_->GeoReferenceInfo(), kGeoReferenceInfo); }
 
 }  // namespace
 }  // namespace test

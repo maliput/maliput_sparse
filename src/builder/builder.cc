@@ -394,6 +394,11 @@ RoadGeometryBuilder& RoadGeometryBuilder::InertialToBackendFrameTranslation(cons
   return *this;
 }
 
+RoadGeometryBuilder& RoadGeometryBuilder::GeoReferenceInfo(const std::string& geo_reference_info) {
+  geo_reference_info_ = geo_reference_info;
+  return *this;
+}
+
 JunctionBuilder RoadGeometryBuilder::StartJunction() { return JunctionBuilder(this); }
 
 BranchPointBuilder RoadGeometryBuilder::StartBranchPoints() { return BranchPointBuilder(this); }
@@ -402,7 +407,7 @@ std::unique_ptr<maliput::api::RoadGeometry> RoadGeometryBuilder::Build() {
   MALIPUT_THROW_UNLESS(!junctions_.empty());
   MALIPUT_THROW_UNLESS(!branch_points_.empty());
   auto road_geometry = std::make_unique<RoadGeometry>(id_, linear_tolerance_, angular_tolerance_, scale_length_,
-                                                      inertial_to_backend_frame_translation_);
+                                                      inertial_to_backend_frame_translation_, geo_reference_info_);
   for (std::unique_ptr<maliput::geometry_base::Junction>& junction : junctions_) {
     road_geometry->AddJunction(std::move(junction));
   }
