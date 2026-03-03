@@ -27,11 +27,11 @@
         // 1. Add the following to MODULE.bazel
         //    local_path_override(module_name="maliput", path="../maliput")
         // 2. Patch the path below and uncomment
-		    {
-            "source": "/home/franco/dev/road_networks/maliput_ws/src/maliput",
-            "target": "/workspaces/maliput",
-            "type": "bind"
-        },
+        // {
+        //     "source": "/path/to/maliput",
+        //     "target": "/workspaces/maliput",
+        //     "type": "bind"
+        // },
         //*************************************************
         // With a registry fork
         //*************************************************
