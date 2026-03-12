@@ -2,6 +2,13 @@
 Changelog for package maliput_sparse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.3.0 (2026-02-12)
+------------------
+* Updating to bazel 7.5.0 (`#77 <https://github.com/maliput/maliput_sparse/issues/77>`_)
+* Adding georeference support (`#76 <https://github.com/maliput/maliput_sparse/issues/76>`_)
+* Fix un-initialized iterator. (`#74 <https://github.com/maliput/maliput_sparse/issues/74>`_)
+* Contributors: Franco Cipollone, Juan Carosella
+
 0.2.5 (2026-02-12)
 ------------------
 * Fix BCR and add bazel workflow. (`#72 <https://github.com/maliput/maliput_sparse/issues/72>`_)
