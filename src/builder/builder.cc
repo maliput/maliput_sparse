@@ -33,6 +33,9 @@
 #include <utility>
 #include <vector>
 
+#include <maliput/common/logger.h>
+#include <maliput/geometry_base/kd_tree_strategy.h>
+
 #include "base/lane.h"
 #include "base/road_geometry.h"
 
@@ -403,6 +406,25 @@ JunctionBuilder RoadGeometryBuilder::StartJunction() { return JunctionBuilder(th
 
 BranchPointBuilder RoadGeometryBuilder::StartBranchPoints() { return BranchPointBuilder(this); }
 
+namespace {
+
+// Computes the kd-tree sampling step for the given road geometry.
+//
+// The kd-tree sampling step is set to a fraction of the average length of lanes in the road geometry.
+// This is a heuristic value that helps to balance the kd-tree construction.
+double ComputeKdTreeSamplingStep(const maliput::api::RoadGeometry* rg) {
+  static constexpr double kFactor = 0.1;
+  const auto lanes = rg->ById().GetLanes();
+  double total_length = 0.0;
+  for (const auto& lane : lanes) {
+    total_length += lane.second->length();
+  }
+  const double average_length = total_length / static_cast<double>(lanes.size());
+  return average_length * kFactor;
+}
+
+}  // namespace
+
 std::unique_ptr<maliput::api::RoadGeometry> RoadGeometryBuilder::Build() {
   MALIPUT_THROW_UNLESS(!junctions_.empty());
   MALIPUT_THROW_UNLESS(!branch_points_.empty());
@@ -414,6 +436,12 @@ std::unique_ptr<maliput::api::RoadGeometry> RoadGeometryBuilder::Build() {
   for (std::unique_ptr<maliput::geometry_base::BranchPoint>& branch_point : branch_points_) {
     road_geometry->AddBranchPoint(std::move(branch_point));
   }
+
+  const double kd_tree_sampling_step = ComputeKdTreeSamplingStep(road_geometry.get());
+  maliput::log()->trace("Initializing maliput::geometry_base::KDTreeStrategy for maliput_sparse. Sampling step: ",
+                        kd_tree_sampling_step);
+  road_geometry->InitializeStrategy<maliput::geometry_base::KDTreeStrategy>(kd_tree_sampling_step);
+
   return road_geometry;
 }
 
