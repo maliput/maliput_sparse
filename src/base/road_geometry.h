@@ -29,11 +29,8 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <optional>
 #include <string>
-#include <vector>
 
-#include <maliput/api/lane_data.h>
 #include <maliput/api/road_geometry.h>
 #include <maliput/geometry_base/road_geometry.h>
 #include <maliput/math/vector.h>
@@ -50,18 +47,7 @@ class RoadGeometry final : public maliput::geometry_base::RoadGeometry {
         geo_reference_info_(geo_reference_info) {}
 
  private:
-  // TODO(https://github.com/maliput/maliput/pull/517): Remove these overrides once default implementations are
-  // provided.
-  // @{
-  maliput::api::RoadPositionResult DoToRoadPosition(
-      const maliput::api::InertialPosition& inertial_position,
-      const std::optional<maliput::api::RoadPosition>& hint = std::nullopt) const override;
-
-  std::vector<maliput::api::RoadPositionResult> DoFindRoadPositions(
-      const maliput::api::InertialPosition& inertial_position, double radius) const override;
-
   std::string DoGeoReferenceInfo() const override { return geo_reference_info_; }
-  // @}
 
   std::string geo_reference_info_{};
 };
