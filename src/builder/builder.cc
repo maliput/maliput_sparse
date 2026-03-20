@@ -411,7 +411,9 @@ namespace {
 // Computes the kd-tree sampling step for the given road geometry.
 //
 // The kd-tree sampling step is set to a fraction of the average length of lanes in the road geometry.
-// This is a heuristic value that helps to balance the kd-tree construction.
+// This is a heuristic value that helps to balance the kd-tree construction. This is the same approach in
+// maliput_malidrive.
+// TODO: Consider moving this as a helper function into maliput as it is being used in multiple backends.
 double ComputeKdTreeSamplingStep(const maliput::api::RoadGeometry* rg) {
   static constexpr double kFactor = 0.1;
   const auto lanes = rg->ById().GetLanes();
