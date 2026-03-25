@@ -1,6 +1,6 @@
 // BSD 3-Clause License
 //
-// Copyright (c) 2022, Woven Planet.
+// Copyright (c) 2022-2026, Woven by Toyota.
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -40,11 +40,13 @@
 #include <maliput/base/phase_based_right_of_way_rule_state_provider.h>
 #include <maliput/base/phase_ring_book_loader.h>
 #include <maliput/base/phased_discrete_rule_state_provider.h>
+#include <maliput/base/road_object_book.h>
 #include <maliput/base/road_rulebook_loader.h>
 #include <maliput/base/rule_registry.h>
 #include <maliput/base/rule_registry_loader.h>
 #include <maliput/base/traffic_light_book.h>
 #include <maliput/base/traffic_light_book_loader.h>
+#include <maliput/base/traffic_sign_book.h>
 #include <maliput/common/logger.h>
 #include <maliput/common/maliput_unused.h>
 
@@ -148,7 +150,8 @@ std::unique_ptr<maliput::api::RoadNetwork> RoadNetworkLoader::operator()() {
   return std::make_unique<maliput::api::RoadNetwork>(
       std::move(rg), std::move(rule_book), std::move(traffic_light_book), std::move(intersection_book),
       std::move(phase_ring_book), std::move(state_provider), std::move(phase_provider), std::move(rule_registry),
-      std::move(discrete_value_rule_state_provider), std::move(range_value_rule_state_provider));
+      std::move(discrete_value_rule_state_provider), std::move(range_value_rule_state_provider),
+      std::make_unique<maliput::RoadObjectBook>(), std::make_unique<maliput::TrafficSignBook>());
 }
 
 }  // namespace loader
