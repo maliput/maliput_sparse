@@ -2,6 +2,12 @@
 Changelog for package maliput_sparse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.4.0 (2026-03-25)
+------------------
+* Add base books to road network loader. (`#84 <https://github.com/maliput/maliput_sparse/issues/84>`_)
+* Adding kdtree capabilities to road network creation (`#82 <https://github.com/maliput/maliput_sparse/issues/82>`_)
+* Contributors: Juan Carosella, Santiago Lopez
+
 0.3.0 (2026-02-12)
 ------------------
 * Updating to bazel 7.5.0 (`#77 <https://github.com/maliput/maliput_sparse/issues/77>`_)
