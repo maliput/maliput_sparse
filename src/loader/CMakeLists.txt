@@ -6,6 +6,7 @@ set(LOADER_SOURCES
   builder_configuration.cc
   road_geometry_loader.cc
   road_network_loader.cc
+  road_rulebook_loader.cc
 )
 
 add_library(loader ${LOADER_SOURCES})

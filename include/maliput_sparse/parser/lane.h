@@ -32,6 +32,7 @@
 #include <optional>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 #include "maliput_sparse/geometry/line_string.h"
 
@@ -50,6 +51,19 @@ struct LaneEnd {
   std::string lane_id{};
   // The endpoint of the lanelet.
   Which end{Which::kStart};
+};
+
+/// Represents a speed limit over a range of a lane.
+struct SpeedLimit {
+  /// Equality operator.
+  bool operator==(const SpeedLimit& other) const;
+
+  double s_start{};           ///< Start of the speed limit zone (arc length).
+  double s_end{};             ///< End of the speed limit zone (arc length).
+  double min{};               ///< Minimum speed [m/s] (typically 0).
+  double max{};               ///< Maximum speed [m/s].
+  std::string description{};  ///< Semantics of the range quantity (e.g., "Urban road. [m/s]").
+  int severity{0};            ///< Enforcement level. 0 = strict, 1 = best effort.
 };
 
 /// Contains the characteristics of a lane.
@@ -74,6 +88,8 @@ struct Lane {
   std::unordered_map<Id, LaneEnd> successors;
   /// The ids of the lanes that precede this lane.
   std::unordered_map<Id, LaneEnd> predecessors;
+  /// Speed limits for this lane. Empty if no speed limits are defined by the backend.
+  std::vector<SpeedLimit> speed_limits;
 };
 
 }  // namespace parser

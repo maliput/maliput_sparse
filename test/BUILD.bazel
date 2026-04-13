@@ -178,3 +178,35 @@ cc_test(
         "@maliput//:math",
     ],
 )
+
+# Loader tests
+cc_test(
+    name = "loader_road_network_loader_test",
+    srcs = ["loader/road_network_loader_test.cc"],
+    size = "small",
+    copts = COPTS,
+    deps = [
+        ":private_test_headers",
+        "//:geometry",
+        "//:loader",
+        "//:parser",
+        "@googletest//:gtest_main",
+        "@maliput//:api",
+        "@maliput//:base",
+        "@maliput//:common",
+    ],
+)
+
+cc_test(
+    name = "loader_road_rulebook_loader_test",
+    srcs = ["loader/road_rulebook_loader_test.cc"],
+    size = "small",
+    copts = COPTS,
+    deps = [
+        "//:loader",
+        "//:parser",
+        "@googletest//:gtest_main",
+        "@maliput//:api",
+        "@maliput//:base",
+    ],
+)

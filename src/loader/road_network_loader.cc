@@ -50,14 +50,18 @@
 #include <maliput/common/logger.h>
 #include <maliput/common/maliput_unused.h>
 
+#include "maliput_sparse/loader/road_rulebook_loader.h"
+
 namespace maliput_sparse {
 namespace loader {
 
 RoadNetworkLoader::RoadNetworkLoader(std::unique_ptr<parser::Parser> parser,
                                      const BuilderConfiguration& builder_configuration)
-    : road_geometry_loader_(std::make_unique<RoadGeometryLoader>(std::move(parser), builder_configuration)),
+    : parser_(parser.get()),
+      road_geometry_loader_(std::make_unique<RoadGeometryLoader>(std::move(parser), builder_configuration)),
       builder_configuration_(builder_configuration) {
   MALIPUT_THROW_UNLESS(road_geometry_loader_ != nullptr);
+  MALIPUT_THROW_UNLESS(parser_ != nullptr);
 }
 
 std::unique_ptr<maliput::api::RoadNetwork> RoadNetworkLoader::operator()() {
@@ -96,6 +100,12 @@ std::unique_ptr<maliput::api::RoadNetwork> RoadNetworkLoader::operator()() {
           : std::make_unique<maliput::ManualRulebook>();
 
   maliput::log()->trace("Built RuleRoadBook.");
+
+  // Populate rules from parser data when no YAML rulebook was provided.
+  if (!builder_configuration_.road_rule_book.has_value()) {
+    RoadRulebookLoader rulebook_loader(parser_);
+    rulebook_loader(rule_registry.get(), rule_book.get());
+  }
 
   maliput::log()->trace("Building PhaseRingBook...");
 

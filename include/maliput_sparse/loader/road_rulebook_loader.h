@@ -1,6 +1,6 @@
 // BSD 3-Clause License
 //
-// Copyright (c) 2022, Woven Planet.
+// Copyright (c) 2022-2026, Woven by Toyota.
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -29,34 +29,47 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <memory>
+#include <maliput/api/rules/road_rulebook.h>
+#include <maliput/api/rules/rule_registry.h>
 
-#include <maliput/api/road_network.h>
-
-#include "maliput_sparse/loader/builder_configuration.h"
-#include "maliput_sparse/loader/road_geometry_loader.h"
 #include "maliput_sparse/parser/parser.h"
 
 namespace maliput_sparse {
 namespace loader {
 
-/// Loads a RoadNetwork based on a maliput_sparse::parser::Parser implementation.
-/// This functor is expected to be used by the maliput backends that rely on
-/// maliput_sparse to load the RoadNetwork.
-class RoadNetworkLoader {
+/// Loads road rules from a maliput_sparse::parser::Parser implementation into
+/// an existing RuleRegistry and RoadRulebook.
+///
+/// This functor extracts rule information (e.g., speed limits) from parsed
+/// lane data and registers the corresponding maliput rule objects. It is
+/// designed to be extensible: new rule types can be added as private methods
+/// and invoked from operator().
+///
+/// This class is expected to be used by the maliput backends that rely on
+/// maliput_sparse to populate rules from parsed road data, as an alternative
+/// to loading rules from YAML configuration files.
+class RoadRulebookLoader {
  public:
-  /// Constructs a RoadNetworkLoader.
-  /// @param parser The parser to use for building the RoadNetworkLoader.
-  /// @param builder_configuration The configuration of the builder.
-  RoadNetworkLoader(std::unique_ptr<parser::Parser> parser, const BuilderConfiguration& builder_configuration);
+  /// Constructs a RoadRulebookLoader.
+  /// @param parser The parser whose lane data provides rule information.
+  ///        Must not be nullptr and must outlive this loader.
+  explicit RoadRulebookLoader(const parser::Parser* parser);
 
-  /// Builds a RoadNetworkLoader.
-  std::unique_ptr<maliput::api::RoadNetwork> operator()();
+  /// Populates the given @p rule_registry and @p rule_book with rules
+  /// extracted from parser data.
+  /// @param rule_registry The RuleRegistry to register rule types into.
+  ///        Must not be nullptr.
+  /// @param rule_book The RoadRulebook to add rules to. Must point to a
+  ///        maliput::ManualRulebook instance. Must not be nullptr.
+  void operator()(maliput::api::rules::RuleRegistry* rule_registry, maliput::api::rules::RoadRulebook* rule_book) const;
 
  private:
+  /// Adds speed limit rules from parser data to the given registry and rulebook.
+  /// Does nothing if no lanes have speed limits.
+  void AddSpeedLimitRules(maliput::api::rules::RuleRegistry* rule_registry,
+                          maliput::api::rules::RoadRulebook* rule_book) const;
+
   const parser::Parser* parser_;
-  const std::unique_ptr<RoadGeometryLoader> road_geometry_loader_;
-  const BuilderConfiguration builder_configuration_;
 };
 
 }  // namespace loader

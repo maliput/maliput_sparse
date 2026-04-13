@@ -32,9 +32,15 @@
 namespace maliput_sparse {
 namespace parser {
 
+bool SpeedLimit::operator==(const SpeedLimit& other) const {
+  return s_start == other.s_start && s_end == other.s_end && min == other.min && max == other.max &&
+         description == other.description && severity == other.severity;
+}
+
 bool Lane::operator==(const Lane& other) const {
   return id == other.id && left == other.left && right == other.right && left_lane_id == other.left_lane_id &&
-         right_lane_id == other.right_lane_id && successors == other.successors && predecessors == other.predecessors;
+         right_lane_id == other.right_lane_id && successors == other.successors && predecessors == other.predecessors &&
+         speed_limits == other.speed_limits;
 }
 
 bool LaneEnd::operator==(const LaneEnd& other) const { return lane_id == other.lane_id && end == other.end; }
