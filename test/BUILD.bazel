@@ -27,6 +27,25 @@ cc_library(
 
 # Base tests
 cc_test(
+    name = "base_boundary_test",
+    srcs = ["base/boundary_test.cc"],
+    size = "small",
+    copts = COPTS,
+    deps = [
+        ":private_test_headers",
+        "//:base",
+        "//:geometry",
+        "//:private_base_headers",
+        "@googletest//:gtest_main",
+        "@maliput//:api",
+        "@maliput//:common",
+        "@maliput//:geometry_base",
+        "@maliput//:math",
+        "@maliput//:test_utilities",
+    ],
+)
+
+cc_test(
     name = "base_lane_test",
     srcs = ["base/lane_test.cc"],
     size = "small",

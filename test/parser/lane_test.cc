@@ -51,13 +51,16 @@ class LaneTest : public ::testing::Test {
   const LineString3d right{{1., -1., 1.}, {10., -1., 1.}};
   const std::optional<Lane::Id> left_lane_id{"left_lane_id"};
   const std::optional<Lane::Id> right_lane_id{"right_lane_id"};
+  const std::optional<Lane::Id> left_boundary_id{"left_boundary_id"};
+  const std::optional<Lane::Id> right_boundary_id{"right_boundary_id"};
   const std::unordered_map<Lane::Id, LaneEnd> successors{
       {Lane::Id{"successor_1"}, {Lane::Id{"successor_1"}, LaneEnd::Which::kStart}},
       {Lane::Id{"successor_2"}, {Lane::Id{"successor_2"}, LaneEnd::Which::kFinish}}};
   const std::unordered_map<Lane::Id, LaneEnd> predecessors{
       {Lane::Id{"predecessor_1"}, {Lane::Id{"predecessor_1"}, LaneEnd::Which::kStart}},
       {Lane::Id{"predecessor_2"}, {Lane::Id{"predecessor_2"}, LaneEnd::Which::kFinish}}};
-  const Lane dut{id, left, right, left_lane_id, right_lane_id, successors, predecessors};
+  const Lane dut{id,         left,        right, left_lane_id, right_lane_id, left_boundary_id, right_boundary_id,
+                 successors, predecessors};
 };
 
 TEST_F(LaneTest, Members) {
@@ -66,6 +69,8 @@ TEST_F(LaneTest, Members) {
   EXPECT_EQ(right, dut.right);
   EXPECT_EQ(left_lane_id, dut.left_lane_id);
   EXPECT_EQ(right_lane_id, dut.right_lane_id);
+  EXPECT_EQ(left_boundary_id, dut.left_boundary_id);
+  EXPECT_EQ(right_boundary_id, dut.right_boundary_id);
   EXPECT_EQ(successors, dut.successors);
   EXPECT_EQ(predecessors, dut.predecessors);
 }

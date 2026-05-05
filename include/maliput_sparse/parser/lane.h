@@ -70,6 +70,10 @@ struct Lane {
   std::optional<Id> left_lane_id;
   /// The id of the lane to the right of this lane.
   std::optional<Id> right_lane_id;
+  /// The id of the lane boundary at the left side of this lane.
+  std::optional<Id> left_boundary_id;
+  /// The id of the lane boundary at the right side of this lane.
+  std::optional<Id> right_boundary_id;
   /// The ids of the lanes that follow this lane.
   std::unordered_map<Id, LaneEnd> successors;
   /// The ids of the lanes that precede this lane.

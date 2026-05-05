@@ -107,10 +107,15 @@ std::unique_ptr<const maliput::api::RoadGeometry> RoadGeometryLoader::operator()
 
       for (const parser::Lane& lane : segment.second.lanes) {
         const maliput::api::LaneId lane_id{lane.id};
-        segment_builder.StartLane()
-            .Id(lane_id)
-            .HeightBounds(maliput::api::HBounds{0., 5.})
-            .StartLaneGeometry()
+        auto lane_builder = segment_builder.StartLane();
+        lane_builder.Id(lane_id).HeightBounds(maliput::api::HBounds{0., 5.});
+        if (lane.left_boundary_id.has_value()) {
+          lane_builder.LeftBoundaryId(maliput::api::LaneBoundary::Id{*lane.left_boundary_id});
+        }
+        if (lane.right_boundary_id.has_value()) {
+          lane_builder.RightBoundaryId(maliput::api::LaneBoundary::Id{*lane.right_boundary_id});
+        }
+        lane_builder.StartLaneGeometry()
             .LeftLineString(lane.left)
             .RightLineString(lane.right)
             .EndLaneGeometry()

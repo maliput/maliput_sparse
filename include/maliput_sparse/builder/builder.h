@@ -98,6 +98,7 @@
 #include <maliput/api/branch_point.h>
 #include <maliput/api/junction.h>
 #include <maliput/api/lane.h>
+#include <maliput/api/lane_boundary.h>
 #include <maliput/api/lane_data.h>
 #include <maliput/api/road_geometry.h>
 #include <maliput/api/segment.h>
@@ -201,6 +202,16 @@ class LaneBuilder final : public details::NestedBuilder<SegmentBuilder> {
   /// @return A LaneGeometryBuilder.
   LaneGeometryBuilder StartLaneGeometry();
 
+  /// @brief Sets the boundary ID on the left side of this lane.
+  /// @param boundary_id The boundary ID to set.
+  /// @return A reference to this LaneBuilder.
+  LaneBuilder& LeftBoundaryId(const maliput::api::LaneBoundary::Id& boundary_id);
+
+  /// @brief Sets the boundary ID on the right side of this lane.
+  /// @param boundary_id The boundary ID to set.
+  /// @return A reference to this LaneBuilder.
+  LaneBuilder& RightBoundaryId(const maliput::api::LaneBoundary::Id& boundary_id);
+
   /// @brief Finalizes the construction process of this Lane by inserting the Lane into the
   /// parent SegmentBuilder.
   /// @throws maliput::common::assertion_error When there is no LaneGeometry to be set into the Lane.
@@ -218,6 +229,8 @@ class LaneBuilder final : public details::NestedBuilder<SegmentBuilder> {
  private:
   maliput::api::LaneId id_{"unset_id"};
   maliput::api::HBounds hbounds_{0., 5.};
+  std::optional<maliput::api::LaneBoundary::Id> left_boundary_id_{};
+  std::optional<maliput::api::LaneBoundary::Id> right_boundary_id_{};
   std::unique_ptr<maliput_sparse::geometry::LaneGeometry> lane_geometry_{};
 };
 
@@ -253,11 +266,19 @@ class SegmentBuilder final : public details::NestedBuilder<JunctionBuilder> {
   /// @see maliput::common::Passkey class description for further details.
   /// @param lane A lane to be stored into the Segment. It must not be nullptr.
   /// @throws maliput::common::assertion_error When @p lane is nullptr.
-  void SetLane(maliput::common::Passkey<LaneBuilder>, std::unique_ptr<maliput::geometry_base::Lane> lane);
+  void SetLane(maliput::common::Passkey<LaneBuilder>, std::unique_ptr<maliput::geometry_base::Lane> lane,
+               const std::optional<maliput::api::LaneBoundary::Id>& left_boundary_id,
+               const std::optional<maliput::api::LaneBoundary::Id>& right_boundary_id);
 
  private:
+  struct LaneBuildData {
+    std::unique_ptr<maliput::geometry_base::Lane> lane;
+    std::optional<maliput::api::LaneBoundary::Id> left_boundary_id;
+    std::optional<maliput::api::LaneBoundary::Id> right_boundary_id;
+  };
+
   maliput::api::SegmentId id_{"unset_id"};
-  std::vector<std::unique_ptr<maliput::geometry_base::Lane>> lanes_{};
+  std::vector<LaneBuildData> lanes_{};
 };
 
 /// @brief Builder class for maliput::api::Junctions.

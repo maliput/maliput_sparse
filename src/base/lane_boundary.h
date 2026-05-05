@@ -1,7 +1,7 @@
 // BSD 3-Clause License
 //
-// Copyright (c) 2022, Woven Planet.
-// All rights reserved.
+// Copyright (c) 2022-2026, Woven by Toyota. All rights reserved.
+// Copyright (c) 2022, Toyota Research Institute. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
@@ -27,19 +27,42 @@
 // CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#include "maliput_sparse/parser/lane.h"
+#pragma once
+
+#include <optional>
+#include <vector>
+
+#include <maliput/api/lane_boundary.h>
+#include <maliput/common/maliput_copyable.h>
+#include <maliput/geometry_base/lane_boundary.h>
 
 namespace maliput_sparse {
-namespace parser {
 
-bool Lane::operator==(const Lane& other) const {
-  return id == other.id && left == other.left && right == other.right && left_lane_id == other.left_lane_id &&
-         right_lane_id == other.right_lane_id && left_boundary_id == other.left_boundary_id &&
-         right_boundary_id == other.right_boundary_id && successors == other.successors &&
-         predecessors == other.predecessors;
-}
+class LaneBoundary final : public maliput::geometry_base::LaneBoundary {
+ public:
+  MALIPUT_NO_COPY_NO_MOVE_NO_ASSIGN(LaneBoundary)
 
-bool LaneEnd::operator==(const LaneEnd& other) const { return lane_id == other.lane_id && end == other.end; }
+  /// Constructs a LaneBoundary for the sparse backend.
+  ///
+  /// @param id The unique identifier for this boundary.
+  /// @param lane_to_left The lane on the +r side, or nullptr for the leftmost boundary.
+  /// @param lane_to_right The lane on the -r side, or nullptr for the rightmost boundary.
+  ///
+  /// @throws maliput::common::assertion_error if both lane pointers are nullptr.
+  LaneBoundary(const maliput::api::LaneBoundary::Id& id, const maliput::api::Lane* lane_to_left,
+               const maliput::api::Lane* lane_to_right);
 
-}  // namespace parser
+  ~LaneBoundary() override = default;
+
+ private:
+  const maliput::api::Lane* do_lane_to_left() const override { return lane_to_left_; }
+  const maliput::api::Lane* do_lane_to_right() const override { return lane_to_right_; }
+  std::optional<maliput::api::LaneMarkingResult> DoGetMarking(double s) const override;
+  std::vector<maliput::api::LaneMarkingResult> DoGetMarkings() const override;
+  std::vector<maliput::api::LaneMarkingResult> DoGetMarkings(double s_start, double s_end) const override;
+
+  const maliput::api::Lane* lane_to_left_{};
+  const maliput::api::Lane* lane_to_right_{};
+};
+
 }  // namespace maliput_sparse
