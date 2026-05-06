@@ -65,7 +65,8 @@ Lane CreateLane(const Lane::Id& id, const LineString3d& left, const LineString3d
                 const std::optional<Lane::Id>& left_lane_id, const std::optional<Lane::Id>& right_lane_id,
                 const std::unordered_map<Lane::Id, LaneEnd>& successors,
                 const std::unordered_map<Lane::Id, LaneEnd>& predecessors) {
-  return Lane{id, left, right, left_lane_id, right_lane_id, std::nullopt, std::nullopt, successors, predecessors};
+  return Lane{id,           left,         right,        left_lane_id, right_lane_id,
+              std::nullopt, std::nullopt, std::nullopt, successors,   predecessors};
 }
 
 class ValidatorTest : public ::testing::Test {

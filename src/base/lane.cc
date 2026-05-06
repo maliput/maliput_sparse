@@ -29,14 +29,18 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "base/lane.h"
 
+#include <optional>
+
 #include <maliput/common/maliput_throw.h>
 
 namespace maliput_sparse {
 
 Lane::Lane(const maliput::api::LaneId& id, const maliput::api::HBounds& elevation_bounds,
-           std::unique_ptr<geometry::LaneGeometry> lane_geometry)
+           std::unique_ptr<geometry::LaneGeometry> lane_geometry,
+           const std::optional<maliput::api::LaneType>& lane_type)
     : maliput::geometry_base::Lane(id), elevation_bounds_(elevation_bounds), lane_geometry_(std::move(lane_geometry)) {
   MALIPUT_THROW_UNLESS(lane_geometry_ != nullptr);
+  type_ = lane_type.value_or(maliput::api::LaneType::kUnknown);
 }
 
 double Lane::do_length() const { return lane_geometry_->ArcLength(); }

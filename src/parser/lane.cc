@@ -35,8 +35,8 @@ namespace parser {
 bool Lane::operator==(const Lane& other) const {
   return id == other.id && left == other.left && right == other.right && left_lane_id == other.left_lane_id &&
          right_lane_id == other.right_lane_id && left_boundary_id == other.left_boundary_id &&
-         right_boundary_id == other.right_boundary_id && successors == other.successors &&
-         predecessors == other.predecessors;
+         right_boundary_id == other.right_boundary_id && lane_type == other.lane_type &&
+         successors == other.successors && predecessors == other.predecessors;
 }
 
 bool LaneEnd::operator==(const LaneEnd& other) const { return lane_id == other.lane_id && end == other.end; }

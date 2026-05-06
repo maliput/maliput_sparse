@@ -99,10 +99,15 @@ LaneBuilder& LaneBuilder::RightBoundaryId(const maliput::api::LaneBoundary::Id& 
   return *this;
 }
 
+LaneBuilder& LaneBuilder::LaneType(maliput::api::LaneType lane_type) {
+  lane_type_ = lane_type;
+  return *this;
+}
+
 SegmentBuilder& LaneBuilder::EndLane() {
   MALIPUT_THROW_UNLESS(lane_geometry_ != nullptr);
-  auto lane = std::make_unique<Lane>(id_, hbounds_, std::move(lane_geometry_));
-  Parent()->SetLane({}, std::move(lane), left_boundary_id_, right_boundary_id_);
+  auto lane = std::make_unique<Lane>(id_, hbounds_, std::move(lane_geometry_), lane_type_);
+  Parent()->SetLane({}, std::move(lane), left_boundary_id_, right_boundary_id_, lane_type_);
   return End();
 }
 
@@ -170,9 +175,10 @@ JunctionBuilder& SegmentBuilder::EndSegment() {
 
 void SegmentBuilder::SetLane(maliput::common::Passkey<LaneBuilder>, std::unique_ptr<maliput::geometry_base::Lane> lane,
                              const std::optional<maliput::api::LaneBoundary::Id>& left_boundary_id,
-                             const std::optional<maliput::api::LaneBoundary::Id>& right_boundary_id) {
+                             const std::optional<maliput::api::LaneBoundary::Id>& right_boundary_id,
+                             const std::optional<maliput::api::LaneType>& lane_type) {
   MALIPUT_THROW_UNLESS(lane != nullptr);
-  lanes_.emplace_back(LaneBuildData{std::move(lane), left_boundary_id, right_boundary_id});
+  lanes_.emplace_back(LaneBuildData{std::move(lane), left_boundary_id, right_boundary_id, lane_type});
 }
 
 JunctionBuilder& JunctionBuilder::Id(const maliput::api::JunctionId& junction_id) {

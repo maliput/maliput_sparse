@@ -670,6 +670,50 @@ TEST_F(RoadGeometryBuilderTest, OutgoingBranches) {
   ASSERT_EQ(0, lane_d->GetOngoingBranches(finish)->size());
 }
 
+// Verifies that LaneType can be set via LaneBuilder and is accessible via Lane::type().
+TEST_F(RoadGeometryBuilderTest, LaneTypeIsSet) {
+  // clang-format off
+  std::unique_ptr<maliput::api::RoadGeometry> rg =
+      dut.Id(kRoadGeometryId)
+          .LinearTolerance(kLinearTolerance)
+          .AngularTolerance(kAngularTolerance)
+          .ScaleLength(kScaleLength)
+          .InertialToBackendFrameTranslation(kInertialToBackendFrameTranslation)
+          .StartJunction()
+              .Id(kJunctionAId)
+              .StartSegment()
+                  .Id(kSegmentAId)
+                  .StartLane()
+                      .Id(kLaneAId)
+                      .HeightBounds(kHBoundsA)
+                      .LaneType(maliput::api::LaneType::kShoulder)
+                      .StartLaneGeometry()
+                          .LeftLineString(kLeftLineStringA)
+                          .RightLineString(kRightLineStringA)
+                      .EndLaneGeometry()
+                  .EndLane()
+                  .StartLane()
+                      .Id(kLaneBId)
+                      .HeightBounds(kHBoundsB)
+                      // No LaneType set; should default to kDriving.
+                      .StartLaneGeometry()
+                          .LeftLineString(kLeftLineStringB)
+                          .RightLineString(kRightLineStringB)
+                      .EndLaneGeometry()
+                  .EndLane()
+              .EndSegment()
+          .EndJunction()
+          .StartBranchPoints()
+          .EndBranchPoints()
+          .Build();
+  // clang-format on
+
+  ASSERT_NE(nullptr, rg);
+  auto* segment_a = rg->junction(0)->segment(0);
+  ASSERT_EQ(maliput::api::LaneType::kShoulder, segment_a->lane(0)->type());
+  ASSERT_EQ(maliput::api::LaneType::kUnknown, segment_a->lane(1)->type());
+}
+
 }  // namespace
 }  // namespace test
 }  // namespace builder

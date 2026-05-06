@@ -115,6 +115,9 @@ std::unique_ptr<const maliput::api::RoadGeometry> RoadGeometryLoader::operator()
         if (lane.right_boundary_id.has_value()) {
           lane_builder.RightBoundaryId(maliput::api::LaneBoundary::Id{*lane.right_boundary_id});
         }
+        if (lane.lane_type.has_value()) {
+          lane_builder.LaneType(*lane.lane_type);
+        }
         lane_builder.StartLaneGeometry()
             .LeftLineString(lane.left)
             .RightLineString(lane.right)
