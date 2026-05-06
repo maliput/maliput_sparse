@@ -33,6 +33,8 @@
 #include <string>
 #include <unordered_map>
 
+#include <maliput/api/lane_data.h>
+
 #include "maliput_sparse/geometry/line_string.h"
 
 namespace maliput_sparse {
@@ -74,6 +76,8 @@ struct Lane {
   std::optional<Id> left_boundary_id;
   /// The id of the lane boundary at the right side of this lane.
   std::optional<Id> right_boundary_id;
+  /// The type of the lane (e.g., driving, shoulder, parking).
+  std::optional<maliput::api::LaneType> lane_type;
   /// The ids of the lanes that follow this lane.
   std::unordered_map<Id, LaneEnd> successors;
   /// The ids of the lanes that precede this lane.

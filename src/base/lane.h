@@ -47,8 +47,10 @@ class Lane : public maliput::geometry_base::Lane {
   /// @param id The Lane's unique identifier.
   /// @param elevation_bounds The Lane's elevation bounds.
   /// @param lane_geometry A LaneGeometry.
+  /// @param lane_type The lane type (driving, shoulder, etc.). Defaults to kUnknown if not provided.
   Lane(const maliput::api::LaneId& id, const maliput::api::HBounds& elevation_bounds,
-       std::unique_ptr<geometry::LaneGeometry> lane_geometry);
+       std::unique_ptr<geometry::LaneGeometry> lane_geometry,
+       const std::optional<maliput::api::LaneType>& lane_type = std::nullopt);
 
   maliput::math::Vector3 ToBackendPosition(const maliput::api::LanePosition& lane_pos) const {
     return DoToBackendPosition(lane_pos);

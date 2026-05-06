@@ -59,8 +59,9 @@ class LaneTest : public ::testing::Test {
   const std::unordered_map<Lane::Id, LaneEnd> predecessors{
       {Lane::Id{"predecessor_1"}, {Lane::Id{"predecessor_1"}, LaneEnd::Which::kStart}},
       {Lane::Id{"predecessor_2"}, {Lane::Id{"predecessor_2"}, LaneEnd::Which::kFinish}}};
-  const Lane dut{id,         left,        right, left_lane_id, right_lane_id, left_boundary_id, right_boundary_id,
-                 successors, predecessors};
+  const Lane dut{
+      id,           left,       right,       left_lane_id, right_lane_id, left_boundary_id, right_boundary_id,
+      std::nullopt, successors, predecessors};
 };
 
 TEST_F(LaneTest, Members) {
@@ -71,13 +72,35 @@ TEST_F(LaneTest, Members) {
   EXPECT_EQ(right_lane_id, dut.right_lane_id);
   EXPECT_EQ(left_boundary_id, dut.left_boundary_id);
   EXPECT_EQ(right_boundary_id, dut.right_boundary_id);
+  EXPECT_FALSE(dut.lane_type.has_value());
   EXPECT_EQ(successors, dut.successors);
   EXPECT_EQ(predecessors, dut.predecessors);
+}
+
+TEST_F(LaneTest, LaneTypeField) {
+  const Lane with_type{id,
+                       left,
+                       right,
+                       left_lane_id,
+                       right_lane_id,
+                       left_boundary_id,
+                       right_boundary_id,
+                       maliput::api::LaneType::kShoulder,
+                       successors,
+                       predecessors};
+  EXPECT_TRUE(with_type.lane_type.has_value());
+  EXPECT_EQ(maliput::api::LaneType::kShoulder, *with_type.lane_type);
 }
 
 TEST_F(LaneTest, EqualityOperator) {
   const Lane dut2 = dut;
   EXPECT_EQ(dut, dut2);
+}
+
+TEST_F(LaneTest, EqualityOperatorLaneTypeDiffers) {
+  Lane dut2 = dut;
+  dut2.lane_type = maliput::api::LaneType::kShoulder;
+  EXPECT_FALSE(dut == dut2);
 }
 
 }  // namespace

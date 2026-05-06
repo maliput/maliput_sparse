@@ -212,6 +212,11 @@ class LaneBuilder final : public details::NestedBuilder<SegmentBuilder> {
   /// @return A reference to this LaneBuilder.
   LaneBuilder& RightBoundaryId(const maliput::api::LaneBoundary::Id& boundary_id);
 
+  /// @brief Sets the type of this lane (e.g., driving, shoulder, parking).
+  /// @param lane_type The maliput::api::LaneType to set.
+  /// @return A reference to this LaneBuilder.
+  LaneBuilder& LaneType(maliput::api::LaneType lane_type);
+
   /// @brief Finalizes the construction process of this Lane by inserting the Lane into the
   /// parent SegmentBuilder.
   /// @throws maliput::common::assertion_error When there is no LaneGeometry to be set into the Lane.
@@ -231,6 +236,7 @@ class LaneBuilder final : public details::NestedBuilder<SegmentBuilder> {
   maliput::api::HBounds hbounds_{0., 5.};
   std::optional<maliput::api::LaneBoundary::Id> left_boundary_id_{};
   std::optional<maliput::api::LaneBoundary::Id> right_boundary_id_{};
+  std::optional<maliput::api::LaneType> lane_type_{};
   std::unique_ptr<maliput_sparse::geometry::LaneGeometry> lane_geometry_{};
 };
 
@@ -268,13 +274,15 @@ class SegmentBuilder final : public details::NestedBuilder<JunctionBuilder> {
   /// @throws maliput::common::assertion_error When @p lane is nullptr.
   void SetLane(maliput::common::Passkey<LaneBuilder>, std::unique_ptr<maliput::geometry_base::Lane> lane,
                const std::optional<maliput::api::LaneBoundary::Id>& left_boundary_id,
-               const std::optional<maliput::api::LaneBoundary::Id>& right_boundary_id);
+               const std::optional<maliput::api::LaneBoundary::Id>& right_boundary_id,
+               const std::optional<maliput::api::LaneType>& lane_type);
 
  private:
   struct LaneBuildData {
     std::unique_ptr<maliput::geometry_base::Lane> lane;
     std::optional<maliput::api::LaneBoundary::Id> left_boundary_id;
     std::optional<maliput::api::LaneBoundary::Id> right_boundary_id;
+    std::optional<maliput::api::LaneType> lane_type;
   };
 
   maliput::api::SegmentId id_{"unset_id"};
