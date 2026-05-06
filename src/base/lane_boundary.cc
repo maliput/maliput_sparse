@@ -1,7 +1,7 @@
 // BSD 3-Clause License
 //
-// Copyright (c) 2022, Woven Planet.
-// All rights reserved.
+// Copyright (c) 2022-2026, Woven by Toyota. All rights reserved.
+// Copyright (c) 2022, Toyota Research Institute. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
@@ -27,19 +27,23 @@
 // CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#include "maliput_sparse/parser/lane.h"
+
+#include "base/lane_boundary.h"
+
+#include <maliput/common/maliput_throw.h>
 
 namespace maliput_sparse {
-namespace parser {
 
-bool Lane::operator==(const Lane& other) const {
-  return id == other.id && left == other.left && right == other.right && left_lane_id == other.left_lane_id &&
-         right_lane_id == other.right_lane_id && left_boundary_id == other.left_boundary_id &&
-         right_boundary_id == other.right_boundary_id && successors == other.successors &&
-         predecessors == other.predecessors;
+LaneBoundary::LaneBoundary(const maliput::api::LaneBoundary::Id& id, const maliput::api::Lane* lane_to_left,
+                           const maliput::api::Lane* lane_to_right)
+    : maliput::geometry_base::LaneBoundary(id), lane_to_left_(lane_to_left), lane_to_right_(lane_to_right) {
+  MALIPUT_THROW_UNLESS(lane_to_left_ != nullptr || lane_to_right_ != nullptr);
 }
 
-bool LaneEnd::operator==(const LaneEnd& other) const { return lane_id == other.lane_id && end == other.end; }
+std::optional<maliput::api::LaneMarkingResult> LaneBoundary::DoGetMarking(double) const { return std::nullopt; }
 
-}  // namespace parser
+std::vector<maliput::api::LaneMarkingResult> LaneBoundary::DoGetMarkings() const { return {}; }
+
+std::vector<maliput::api::LaneMarkingResult> LaneBoundary::DoGetMarkings(double, double) const { return {}; }
+
 }  // namespace maliput_sparse

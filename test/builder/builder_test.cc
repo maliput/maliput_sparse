@@ -38,6 +38,7 @@
 #include <maliput/api/compare.h>
 #include <maliput/api/junction.h>
 #include <maliput/api/lane.h>
+#include <maliput/api/lane_boundary.h>
 #include <maliput/api/lane_data.h>
 #include <maliput/api/road_geometry.h>
 #include <maliput/api/segment.h>
@@ -394,6 +395,7 @@ TEST_F(RoadGeometryBuilderTest, CompleteCase) {
   ASSERT_NE(nullptr, segment_a);
   ASSERT_EQ(kSegmentAId, segment_a->id());
   ASSERT_EQ(2, segment_a->num_lanes());
+  ASSERT_EQ(3, segment_a->num_boundaries());
 
   auto* lane_a = segment_a->lane(0);
   ASSERT_NE(nullptr, lane_a);
@@ -404,6 +406,29 @@ TEST_F(RoadGeometryBuilderTest, CompleteCase) {
   ASSERT_NE(nullptr, lane_b);
   ASSERT_EQ(kLaneBId, lane_b->id());
   ASSERT_TRUE(AssertCompare(IsHBoundsClose(kHBoundsB, lane_b->elevation_bounds(0., 0.), kEqualityTolerance)));
+
+  const maliput::api::LaneBoundary* boundary_0 = segment_a->boundary(0);
+  const maliput::api::LaneBoundary* boundary_1 = segment_a->boundary(1);
+  const maliput::api::LaneBoundary* boundary_2 = segment_a->boundary(2);
+  ASSERT_NE(nullptr, boundary_0);
+  ASSERT_NE(nullptr, boundary_1);
+  ASSERT_NE(nullptr, boundary_2);
+
+  EXPECT_EQ(maliput::api::LaneBoundary::Id("segment_a_boundary_0"), boundary_0->id());
+  EXPECT_EQ(maliput::api::LaneBoundary::Id("segment_a_boundary_1"), boundary_1->id());
+  EXPECT_EQ(maliput::api::LaneBoundary::Id("segment_a_boundary_2"), boundary_2->id());
+
+  EXPECT_EQ(lane_a, boundary_0->lane_to_left());
+  EXPECT_EQ(nullptr, boundary_0->lane_to_right());
+  EXPECT_EQ(lane_b, boundary_1->lane_to_left());
+  EXPECT_EQ(lane_a, boundary_1->lane_to_right());
+  EXPECT_EQ(nullptr, boundary_2->lane_to_left());
+  EXPECT_EQ(lane_b, boundary_2->lane_to_right());
+
+  EXPECT_EQ(boundary_0, lane_a->right_boundary());
+  EXPECT_EQ(boundary_1, lane_a->left_boundary());
+  EXPECT_EQ(boundary_1, lane_b->right_boundary());
+  EXPECT_EQ(boundary_2, lane_b->left_boundary());
 
   ASSERT_EQ(lane_a, lane_b->to_right());
   ASSERT_EQ(lane_b, lane_a->to_left());
@@ -417,6 +442,7 @@ TEST_F(RoadGeometryBuilderTest, CompleteCase) {
   ASSERT_NE(nullptr, lane_c);
   ASSERT_EQ(kLaneCId, lane_c->id());
   ASSERT_TRUE(AssertCompare(IsHBoundsClose(kHBoundsC, lane_c->elevation_bounds(0., 0.), kEqualityTolerance)));
+  ASSERT_EQ(2, segment_b->num_boundaries());
 
   auto* junction_b = rg->junction(1);
   ASSERT_NE(nullptr, junction_b);

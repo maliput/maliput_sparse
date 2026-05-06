@@ -1,3 +1,4 @@
+ament_add_gtest(boundary_test boundary_test.cc)
 ament_add_gtest(lane_test lane_test.cc)
 ament_add_gtest(road_geometry_test road_geometry_test.cc)
 
@@ -25,5 +26,6 @@ if (TARGET ${target})
     endif()
 endmacro()
 
+add_dependencies_to_test(boundary_test)
 add_dependencies_to_test(lane_test)
 add_dependencies_to_test(road_geometry_test)

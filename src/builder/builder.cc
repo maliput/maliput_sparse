@@ -30,6 +30,7 @@
 #include "maliput_sparse/builder/builder.h"
 
 #include <algorithm>
+#include <sstream>
 #include <utility>
 #include <vector>
 
@@ -37,6 +38,7 @@
 #include <maliput/geometry_base/kd_tree_strategy.h>
 
 #include "base/lane.h"
+#include "base/lane_boundary.h"
 #include "base/road_geometry.h"
 
 namespace maliput_sparse {
@@ -87,10 +89,20 @@ LaneBuilder& LaneBuilder::HeightBounds(const maliput::api::HBounds& hbounds) {
 
 LaneGeometryBuilder LaneBuilder::StartLaneGeometry() { return LaneGeometryBuilder(this); }
 
+LaneBuilder& LaneBuilder::LeftBoundaryId(const maliput::api::LaneBoundary::Id& boundary_id) {
+  left_boundary_id_ = boundary_id;
+  return *this;
+}
+
+LaneBuilder& LaneBuilder::RightBoundaryId(const maliput::api::LaneBoundary::Id& boundary_id) {
+  right_boundary_id_ = boundary_id;
+  return *this;
+}
+
 SegmentBuilder& LaneBuilder::EndLane() {
   MALIPUT_THROW_UNLESS(lane_geometry_ != nullptr);
   auto lane = std::make_unique<Lane>(id_, hbounds_, std::move(lane_geometry_));
-  Parent()->SetLane({}, std::move(lane));
+  Parent()->SetLane({}, std::move(lane), left_boundary_id_, right_boundary_id_);
   return End();
 }
 
@@ -108,19 +120,59 @@ SegmentBuilder& SegmentBuilder::Id(const maliput::api::SegmentId& segment_id) {
 LaneBuilder SegmentBuilder::StartLane() { return LaneBuilder(this); }
 
 JunctionBuilder& SegmentBuilder::EndSegment() {
+  auto boundary_id_to_string = [](const std::optional<maliput::api::LaneBoundary::Id>& boundary_id) {
+    return boundary_id.has_value() ? boundary_id->string() : std::string("<unset>");
+  };
+  auto resolve_boundary_id = [&](int boundary_index, const std::optional<maliput::api::LaneBoundary::Id>& candidate_a,
+                                 const std::optional<maliput::api::LaneBoundary::Id>& candidate_b) {
+    if (candidate_a.has_value() && candidate_b.has_value() && candidate_a != candidate_b) {
+      std::stringstream ss;
+      ss << "Mismatched boundary IDs in segment '" << id_.string() << "' at boundary index " << boundary_index
+         << ": left-side candidate is '" << boundary_id_to_string(candidate_a) << "' while right-side candidate is '"
+         << boundary_id_to_string(candidate_b) << "'.";
+      MALIPUT_THROW_MESSAGE(ss.str());
+    }
+    if (candidate_a.has_value()) {
+      return *candidate_a;
+    }
+    if (candidate_b.has_value()) {
+      return *candidate_b;
+    }
+    return maliput::api::LaneBoundary::Id(id_.string() + "_boundary_" + std::to_string(boundary_index));
+  };
+
   MALIPUT_THROW_UNLESS(!lanes_.empty());
   auto segment = std::make_unique<maliput::geometry_base::Segment>(id_);
-  for (std::unique_ptr<maliput::geometry_base::Lane>& lane : lanes_) {
-    segment->AddLane(std::move(lane));
+  std::vector<const maliput::api::Lane*> segment_lanes;
+  segment_lanes.reserve(lanes_.size());
+  for (LaneBuildData& lane : lanes_) {
+    segment_lanes.push_back(segment->AddLane(std::move(lane.lane)));
+  }
+
+  const int num_lanes = static_cast<int>(segment_lanes.size());
+  for (int boundary_index = 0; boundary_index <= num_lanes; ++boundary_index) {
+    const maliput::api::Lane* lane_to_right = boundary_index > 0 ? segment_lanes.at(boundary_index - 1) : nullptr;
+    const maliput::api::Lane* lane_to_left = boundary_index < num_lanes ? segment_lanes.at(boundary_index) : nullptr;
+
+    const std::optional<maliput::api::LaneBoundary::Id> right_candidate =
+        boundary_index > 0 ? lanes_.at(boundary_index - 1).left_boundary_id : std::nullopt;
+    const std::optional<maliput::api::LaneBoundary::Id> left_candidate =
+        boundary_index < num_lanes ? lanes_.at(boundary_index).right_boundary_id : std::nullopt;
+    const maliput::api::LaneBoundary::Id boundary_id =
+        resolve_boundary_id(boundary_index, right_candidate, left_candidate);
+
+    auto boundary = std::make_unique<maliput_sparse::LaneBoundary>(boundary_id, lane_to_left, lane_to_right);
+    segment->AddBoundary(std::move(boundary));
   }
   Parent()->SetSegment({}, std::move(segment));
   return End();
 }
 
-void SegmentBuilder::SetLane(maliput::common::Passkey<LaneBuilder>,
-                             std::unique_ptr<maliput::geometry_base::Lane> lane) {
+void SegmentBuilder::SetLane(maliput::common::Passkey<LaneBuilder>, std::unique_ptr<maliput::geometry_base::Lane> lane,
+                             const std::optional<maliput::api::LaneBoundary::Id>& left_boundary_id,
+                             const std::optional<maliput::api::LaneBoundary::Id>& right_boundary_id) {
   MALIPUT_THROW_UNLESS(lane != nullptr);
-  lanes_.emplace_back(std::move(lane));
+  lanes_.emplace_back(LaneBuildData{std::move(lane), left_boundary_id, right_boundary_id});
 }
 
 JunctionBuilder& JunctionBuilder::Id(const maliput::api::JunctionId& junction_id) {
