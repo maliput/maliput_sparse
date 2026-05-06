@@ -2,6 +2,12 @@
 Changelog for package maliput_sparse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.5.0 (2026-05-06)
+------------------
+* Adding lane types (`#90 <https://github.com/maliput/maliput_sparse/issues/90>`_)
+* Implementing sparse boundaries (`#89 <https://github.com/maliput/maliput_sparse/issues/89>`_)
+* Contributors: Juan Carosella
+
 0.4.0 (2026-03-25)
 ------------------
 * Add base books to road network loader. (`#84 <https://github.com/maliput/maliput_sparse/issues/84>`_)
