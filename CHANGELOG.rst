@@ -2,6 +2,12 @@
 Changelog for package maliput_sparse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.6.0 (2026-05-07)
+------------------
+* Adding lane marking support (`#92 <https://github.com/maliput/maliput_sparse/issues/92>`_)
+* Adding copilot instructions (`#88 <https://github.com/maliput/maliput_sparse/issues/88>`_)
+* Contributors: Juan Carosella
+
 0.5.0 (2026-05-06)
 ------------------
 * Adding lane types (`#90 <https://github.com/maliput/maliput_sparse/issues/90>`_)
