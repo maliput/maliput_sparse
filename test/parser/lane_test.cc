@@ -59,9 +59,8 @@ class LaneTest : public ::testing::Test {
   const std::unordered_map<Lane::Id, LaneEnd> predecessors{
       {Lane::Id{"predecessor_1"}, {Lane::Id{"predecessor_1"}, LaneEnd::Which::kStart}},
       {Lane::Id{"predecessor_2"}, {Lane::Id{"predecessor_2"}, LaneEnd::Which::kFinish}}};
-  const Lane dut{
-      id,           left,       right,       left_lane_id, right_lane_id, left_boundary_id, right_boundary_id,
-      std::nullopt, successors, predecessors};
+  const Lane dut{id,           left, right, left_lane_id, right_lane_id, left_boundary_id, right_boundary_id,
+                 std::nullopt, {},   {},    successors,   predecessors};
 };
 
 TEST_F(LaneTest, Members) {
@@ -86,6 +85,8 @@ TEST_F(LaneTest, LaneTypeField) {
                        left_boundary_id,
                        right_boundary_id,
                        maliput::api::LaneType::kShoulder,
+                       {},
+                       {},
                        successors,
                        predecessors};
   EXPECT_TRUE(with_type.lane_type.has_value());

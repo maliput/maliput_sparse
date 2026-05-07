@@ -31,6 +31,7 @@
 #include <memory>
 
 #include <gtest/gtest.h>
+#include <maliput/api/lane_marking.h>
 #include <maliput/geometry_base/segment.h>
 #include <maliput/math/vector.h>
 
@@ -38,6 +39,7 @@
 #include "base/lane_boundary.h"
 #include "maliput_sparse/geometry/lane_geometry.h"
 #include "maliput_sparse/geometry/line_string.h"
+#include "maliput_sparse/parser/lane_marking.h"
 
 namespace maliput_sparse {
 namespace test {
@@ -103,6 +105,113 @@ GTEST_TEST(LaneBoundaryTest, SegmentBoundaryAdjacencyAndIndexing) {
 
   EXPECT_FALSE(boundary_0->GetMarking(0.).has_value());
   EXPECT_TRUE(boundary_0->GetMarkings().empty());
+}
+
+GTEST_TEST(LaneBoundaryMarkingTest, GetMarkingAtPosition) {
+  maliput::geometry_base::Segment segment{maliput::api::SegmentId{"seg"}};
+
+  const LineString3d left{{Vector3{0., 0., 0.}, Vector3{10., 0., 0.}}};
+  const LineString3d right{{Vector3{0., -4., 0.}, Vector3{10., -4., 0.}}};
+  const maliput::api::Lane* lane = segment.AddLane(MakeLane("lane_0", left, right));
+
+  const parser::LaneMarking solid_white{maliput::api::LaneMarkingType::kSolid, maliput::api::LaneMarkingColor::kWhite,
+                                        maliput::api::LaneMarkingWeight::kStandard};
+  const parser::LaneMarking dashed_yellow{maliput::api::LaneMarkingType::kBroken,
+                                          maliput::api::LaneMarkingColor::kYellow,
+                                          maliput::api::LaneMarkingWeight::kStandard};
+
+  const std::vector<parser::BoundaryMarkings> markings{
+      parser::BoundaryMarkings{0., 5., solid_white},
+      parser::BoundaryMarkings{5., 10., dashed_yellow},
+  };
+  const auto* boundary = segment.AddBoundary(
+      std::make_unique<LaneBoundary>(maliput::api::LaneBoundary::Id{"seg_boundary_0"}, lane, nullptr, markings));
+
+  // Query inside first marking range.
+  const auto result_at_2 = boundary->GetMarking(2.);
+  ASSERT_TRUE(result_at_2.has_value());
+  EXPECT_EQ(maliput::api::LaneMarkingType::kSolid, result_at_2->marking.type);
+  EXPECT_EQ(maliput::api::LaneMarkingColor::kWhite, result_at_2->marking.color);
+  EXPECT_DOUBLE_EQ(0., result_at_2->s_start);
+  EXPECT_DOUBLE_EQ(5., result_at_2->s_end);
+
+  // Query inside second marking range.
+  const auto result_at_7 = boundary->GetMarking(7.);
+  ASSERT_TRUE(result_at_7.has_value());
+  EXPECT_EQ(maliput::api::LaneMarkingType::kBroken, result_at_7->marking.type);
+  EXPECT_EQ(maliput::api::LaneMarkingColor::kYellow, result_at_7->marking.color);
+  EXPECT_DOUBLE_EQ(5., result_at_7->s_start);
+  EXPECT_DOUBLE_EQ(10., result_at_7->s_end);
+
+  // Query outside all markings.
+  EXPECT_FALSE(boundary->GetMarking(15.).has_value());
+}
+
+GTEST_TEST(LaneBoundaryMarkingTest, GetAllMarkings) {
+  maliput::geometry_base::Segment segment{maliput::api::SegmentId{"seg"}};
+
+  const LineString3d left{{Vector3{0., 0., 0.}, Vector3{10., 0., 0.}}};
+  const LineString3d right{{Vector3{0., -4., 0.}, Vector3{10., -4., 0.}}};
+  const maliput::api::Lane* lane = segment.AddLane(MakeLane("lane_0", left, right));
+
+  const parser::LaneMarking solid_white{maliput::api::LaneMarkingType::kSolid, maliput::api::LaneMarkingColor::kWhite,
+                                        maliput::api::LaneMarkingWeight::kStandard};
+  const parser::LaneMarking dashed_yellow{maliput::api::LaneMarkingType::kBroken,
+                                          maliput::api::LaneMarkingColor::kYellow,
+                                          maliput::api::LaneMarkingWeight::kStandard};
+
+  const std::vector<parser::BoundaryMarkings> markings{
+      parser::BoundaryMarkings{0., 5., solid_white},
+      parser::BoundaryMarkings{5., 10., dashed_yellow},
+  };
+  const auto* boundary = segment.AddBoundary(
+      std::make_unique<LaneBoundary>(maliput::api::LaneBoundary::Id{"seg_boundary_0"}, lane, nullptr, markings));
+
+  const auto all = boundary->GetMarkings();
+  ASSERT_EQ(2u, all.size());
+  EXPECT_EQ(maliput::api::LaneMarkingType::kSolid, all[0].marking.type);
+  EXPECT_DOUBLE_EQ(0., all[0].s_start);
+  EXPECT_DOUBLE_EQ(5., all[0].s_end);
+  EXPECT_EQ(maliput::api::LaneMarkingType::kBroken, all[1].marking.type);
+  EXPECT_DOUBLE_EQ(5., all[1].s_start);
+  EXPECT_DOUBLE_EQ(10., all[1].s_end);
+}
+
+GTEST_TEST(LaneBoundaryMarkingTest, GetMarkingsInRange) {
+  maliput::geometry_base::Segment segment{maliput::api::SegmentId{"seg"}};
+
+  const LineString3d left{{Vector3{0., 0., 0.}, Vector3{20., 0., 0.}}};
+  const LineString3d right{{Vector3{0., -4., 0.}, Vector3{20., -4., 0.}}};
+  const maliput::api::Lane* lane = segment.AddLane(MakeLane("lane_0", left, right));
+
+  const parser::LaneMarking m1{maliput::api::LaneMarkingType::kSolid, maliput::api::LaneMarkingColor::kWhite,
+                               maliput::api::LaneMarkingWeight::kStandard};
+  const parser::LaneMarking m2{maliput::api::LaneMarkingType::kBroken, maliput::api::LaneMarkingColor::kYellow,
+                               maliput::api::LaneMarkingWeight::kStandard};
+  const parser::LaneMarking m3{maliput::api::LaneMarkingType::kSolidSolid, maliput::api::LaneMarkingColor::kWhite,
+                               maliput::api::LaneMarkingWeight::kBold};
+
+  const std::vector<parser::BoundaryMarkings> markings{
+      parser::BoundaryMarkings{0., 5., m1},
+      parser::BoundaryMarkings{5., 15., m2},
+      parser::BoundaryMarkings{15., 20., m3},
+  };
+  const auto* boundary = segment.AddBoundary(
+      std::make_unique<LaneBoundary>(maliput::api::LaneBoundary::Id{"seg_boundary_0"}, lane, nullptr, markings));
+
+  // Range overlapping first two markings.
+  const auto range_results = boundary->GetMarkings(3., 10.);
+  ASSERT_EQ(2u, range_results.size());
+  EXPECT_EQ(maliput::api::LaneMarkingType::kSolid, range_results[0].marking.type);
+  EXPECT_EQ(maliput::api::LaneMarkingType::kBroken, range_results[1].marking.type);
+
+  // Range covering only the middle marking.
+  const auto mid_results = boundary->GetMarkings(6., 14.);
+  ASSERT_EQ(1u, mid_results.size());
+  EXPECT_EQ(maliput::api::LaneMarkingType::kBroken, mid_results[0].marking.type);
+
+  // Range outside all markings.
+  EXPECT_TRUE(boundary->GetMarkings(20., 30.).empty());
 }
 
 }  // namespace

@@ -83,6 +83,7 @@ cc_library(
     ],
     deps = [
         ":geometry",
+        ":parser",
         "@maliput//:api",
         "@maliput//:common",
         "@maliput//:geometry_base",

@@ -104,10 +104,21 @@ LaneBuilder& LaneBuilder::LaneType(maliput::api::LaneType lane_type) {
   return *this;
 }
 
+LaneBuilder& LaneBuilder::LeftBoundaryMarkings(const std::vector<parser::BoundaryMarkings>& markings) {
+  left_boundary_markings_ = markings;
+  return *this;
+}
+
+LaneBuilder& LaneBuilder::RightBoundaryMarkings(const std::vector<parser::BoundaryMarkings>& markings) {
+  right_boundary_markings_ = markings;
+  return *this;
+}
+
 SegmentBuilder& LaneBuilder::EndLane() {
   MALIPUT_THROW_UNLESS(lane_geometry_ != nullptr);
   auto lane = std::make_unique<Lane>(id_, hbounds_, std::move(lane_geometry_), lane_type_);
-  Parent()->SetLane({}, std::move(lane), left_boundary_id_, right_boundary_id_, lane_type_);
+  Parent()->SetLane({}, std::move(lane), left_boundary_id_, right_boundary_id_, lane_type_, left_boundary_markings_,
+                    right_boundary_markings_);
   return End();
 }
 
@@ -166,7 +177,26 @@ JunctionBuilder& SegmentBuilder::EndSegment() {
     const maliput::api::LaneBoundary::Id boundary_id =
         resolve_boundary_id(boundary_index, right_candidate, left_candidate);
 
-    auto boundary = std::make_unique<maliput_sparse::LaneBoundary>(boundary_id, lane_to_left, lane_to_right);
+    // Gather markings for this boundary from adjacent lanes.
+    const std::vector<parser::BoundaryMarkings>& right_lane_markings =
+        boundary_index > 0 ? lanes_.at(boundary_index - 1).left_boundary_markings
+                           : std::vector<parser::BoundaryMarkings>{};
+    const std::vector<parser::BoundaryMarkings>& left_lane_markings =
+        boundary_index < num_lanes ? lanes_.at(boundary_index).right_boundary_markings
+                                   : std::vector<parser::BoundaryMarkings>{};
+
+    if (!right_lane_markings.empty() && !left_lane_markings.empty() && right_lane_markings != left_lane_markings) {
+      std::stringstream ss;
+      ss << "Mismatched marking data for boundary '" << boundary_id.string() << "' in segment '" << id_.string()
+         << "'.";
+      MALIPUT_THROW_MESSAGE(ss.str());
+    }
+
+    const std::vector<parser::BoundaryMarkings>& boundary_markings =
+        !right_lane_markings.empty() ? right_lane_markings : left_lane_markings;
+
+    auto boundary =
+        std::make_unique<maliput_sparse::LaneBoundary>(boundary_id, lane_to_left, lane_to_right, boundary_markings);
     segment->AddBoundary(std::move(boundary));
   }
   Parent()->SetSegment({}, std::move(segment));
@@ -176,9 +206,12 @@ JunctionBuilder& SegmentBuilder::EndSegment() {
 void SegmentBuilder::SetLane(maliput::common::Passkey<LaneBuilder>, std::unique_ptr<maliput::geometry_base::Lane> lane,
                              const std::optional<maliput::api::LaneBoundary::Id>& left_boundary_id,
                              const std::optional<maliput::api::LaneBoundary::Id>& right_boundary_id,
-                             const std::optional<maliput::api::LaneType>& lane_type) {
+                             const std::optional<maliput::api::LaneType>& lane_type,
+                             const std::vector<parser::BoundaryMarkings>& left_boundary_markings,
+                             const std::vector<parser::BoundaryMarkings>& right_boundary_markings) {
   MALIPUT_THROW_UNLESS(lane != nullptr);
-  lanes_.emplace_back(LaneBuildData{std::move(lane), left_boundary_id, right_boundary_id, lane_type});
+  lanes_.emplace_back(LaneBuildData{std::move(lane), left_boundary_id, right_boundary_id, lane_type,
+                                    left_boundary_markings, right_boundary_markings});
 }
 
 JunctionBuilder& JunctionBuilder::Id(const maliput::api::JunctionId& junction_id) {

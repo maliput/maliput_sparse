@@ -36,6 +36,8 @@
 #include <maliput/common/maliput_copyable.h>
 #include <maliput/geometry_base/lane_boundary.h>
 
+#include "maliput_sparse/parser/lane_marking.h"
+
 namespace maliput_sparse {
 
 class LaneBoundary final : public maliput::geometry_base::LaneBoundary {
@@ -47,10 +49,11 @@ class LaneBoundary final : public maliput::geometry_base::LaneBoundary {
   /// @param id The unique identifier for this boundary.
   /// @param lane_to_left The lane on the +r side, or nullptr for the leftmost boundary.
   /// @param lane_to_right The lane on the -r side, or nullptr for the rightmost boundary.
+  /// @param markings Optional marking data for this boundary, sorted by s_start.
   ///
   /// @throws maliput::common::assertion_error if both lane pointers are nullptr.
   LaneBoundary(const maliput::api::LaneBoundary::Id& id, const maliput::api::Lane* lane_to_left,
-               const maliput::api::Lane* lane_to_right);
+               const maliput::api::Lane* lane_to_right, const std::vector<parser::BoundaryMarkings>& markings = {});
 
   ~LaneBoundary() override = default;
 
@@ -61,8 +64,16 @@ class LaneBoundary final : public maliput::geometry_base::LaneBoundary {
   std::vector<maliput::api::LaneMarkingResult> DoGetMarkings() const override;
   std::vector<maliput::api::LaneMarkingResult> DoGetMarkings(double s_start, double s_end) const override;
 
+  /// Helper structure to store marking data.
+  struct MarkingData {
+    double s_start{0.};
+    double s_end{0.};
+    parser::LaneMarking marking{};
+  };
+
   const maliput::api::Lane* lane_to_left_{};
   const maliput::api::Lane* lane_to_right_{};
+  std::vector<MarkingData> markings_{};
 };
 
 }  // namespace maliput_sparse

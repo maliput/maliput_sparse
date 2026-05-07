@@ -111,6 +111,7 @@
 
 #include "maliput_sparse/geometry/lane_geometry.h"
 #include "maliput_sparse/geometry/line_string.h"
+#include "maliput_sparse/parser/lane_marking.h"
 
 namespace maliput_sparse {
 namespace builder {
@@ -217,6 +218,16 @@ class LaneBuilder final : public details::NestedBuilder<SegmentBuilder> {
   /// @return A reference to this LaneBuilder.
   LaneBuilder& LaneType(maliput::api::LaneType lane_type);
 
+  /// @brief Sets markings for the left boundary of this lane.
+  /// @param markings Boundary markings associated with the left boundary.
+  /// @return A reference to this LaneBuilder.
+  LaneBuilder& LeftBoundaryMarkings(const std::vector<parser::BoundaryMarkings>& markings);
+
+  /// @brief Sets markings for the right boundary of this lane.
+  /// @param markings Boundary markings associated with the right boundary.
+  /// @return A reference to this LaneBuilder.
+  LaneBuilder& RightBoundaryMarkings(const std::vector<parser::BoundaryMarkings>& markings);
+
   /// @brief Finalizes the construction process of this Lane by inserting the Lane into the
   /// parent SegmentBuilder.
   /// @throws maliput::common::assertion_error When there is no LaneGeometry to be set into the Lane.
@@ -237,6 +248,8 @@ class LaneBuilder final : public details::NestedBuilder<SegmentBuilder> {
   std::optional<maliput::api::LaneBoundary::Id> left_boundary_id_{};
   std::optional<maliput::api::LaneBoundary::Id> right_boundary_id_{};
   std::optional<maliput::api::LaneType> lane_type_{};
+  std::vector<parser::BoundaryMarkings> left_boundary_markings_{};
+  std::vector<parser::BoundaryMarkings> right_boundary_markings_{};
   std::unique_ptr<maliput_sparse::geometry::LaneGeometry> lane_geometry_{};
 };
 
@@ -275,7 +288,9 @@ class SegmentBuilder final : public details::NestedBuilder<JunctionBuilder> {
   void SetLane(maliput::common::Passkey<LaneBuilder>, std::unique_ptr<maliput::geometry_base::Lane> lane,
                const std::optional<maliput::api::LaneBoundary::Id>& left_boundary_id,
                const std::optional<maliput::api::LaneBoundary::Id>& right_boundary_id,
-               const std::optional<maliput::api::LaneType>& lane_type);
+               const std::optional<maliput::api::LaneType>& lane_type,
+               const std::vector<parser::BoundaryMarkings>& left_boundary_markings = {},
+               const std::vector<parser::BoundaryMarkings>& right_boundary_markings = {});
 
  private:
   struct LaneBuildData {
@@ -283,6 +298,8 @@ class SegmentBuilder final : public details::NestedBuilder<JunctionBuilder> {
     std::optional<maliput::api::LaneBoundary::Id> left_boundary_id;
     std::optional<maliput::api::LaneBoundary::Id> right_boundary_id;
     std::optional<maliput::api::LaneType> lane_type;
+    std::vector<parser::BoundaryMarkings> left_boundary_markings{};
+    std::vector<parser::BoundaryMarkings> right_boundary_markings{};
   };
 
   maliput::api::SegmentId id_{"unset_id"};

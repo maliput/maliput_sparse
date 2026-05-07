@@ -32,10 +32,12 @@
 #include <optional>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 #include <maliput/api/lane_data.h>
 
 #include "maliput_sparse/geometry/line_string.h"
+#include "maliput_sparse/parser/lane_marking.h"
 
 namespace maliput_sparse {
 namespace parser {
@@ -78,6 +80,10 @@ struct Lane {
   std::optional<Id> right_boundary_id;
   /// The type of the lane (e.g., driving, shoulder, parking).
   std::optional<maliput::api::LaneType> lane_type;
+  /// Markings associated with this lane's left boundary.
+  std::vector<BoundaryMarkings> left_boundary_markings;
+  /// Markings associated with this lane's right boundary.
+  std::vector<BoundaryMarkings> right_boundary_markings;
   /// The ids of the lanes that follow this lane.
   std::unordered_map<Id, LaneEnd> successors;
   /// The ids of the lanes that precede this lane.
