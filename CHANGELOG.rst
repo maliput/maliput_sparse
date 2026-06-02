@@ -2,6 +2,11 @@
 Changelog for package maliput_sparse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.7.0 (2026-06-02)
+------------------
+* Add RoadMarkingBook to RoadNetworkLoader. (`#94 <https://github.com/maliput/maliput_sparse/issues/94>`_)
+* Contributors: Santiago Lopez
+
 0.6.0 (2026-05-07)
 ------------------
 * Adding lane marking support (`#92 <https://github.com/maliput/maliput_sparse/issues/92>`_)
